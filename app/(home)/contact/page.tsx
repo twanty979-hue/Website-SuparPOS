@@ -10,7 +10,7 @@ export default function ContactPage() {
         
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4 drop-shadow-sm">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-400 mb-4 drop-shadow-sm">
             ติดต่อเรา
           </h1>
           <p className="text-slate-500 text-lg font-light">
@@ -23,20 +23,20 @@ export default function ContactPage() {
           
           {/* Decorative Background Blur */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-             <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-100 rounded-full blur-[100px] opacity-50"></div>
-             <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-50 rounded-full blur-[100px] opacity-50"></div>
+             <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-100 rounded-full blur-[100px] opacity-50"></div>
+             <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-green-50 rounded-full blur-[100px] opacity-50"></div>
           </div>
 
           <div className="flex flex-col md:flex-row relative z-10">
             
             {/* ฝั่งซ้าย: THE CEO (โหมดเล่นใหญ่) */}
-            <div className="md:w-5/12 bg-gradient-to-b from-blue-50/80 to-white p-12 flex flex-col items-center text-center relative border-b md:border-b-0 md:border-r border-blue-50">
+            <div className="md:w-5/12 bg-gradient-to-b from-emerald-50/80 to-white p-12 flex flex-col items-center text-center relative border-b md:border-b-0 md:border-r border-emerald-50">
               
               {/* Profile Image with Aura */}
               <div className="relative w-56 h-56 mb-8 group cursor-pointer">
                 {/* Rotating Rings */}
-                <div className="absolute inset-[-12px] border-2 border-dashed border-blue-200 rounded-full animate-[spin_10s_linear_infinite]"></div>
-                <div className="absolute inset-[-4px] bg-gradient-to-tr from-blue-500 to-cyan-400 rounded-full animate-pulse blur-sm"></div>
+                <div className="absolute inset-[-12px] border-2 border-dashed border-emerald-200 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                <div className="absolute inset-[-4px] bg-gradient-to-tr from-emerald-500 to-green-400 rounded-full animate-pulse blur-sm"></div>
                 
                 <Image
                   src="/images/ceo.jpg" // *** รูปเดิม ***
@@ -46,7 +46,7 @@ export default function ContactPage() {
                 />
                 
                 {/* Verified Badge */}
-                <div className="absolute bottom-2 right-2 z-20 bg-blue-600 text-white p-2 rounded-full border-4 border-white shadow-lg">
+                <div className="absolute bottom-2 right-2 z-20 bg-emerald-600 text-white p-2 rounded-full border-4 border-white shadow-lg">
                   <FaCheckCircle className="text-xl" />
                 </div>
               </div>
@@ -54,20 +54,20 @@ export default function ContactPage() {
               <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">
                 คุณวรธน นำทอง
               </h2>
-              <div className="mt-3 inline-flex items-center space-x-2 bg-blue-100/50 px-4 py-1.5 rounded-full border border-blue-200">
+              <div className="mt-3 inline-flex items-center space-x-2 bg-emerald-100/50 px-4 py-1.5 rounded-full border border-emerald-200">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                <span className="text-blue-700 text-xs font-bold uppercase tracking-widest">
+                <span className="text-emerald-700 text-xs font-bold uppercase tracking-widest">
                   CEO & Visionary Founder
                 </span>
               </div>
               
               {/* Quote แบบเล่นใหญ่ */}
               <div className="mt-8 relative">
-                <FaQuoteLeft className="absolute -top-4 -left-2 text-blue-100 text-4xl" />
+                <FaQuoteLeft className="absolute -top-4 -left-2 text-emerald-100 text-4xl" />
                 <p className="text-slate-700 text-base leading-relaxed font-medium italic relative z-10">
                   "ผมไม่ได้แค่เขียนโปรแกรม... <br/>
-                  <span className="text-indigo-600 font-bold bg-indigo-50 px-1">แต่ผมเดิมพันด้วยชีวิต!</span> <br/>
-                  POS-FoodScan คือจิตวิญญาณของผม ผมทุ่มเทสร้างมันขึ้นมาเพื่อให้เป็น <span className="text-blue-600 font-bold">The Best POS</span> ที่จะเปลี่ยนโลกธุรกิจร้านอาหารของคุณไปตลอดกาล!"
+                  <span className="text-green-600 font-bold bg-green-50 px-1">แต่ผมเดิมพันด้วยชีวิต!</span> <br/>
+                  SuparPOS คือจิตวิญญาณของผม ผมทุ่มเทสร้างมันขึ้นมาเพื่อให้เป็น <span className="text-emerald-600 font-bold">The Best POS</span> ที่จะเปลี่ยนโลกธุรกิจร้านอาหารของคุณไปตลอดกาล!"
                 </p>
               </div>
 
@@ -83,8 +83,8 @@ export default function ContactPage() {
                 <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
                   ช่องทางการติดต่อ
                   <span className="flex h-3 w-3 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                   </span>
                 </h3>
                 <p className="text-slate-500 text-sm mt-2">ติดต่อผมโดยตรงได้ทุกช่องทาง ยินดีให้บริการระดับ VVIP ครับ</p>
@@ -96,18 +96,18 @@ export default function ContactPage() {
                   href="https://www.facebook.com/worathon.namthong.2025/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center p-5 rounded-2xl border border-slate-100 bg-white hover:border-blue-500/30 hover:shadow-[0_10px_40px_-10px_rgba(37,99,235,0.2)] transition-all duration-300 transform hover:-translate-y-1"
+                  className="group flex items-center p-5 rounded-2xl border border-slate-100 bg-white hover:border-emerald-500/30 hover:shadow-[0_10px_40px_-10px_rgba(16,185,129,0.2)] transition-all duration-300 transform hover:-translate-y-1"
                 >
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#1877F2] to-[#0b5fc9] rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-200 group-hover:rotate-6 transition-transform">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#1877F2] to-[#0b5fc9] rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-emerald-200 group-hover:rotate-6 transition-transform">
                     <FaFacebookF />
                   </div>
                   <div className="ml-6 flex-1">
-                    <p className="text-xs text-blue-500 font-bold uppercase tracking-wide mb-1">Facebook ส่วนตัว</p>
+                    <p className="text-xs text-emerald-500 font-bold uppercase tracking-wide mb-1">Facebook ส่วนตัว</p>
                     <p className="text-slate-800 font-bold text-xl group-hover:text-[#1877F2] transition-colors">
                       วรธน นำทอง
                     </p>
                   </div>
-                  <div className="text-slate-300 group-hover:text-blue-500 transition-colors">➔</div>
+                  <div className="text-slate-300 group-hover:text-emerald-500 transition-colors">➔</div>
                 </a>
 
                 {/* Line Card */}

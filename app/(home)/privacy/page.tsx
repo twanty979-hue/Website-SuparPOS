@@ -1,24 +1,23 @@
 // app/privacy/page.tsx (หรือ path ที่คุณใช้งานอยู่)
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default function PrivacyPage() {
   // วันที่อัปเดตล่าสุด (เปลี่ยนได้ตามจริง)
   const lastUpdated = "8 กุมภาพันธ์ 2026";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-white py-12 px-4 sm:px-6 lg:px-8 font-sans text-slate-600">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-white py-12 px-4 sm:px-6 lg:px-8 font-sans text-slate-600">
       
       {/* Background Decor (Optional - ให้เหมือนหน้า Login) */}
-      <div className="fixed top-[-10%] right-[-5%] w-96 h-96 bg-blue-100 rounded-full blur-[100px] opacity-40 pointer-events-none"></div>
-      <div className="fixed bottom-[-10%] left-[-5%] w-96 h-96 bg-cyan-100 rounded-full blur-[100px] opacity-40 pointer-events-none"></div>
+      <div className="fixed top-[-10%] right-[-5%] w-96 h-96 bg-emerald-100 rounded-full blur-[100px] opacity-40 pointer-events-none"></div>
+      <div className="fixed bottom-[-10%] left-[-5%] w-96 h-96 bg-teal-100 rounded-full blur-[100px] opacity-40 pointer-events-none"></div>
 
       <div className="max-w-4xl mx-auto relative z-10">
         
         {/* Header Section */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-lg shadow-blue-500/10 mb-6 text-blue-500 border border-blue-50">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-lg shadow-emerald-500/10 mb-6 text-emerald-500 border border-emerald-50">
             {/* ใส่ Logo หรือ Icon ความปลอดภัย */}
             <i className="fa-solid fa-shield-halved text-3xl"></i>
           </div>
@@ -26,7 +25,7 @@ export default function PrivacyPage() {
             นโยบายความเป็นส่วนตัว
           </h1>
           <p className="text-lg text-slate-500 font-medium">
-            Pos-FoodScan Management System
+            SuparPOS Management System
           </p>
         </div>
 
@@ -36,9 +35,9 @@ export default function PrivacyPage() {
           <div className="p-8 md:p-12 space-y-10">
             
             {/* Intro */}
-            <div className="bg-blue-50/50 rounded-2xl p-6 border border-blue-100/50">
+            <div className="bg-emerald-50/50 rounded-2xl p-6 border border-emerald-100/50">
               <p className="leading-relaxed">
-                <strong className="text-blue-700">Pos-FoodScan</strong> ("เรา") ให้ความสำคัญกับความเป็นส่วนตัวและความปลอดภัยของข้อมูลผู้ใช้งานอย่างสูงสุด 
+                <strong className="text-emerald-700">SuparPOS</strong> ("เรา") ให้ความสำคัญกับความเป็นส่วนตัวและความปลอดภัยของข้อมูลผู้ใช้งานอย่างสูงสุด 
                 นโยบายฉบับนี้จัดทำขึ้นเพื่อชี้แจงให้ท่านทราบถึงวิธีการที่เราเก็บรวบรวม ใช้ และปกป้องข้อมูลส่วนบุคคลของท่านเมื่อเข้าใช้งานระบบ POS และบริการของเรา
               </p>
             </div>
@@ -46,7 +45,7 @@ export default function PrivacyPage() {
             {/* Section 1 */}
             <section className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
                   <i className="fa-solid fa-database"></i>
                 </div>
                 <h2 className="text-xl font-bold text-slate-800">1. ข้อมูลที่เราเก็บรวบรวม</h2>
@@ -74,17 +73,17 @@ export default function PrivacyPage() {
             {/* Section 2 */}
             <section className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shadow-sm">
                   <i className="fa-solid fa-chart-pie"></i>
                 </div>
                 <h2 className="text-xl font-bold text-slate-800">2. วัตถุประสงค์การใช้ข้อมูล</h2>
               </div>
               <div className="pl-14 space-y-2 text-sm md:text-base">
                 <p>เรานำข้อมูลของท่านไปใช้เพื่อประโยชน์ในการ:</p>
-                <ul className="list-disc pl-5 space-y-1 text-slate-600 marker:text-indigo-300">
+                <ul className="list-disc pl-5 space-y-1 text-slate-600 marker:text-green-300">
                   <li>ให้บริการจัดการร้านอาหาร ระบบสั่งอาหาร และสรุปยอดขาย</li>
                   <li>ยืนยันตัวตนและรักษาความปลอดภัยของบัญชีผู้ใช้</li>
-                  <li>พัฒนาและปรับปรุงฟีเจอร์ใหม่ๆ ของ Pos-FoodScan</li>
+                  <li>พัฒนาและปรับปรุงฟีเจอร์ใหม่ๆ ของ SuparPOS</li>
                   <li>ติดต่อสื่อสาร แจ้งเตือนสถานะระบบ หรือโปรโมชั่นที่เกี่ยวข้อง</li>
                 </ul>
               </div>
@@ -126,7 +125,7 @@ export default function PrivacyPage() {
           <div className="bg-slate-50 px-8 py-6 border-t border-slate-100 flex justify-center">
              <Link 
               href="/" 
-              className="group inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors px-6 py-2 rounded-full hover:bg-white hover:shadow-sm"
+              className="group inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600 transition-colors px-6 py-2 rounded-full hover:bg-white hover:shadow-sm"
             >
               <i className="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
               กลับสู่หน้าหลัก
@@ -137,7 +136,7 @@ export default function PrivacyPage() {
         
         {/* Copyright */}
         <p className="text-center text-slate-400 text-xs mt-8 opacity-60">
-          © {new Date().getFullYear()} Pos-FoodScan System. All rights reserved.
+          © {new Date().getFullYear()} SuparPOS System. All rights reserved.
         </p>
 
       </div>

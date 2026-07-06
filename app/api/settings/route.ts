@@ -90,6 +90,41 @@ export async function POST(request: Request) {
       updateData.table_qr_mode = body.table_qr_mode;
     }
 
+    if (body.vat !== undefined || body.vat_mode !== undefined) {
+      const { data: currentBrand, error: configError } = await supabase
+        .from('brands')
+        .select('config')
+        .eq('id', brandId)
+        .single();
+      if (configError) throw configError;
+
+      const currentConfig =
+        currentBrand?.config && typeof currentBrand.config === 'object'
+          ? currentBrand.config
+          : {};
+      const vat = Number(body.vat ?? currentConfig.vat ?? 0);
+      const vatMode = body.vat_mode ?? currentConfig.vat_mode ?? 'included';
+
+      if (!Number.isFinite(vat) || vat < 0 || vat > 100) {
+        return NextResponse.json(
+          { success: false, error: 'VAT must be between 0 and 100' },
+          { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
+        );
+      }
+      if (vatMode !== 'included' && vatMode !== 'excluded') {
+        return NextResponse.json(
+          { success: false, error: 'Invalid VAT mode' },
+          { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
+        );
+      }
+
+      updateData.config = {
+        ...currentConfig,
+        vat,
+        vat_mode: vatMode,
+      };
+    }
+
     const { error } = await supabase.from('brands').update(updateData).eq('id', brandId);
     if (error) throw error;
 

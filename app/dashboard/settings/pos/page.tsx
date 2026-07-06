@@ -67,6 +67,33 @@ function PosSettingsContent() {
               <Toggle enabled={settings.hideProductNames} onChange={() => updateSetting('hideProductNames', !settings.hideProductNames)} />
             </div>
           )}
+          <div className="flex items-center justify-between gap-4 border-t border-slate-100 p-5">
+            <div><p className="text-sm font-bold text-slate-700">ซ่อนสินค้าที่มีบาร์โค้ด</p><p className="mt-1 text-xs leading-relaxed text-slate-400">ซ่อนสินค้าที่มีบาร์โค้ดจากหน้ารายการปุ่มกด (แต่ยังยิงบาร์โค้ดเพื่อค้นหาและสแกนได้ปกติ)</p></div>
+            <Toggle enabled={!settings.showBarcodeProducts} onChange={() => updateSetting('showBarcodeProducts', !settings.showBarcodeProducts)} />
+          </div>
+          <div className="flex flex-col gap-2 border-t border-slate-100 p-5">
+            <p className="text-sm font-bold text-slate-700">ขนาดปุ่มสินค้า</p>
+            <p className="text-xs text-slate-400 font-medium">เลือกขนาดของปุ่มแสดงรายการสินค้าอาหาร</p>
+            <div className="grid grid-cols-2 gap-3 mt-1">
+              {(['normal', 'large'] as const).map(size => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => updateSetting('productSize', size)}
+                  className={`rounded-2xl border-2 p-4 text-left transition-all ${
+                    settings.productSize === size
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="block text-sm font-black">{size === 'normal' ? 'ปกติ' : 'ใหญ่'}</span>
+                  <span className="text-[10px] opacity-70">
+                    {size === 'normal' ? 'เหมาะสำหรับหน้าจอขนาดปกติ' : 'ปุ่มใหญ่ กดง่าย ชัดเจน'}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">

@@ -8,6 +8,8 @@ export interface PosDisplaySettings {
   autoPrintReceipt: boolean;
   autoPrintOrders: boolean;
   receiptCopies: 1 | 2;
+  showBarcodeProducts: boolean;
+  productSize: 'normal' | 'large';
 }
 
 export const POS_SETTINGS_KEY = 'foodscan_pos_settings';
@@ -18,6 +20,8 @@ export const DEFAULT_POS_SETTINGS: PosDisplaySettings = {
   autoPrintReceipt: true,
   autoPrintOrders: false,
   receiptCopies: 1,
+  showBarcodeProducts: true,
+  productSize: 'normal',
 };
 
 function normalizeSettings(value?: Partial<PosDisplaySettings> | null): PosDisplaySettings {
@@ -27,6 +31,8 @@ function normalizeSettings(value?: Partial<PosDisplaySettings> | null): PosDispl
     autoPrintReceipt: value?.autoPrintReceipt ?? DEFAULT_POS_SETTINGS.autoPrintReceipt,
     autoPrintOrders: value?.autoPrintOrders ?? DEFAULT_POS_SETTINGS.autoPrintOrders,
     receiptCopies: value?.receiptCopies === 2 ? 2 : 1,
+    showBarcodeProducts: value?.showBarcodeProducts ?? DEFAULT_POS_SETTINGS.showBarcodeProducts,
+    productSize: value?.productSize === 'large' ? 'large' : 'normal',
   };
 }
 

@@ -3,6 +3,21 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createHmac } from 'node:crypto'
 
+const allowedWebReturnOrigins = new Set([
+  'http://localhost:7357',
+  'https://app.suparpos.com',
+])
+
+function safeWebReturnOrigin(value: string | null) {
+  if (!value) return null
+  try {
+    const origin = new URL(value).origin
+    return allowedWebReturnOrigins.has(origin) ? origin : null
+  } catch {
+    return null
+  }
+}
+
 function recoveryTicket(userId: string) {
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!secret) throw new Error('Missing recovery signing secret')
@@ -23,6 +38,7 @@ export async function GET(request: Request) {
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type')
   const source = searchParams.get('source')
+  const returnTo = safeWebReturnOrigin(searchParams.get('return_to'))
   
   const next = searchParams.get('next') ?? '/dashboard/pai_order'
 
@@ -69,6 +85,17 @@ export async function GET(request: Request) {
   }
 
   // 🟢 ถ้าเข้าเงื่อนไขนี้ แสดงว่าล็อกอิน/กู้รหัสสำเร็จ 100%
+  if (source === 'web' && returnTo && sessionData?.user) {
+    const webUrl = new URL('/', returnTo)
+    if (type === 'recovery') {
+      webUrl.searchParams.set('type', 'recovery')
+      webUrl.searchParams.set('ticket', recoveryTicket(sessionData.user.id))
+    } else {
+      webUrl.searchParams.set('type', 'verified')
+    }
+    return NextResponse.redirect(webUrl)
+  }
+
   if (source === 'app' && sessionData?.user) {
     const deepLink = new URL('/mobile/auth/callback', origin)
     

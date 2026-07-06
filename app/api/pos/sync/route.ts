@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { rebuildDashboardCashierStats } from '@/lib/dashboardCashierStats';
 import { rebuildDashboardDailyPaymentCount } from '@/lib/dashboardDailySales';
+import { applyIngredientConsumption } from '@/lib/ingredientConsumption';
 import { checkOrderLimitOrThrow } from '@/app/actions/limitGuard';
 
 // --- 🌐 จัดการ CORS Preflight รองรับการยิงจากโมบายล์แอป ---
@@ -244,10 +245,22 @@ export async function POST(request: Request) {
       if (updateError) throw updateError;
     }
 
-    // Dashboard summaries must never make a completed sale fail to sync.
-    // They are derived data and can be rebuilt later from pai_orders.
     const paymentCreatedAt =
       paiOrderData.created_at || new Date().toISOString();
+
+    // Food products use recipes instead of the retail stock_logs flow below.
+    // The deterministic movement key makes PAYMENT ticket retries idempotent.
+    await applyIngredientConsumption(privilegedSupabase, {
+      brandId,
+      paymentId: targetPaymentId,
+      orderId: newOrderData.id,
+      items: processedItems,
+      saleTime: paymentCreatedAt,
+      performedBy: resolvedCashierId,
+    });
+
+    // Dashboard summaries must never make a completed sale fail to sync.
+    // They are derived data and can be rebuilt later from pai_orders.
     const dashboardResults = await Promise.allSettled([
       rebuildDashboardCashierStats(privilegedSupabase, {
         brandId,

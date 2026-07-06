@@ -28,41 +28,26 @@ function getCountryFromTimezone(tz: string): string {
     return tzMap[city] || 'TH';
 }
 
-// 🔥 แก้ไขใหม่: ป้องกันบัคลูกค้าแบบ "ตลอดชีพ (Lifetime)"
-// 🔥 แก้ไขใหม่: โหมดนายทุน! ป้องกันบัคเวลา และ ไม่มีวันหมดอายุ = เด้งไป Free ทันที
 function calculateEffectivePlan(brand: any) {
     const now = dayjs();
-
-    // 🛠️ ตัวช่วยแปลงเวลาให้ dayjs อ่านออก 100%
     const parseExpiry = (dateString: string | null) => {
         if (!dateString) return null;
         const safeDateStr = dateString.replace(' ', 'T'); 
         return dayjs(safeDateStr);
     };
     
-    // ลำดับที่ 1: เช็กสถานะของ 'ultimate'
-    if (brand.plan === 'ultimate') {
-        const exp = parseExpiry(brand.expiry_ultimate);
-        // ต้องมีวันหมดอายุ + แปลงค่าได้ + ยังไม่หมดเวลา เท่านั้นถึงจะรอด!
-        if (exp && exp.isValid() && exp.isAfter(now)) return 'ultimate';
+    const expUltimate = parseExpiry(brand.expiry_ultimate);
+    if (expUltimate && expUltimate.isValid() && expUltimate.isAfter(now)) {
+        return 'ultimate';
     }
-    
-    // ลำดับที่ 2: เช็กสถานะของ 'pro' 
-    if (brand.plan === 'pro') {
-        const exp = parseExpiry(brand.expiry_pro);
-        if (exp && exp.isValid() && exp.isAfter(now)) return 'pro';
+    const expPro = parseExpiry(brand.expiry_pro);
+    if (expPro && expPro.isValid() && expPro.isAfter(now)) {
+        return 'pro';
     }
-
-    // ลำดับที่ 3: เช็กสถานะของ 'basic'
-    if (brand.plan === 'basic') {
-        const exp = parseExpiry(brand.expiry_basic);
-        if (exp && exp.isValid() && exp.isAfter(now)) return 'basic';
+    const expBasic = parseExpiry(brand.expiry_basic);
+    if (expBasic && expBasic.isValid() && expBasic.isAfter(now)) {
+        return 'basic';
     }
-
-    // 🔥 โหมดไร้ความปรานี: 
-    // - หมดอายุแล้ว -> Free!
-    // - ไม่มีวันหมดอายุในระบบ (NULL) -> Free!
-    // - ข้อมูลพังอ่านไม่ออก -> Free!
     return 'free'; 
 }
 
@@ -98,7 +83,7 @@ export async function getDashboardDataAction(
 
         const localCountryCode = getCountryFromTimezone(brandTimezone);
         const hdLocal = new Holidays(localCountryCode, 'en');
-        const hdCN = new Holidays('CN', 'en'); // 👈 แก้ตรงนี้! เปลี่ยน 'SG' เป็น 'CN'
+        const hdCN = new Holidays('CN', 'en'); 
         const hdUS = new Holidays('US', 'en');
 
         let now = dayjs().tz(brandTimezone);
@@ -111,12 +96,21 @@ export async function getDashboardDataAction(
         if (range === 'today') {
             startDate = anchorDate.startOf('day');
             endDate = anchorDate.endOf('day');
-        } else if (range === 'month') {
+        } else if (range === 'yesterday') {
+            startDate = anchorDate.subtract(1, 'day').startOf('day');
+            endDate = anchorDate.subtract(1, 'day').endOf('day');
+        } else if (range === 'last7days') {
+            startDate = anchorDate.subtract(6, 'day').startOf('day');
+            endDate = anchorDate.endOf('day');
+        } else if (range === 'last30days') {
+            startDate = anchorDate.subtract(29, 'day').startOf('day');
+            endDate = anchorDate.endOf('day');
+        } else if (range === 'thisMonth' || range === 'month') {
             startDate = anchorDate.startOf('month');
             endDate = anchorDate.endOf('month');
-        } else if (range === 'year') {
-            startDate = anchorDate.startOf('year');
-            endDate = anchorDate.endOf('year');
+        } else if (range === 'lastMonth') {
+            startDate = anchorDate.subtract(1, 'month').startOf('month');
+            endDate = anchorDate.subtract(1, 'month').endOf('month');
         } else if (range === 'custom') {
             if (customFrom) startDate = dayjs.tz(customFrom, brandTimezone).startOf('day');
             if (customTo) endDate = dayjs.tz(customTo, brandTimezone).endOf('day');
@@ -156,7 +150,7 @@ export async function getDashboardDataAction(
         const { data: productStats, error: prodError } = await prodQuery;
         if (prodError) throw prodError;
 
-        let processedTrend: { date: string; value: number; holiday?: string }[] = [];
+        let processedTrend: { date: string; value: number; holiday?: string; report_date?: string }[] = [];
         const parseDate = (dateStr: string) => dayjs.tz(dateStr, brandTimezone);
 
         const getHolidayName = (dateInput: string | Date) => { 
@@ -181,7 +175,6 @@ export async function getDashboardDataAction(
             return null;
         };
 
-        // 🔥 แก้ไขการวาดกราฟให้แม่นยำ ไม่สนว่าจะโดน Limit Guard หรือไม่
         if (range === 'year') {
             const requestedYearStart = anchorDate.startOf('year');
             processedTrend = Array.from({ length: 12 }, (_, i) => {
@@ -195,39 +188,40 @@ export async function getDashboardDataAction(
                     if (processedTrend[idx]) processedTrend[idx].value += Number(item.total_revenue);
                 }
             });
-
-        } else if (range === 'month') {
-            // 🚨 แก้บัคกราฟเดือนหาย: ใช้ anchorDate สร้างแกน X แทน startDate 
-            const requestedMonthStart = anchorDate.startOf('month');
-            const daysInMonth = requestedMonthStart.daysInMonth();
-            
-            processedTrend = Array.from({ length: daysInMonth }, (_, i) => {
-                const d = requestedMonthStart.add(i, 'day');
-                const dateStr = d.format('YYYY-MM-DD');
-                return { date: d.format('D'), value: 0, holiday: getHolidayName(dateStr) || undefined };
-            });
-            
-            salesData?.forEach((item) => {
-                const itemDate = parseDate(item.report_date);
-                if (itemDate.month() === requestedMonthStart.month() && itemDate.year() === requestedMonthStart.year()) {
-                    const dayIdx = itemDate.date() - 1;
-                    if (processedTrend[dayIdx]) processedTrend[dayIdx].value += Number(item.total_revenue);
-                }
-            });
-
-        } else {
+        } else if (range === 'all') {
             processedTrend = salesData?.map(d => {
                 return {
                     date: parseDate(d.report_date).locale('th').format('D MMM'), 
                     value: Number(d.total_revenue),
-                    holiday: getHolidayName(d.report_date) || undefined 
+                    holiday: getHolidayName(d.report_date) || undefined,
+                    report_date: d.report_date
                 };
             }) || [];
-            
-            if (processedTrend.length === 0 && range === 'today') {
-                const todayStr = anchorDate.format('YYYY-MM-DD');
-                processedTrend = [{ date: 'วันนี้', value: 0, holiday: getHolidayName(todayStr) || undefined }];
+        } else {
+            const filledMap = new Map<string, { date: string; value: number; holiday?: string; report_date: string }>();
+            let cur = startDate.clone();
+            while (cur.isBefore(endDate) || cur.isSame(endDate, 'day')) {
+                const dateStr = cur.format('YYYY-MM-DD');
+                filledMap.set(dateStr, {
+                    date: range === 'today' || (startDate.isSame(endDate, 'day') && range !== 'custom')
+                        ? 'วันนี้' 
+                        : cur.locale('th').format('D MMM'),
+                    value: 0,
+                    holiday: getHolidayName(dateStr) || undefined,
+                    report_date: dateStr
+                });
+                cur = cur.add(1, 'day');
             }
+
+            salesData?.forEach((item) => {
+                const itemDateStr = parseDate(item.report_date).format('YYYY-MM-DD');
+                const existing = filledMap.get(itemDateStr);
+                if (existing) {
+                    existing.value += Number(item.total_revenue);
+                }
+            });
+
+            processedTrend = Array.from(filledMap.values());
         }
 
         const summary = {
@@ -249,13 +243,228 @@ export async function getDashboardDataAction(
             .sort((a, b) => b.qty - a.qty)
             .slice(0, 5);
 
+        // Fetch advanced stats if Pro/Ultimate
+        let hourlySales: any[] = [];
+        let paymentStats: any[] = [];
+        let tableStats: any[] = [];
+        let cashierStats: any[] = [];
+
+        if (effectivePlan === 'pro' || effectivePlan === 'ultimate') {
+            try {
+                let hourlyQuery = supabase.from('dashboard_hourly_sales').select('*').eq('brand_id', brandId);
+                let paymentQuery = supabase.from('dashboard_payment_stats').select('*').eq('brand_id', brandId);
+                let tableQuery = supabase.from('dashboard_table_stats').select('*').eq('brand_id', brandId);
+                let cashierQuery = supabase.from('dashboard_cashier_stats').select(`
+                    total_revenue,
+                    total_payments,
+                    cashier_id,
+                    profiles (
+                        full_name,
+                        avatar_url
+                    )
+                `).eq('brand_id', brandId);
+
+                if (!isAllTime) {
+                    const startStr = startDate.format('YYYY-MM-DD');
+                    const endStr = endDate.format('YYYY-MM-DD');
+                    hourlyQuery = hourlyQuery.gte('report_date', startStr).lte('report_date', endStr);
+                    paymentQuery = paymentQuery.gte('report_date', startStr).lte('report_date', endStr);
+                    tableQuery = tableQuery.gte('report_date', startStr).lte('report_date', endStr);
+                    cashierQuery = cashierQuery.gte('report_date', startStr).lte('report_date', endStr);
+                }
+
+                const [hourlyRes, paymentRes, tableRes, cashierRes] = await Promise.all([
+                    hourlyQuery,
+                    paymentQuery,
+                    tableQuery,
+                    cashierQuery
+                ]);
+
+                if (hourlyRes.error || paymentRes.error || tableRes.error || cashierRes.error) {
+                    throw new Error("Query failed, falling back to base tables");
+                }
+
+                const hourlyRaw = hourlyRes.data || [];
+                const paymentRaw = paymentRes.data || [];
+                const tableRaw = tableRes.data || [];
+                const cashierRaw = cashierRes.data || [];
+
+                // A. Hourly aggregation (0 - 23)
+                const hourlyMap: Record<number, { hour: number, revenue: number, orders: number }> = {};
+                for (let h = 0; h < 24; h++) {
+                    hourlyMap[h] = { hour: h, revenue: 0, orders: 0 };
+                }
+                hourlyRaw.forEach(row => {
+                    const h = Number(row.report_hour);
+                    if (hourlyMap[h] !== undefined) {
+                        hourlyMap[h].revenue += Number(row.total_revenue || 0);
+                        hourlyMap[h].orders += Number(row.total_payments || 0);
+                    }
+                });
+                hourlySales = Object.values(hourlyMap);
+
+                // B. Payment aggregation
+                const paymentMap: Record<string, { method: string, revenue: number, orders: number }> = {};
+                paymentRaw.forEach(row => {
+                    const m = (row.payment_method || 'unknown').toLowerCase();
+                    if (!paymentMap[m]) {
+                        paymentMap[m] = { method: m, revenue: 0, orders: 0 };
+                    }
+                    paymentMap[m].revenue += Number(row.total_revenue || 0);
+                    paymentMap[m].orders += Number(row.total_payments || 0);
+                });
+                paymentStats = Object.values(paymentMap);
+
+                // C. Table aggregation
+                const tableMap: Record<string, { table: string, type: string, revenue: number, orders: number }> = {};
+                tableRaw.forEach(row => {
+                    const key = `${row.order_type || ''}_${row.table_label || ''}`;
+                    if (!tableMap[key]) {
+                        tableMap[key] = {
+                            table: row.table_label || '',
+                            type: row.order_type || '',
+                            revenue: 0,
+                            orders: 0
+                        };
+                    }
+                    tableMap[key].revenue += Number(row.total_revenue || 0);
+                    tableMap[key].orders += Number(row.total_payments || 0);
+                });
+                tableStats = Object.values(tableMap);
+
+                // D. Cashier aggregation
+                const cashierMap: Record<string, { cashierId: string, name: string, avatarUrl: string, revenue: number, orders: number }> = {};
+                cashierRaw.forEach(row => {
+                    const cid = row.cashier_id || 'unknown';
+                    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+                    const name = profile?.full_name || 'พนักงาน';
+                    const avatarUrl = profile?.avatar_url || '';
+
+                    if (!cashierMap[cid]) {
+                        cashierMap[cid] = {
+                            cashierId: cid,
+                            name,
+                            avatarUrl,
+                            revenue: 0,
+                            orders: 0
+                        };
+                    }
+                    cashierMap[cid].revenue += Number(row.total_revenue || 0);
+                    cashierMap[cid].orders += Number(row.total_payments || 0);
+                });
+                cashierStats = Object.values(cashierMap);
+
+            } catch (err) {
+                console.warn("⚠️ Advanced pre-aggregated tables error, aggregating from base tables...", err);
+                
+                // Fallback: Query from base tables (pai_orders & orders), filtering out cancelled records
+                let paymentsQuery = supabase.from('pai_orders').select(`
+                    id,
+                    total_amount,
+                    payment_method,
+                    cashier_id,
+                    created_at,
+                    orders!inner (
+                        status,
+                        type,
+                        table_label
+                    ),
+                    profiles (
+                        full_name,
+                        avatar_url
+                    )
+                `).eq('brand_id', brandId).neq('orders.status', 'cancelled');
+
+                if (!isAllTime) {
+                    const startUtc = startDate.utc().toISOString();
+                    const endUtc = endDate.utc().toISOString();
+                    paymentsQuery = paymentsQuery.gte('created_at', startUtc).lte('created_at', endUtc);
+                }
+
+                const { data: paymentsData, error: paymentsError } = await paymentsQuery;
+                if (!paymentsError && paymentsData) {
+                    // Aggregate hourly
+                    const hourlyMap: Record<number, { hour: number, revenue: number, orders: number }> = {};
+                    for (let h = 0; h < 24; h++) {
+                        hourlyMap[h] = { hour: h, revenue: 0, orders: 0 };
+                    }
+                    paymentsData.forEach(p => {
+                        const h = dayjs(p.created_at).tz(brandTimezone).hour();
+                        hourlyMap[h].revenue += Number(p.total_amount || 0);
+                        hourlyMap[h].orders += 1;
+                    });
+                    hourlySales = Object.values(hourlyMap);
+
+                    // Aggregate payment
+                    const paymentMap: Record<string, { method: string, revenue: number, orders: number }> = {};
+                    paymentsData.forEach(p => {
+                        const m = (p.payment_method || 'unknown').toLowerCase();
+                        if (!paymentMap[m]) {
+                            paymentMap[m] = { method: m, revenue: 0, orders: 0 };
+                        }
+                        paymentMap[m].revenue += Number(p.total_amount || 0);
+                        paymentMap[m].orders += 1;
+                    });
+                    paymentStats = Object.values(paymentMap);
+
+                    // Aggregate table
+                    const tableMap: Record<string, { table: string, type: string, revenue: number, orders: number }> = {};
+                    paymentsData.forEach(p => {
+                        const order = Array.isArray(p.orders) ? p.orders[0] : p.orders;
+                        const type = order?.type || 'pos';
+                        const table = order?.table_label || '';
+                        const key = `${type}_${table}`;
+                        if (!tableMap[key]) {
+                            tableMap[key] = {
+                                table,
+                                type,
+                                revenue: 0,
+                                orders: 0
+                            };
+                        }
+                        tableMap[key].revenue += Number(p.total_amount || 0);
+                        tableMap[key].orders += 1;
+                    });
+                    tableStats = Object.values(tableMap);
+
+                    // Aggregate cashier
+                    const cashierMap: Record<string, { cashierId: string, name: string, avatarUrl: string, revenue: number, orders: number }> = {};
+                    paymentsData.forEach(p => {
+                        const cid = p.cashier_id || 'unknown';
+                        const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+                        const name = profile?.full_name || 'พนักงาน';
+                        const avatarUrl = profile?.avatar_url || '';
+                        if (!cashierMap[cid]) {
+                            cashierMap[cid] = {
+                                cashierId: cid,
+                                name,
+                                avatarUrl,
+                                revenue: 0,
+                                orders: 0
+                            };
+                        }
+                        cashierMap[cid].revenue += Number(p.total_amount || 0);
+                        cashierMap[cid].orders += 1;
+                    });
+                    cashierStats = Object.values(cashierMap);
+                }
+            }
+        }
+
         return { 
             success: true, 
             range, 
             summary, 
             salesTrend: processedTrend, 
+            chartData: processedTrend,
             topProducts, 
-            limitWarning 
+            limitWarning,
+            effectivePlan,
+            plan: effectivePlan,
+            hourlySales,
+            paymentStats,
+            tableStats,
+            cashierStats
         };
 
     } catch (error: any) {

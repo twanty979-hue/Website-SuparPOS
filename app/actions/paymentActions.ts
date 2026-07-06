@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import dayjs from 'dayjs';
 import { checkOrderLimitOrThrow } from './limitGuard';
 import { autoDeductStockAction } from './stockActions';
+import { applyIngredientConsumption } from '@/lib/ingredientConsumption';
 
 const PURCHASED_THEME_TYPES = ['free', 'weekly', 'monthly', 'yearly', 'lifetime'];
 
@@ -202,6 +203,82 @@ export async function getUnpaidOrdersAction(brandId: string) {
 // --- 3. Process Payment (Sync Data) ---
 export async function processPaymentAction(payload: any) {
     const supabase = await getSupabase();
+    
+    // 🛑 intercept cancellation payload from sync queue
+    if (payload.action === 'cancel_order') {
+        try {
+            const targetOrderIds = Array.isArray(payload.orderIds)
+                ? payload.orderIds.filter(Boolean).map(String)
+                : payload.orderId
+                    ? [String(payload.orderId)]
+                    : [];
+            
+            if (targetOrderIds.length === 0) {
+                return { success: false, error: 'Missing orderId' };
+            }
+
+            const cancelledAt = payload.cancelledAt || new Date().toISOString();
+            const cancelledBy = payload.cancelledBy || null;
+
+            if (payload.isNewOffline && payload.newOrderData && payload.itemsToSave) {
+                const { error: orderError } = await supabase.from('orders').upsert(payload.newOrderData);
+                if (orderError) throw orderError;
+                
+                const { error: itemsError } = await supabase.from('order_items').upsert(payload.itemsToSave);
+                if (itemsError) throw itemsError;
+            } else {
+                const { error: orderError } = await supabase.from('orders').update({
+                    status: 'cancelled',
+                    cancelled_by: cancelledBy,
+                    cancelled_at: cancelledAt
+                }).in('id', targetOrderIds).eq('brand_id', payload.brandId);
+                if (orderError) throw orderError;
+                
+                const { error: itemsError } = await supabase.from('order_items').update({
+                    status: 'cancelled',
+                    cancelled_by: cancelledBy,
+                    cancelled_at: cancelledAt
+                }).in('order_id', targetOrderIds);
+                if (itemsError) throw itemsError;
+            }
+            return { success: true };
+        } catch (err: any) {
+            return { success: false, error: err.message };
+        }
+    }
+
+    if (payload.action === 'cancel_order_item') {
+        try {
+            const targetItemIds = Array.isArray(payload.itemIds)
+                ? payload.itemIds.filter(Boolean).map(String)
+                : payload.itemId
+                    ? [String(payload.itemId)]
+                    : [];
+
+            if (targetItemIds.length === 0) {
+                return { success: false, error: 'Missing itemId' };
+            }
+
+            const cancelledAt = payload.cancelledAt || new Date().toISOString();
+            const cancelledBy = payload.cancelledBy || null;
+
+            const { error: itemUpdateError } = await supabase
+                .from('order_items')
+                .update({
+                    status: 'cancelled',
+                    cancelled_by: cancelledBy,
+                    cancelled_at: cancelledAt
+                })
+                .in('id', targetItemIds)
+                .eq('order_id', payload.orderId);
+
+            if (itemUpdateError) throw itemUpdateError;
+            return { success: true };
+        } catch (err: any) {
+            return { success: false, error: err.message };
+        }
+    }
+
     const { brandId, userId, totalAmount, receivedAmount, changeAmount, paymentMethod, type, selectedOrder, cart, paymentTime, localPayId, localOrderId } = payload;
 
     try {
@@ -221,8 +298,28 @@ export async function processPaymentAction(payload: any) {
 
         // 🚨 ด่านสกัด: เช็คว่าใบเสร็จนี้เคยเข้า Cloud ไปแล้วหรือยัง
         if (localPayId) {
-             const { data: existingPayment } = await supabase.from('pai_orders').select('id').eq('id', localPayId).single();
-             if (existingPayment) return { success: true, message: "Already synced" };
+             const { data: existingPayment } = await supabase
+                 .from('pai_orders')
+                 .select('id, order_id, cashier_id, created_at')
+                 .eq('id', localPayId)
+                 .maybeSingle();
+             if (existingPayment) {
+                 const { data: existingItems, error: existingItemsError } = await supabase
+                     .from('order_items')
+                     .select('id, order_id, product_id, quantity, variant, status')
+                     .eq('order_id', existingPayment.order_id);
+                 if (existingItemsError) throw existingItemsError;
+
+                 await applyIngredientConsumption(supabase, {
+                     brandId,
+                     paymentId: existingPayment.id,
+                     orderId: existingPayment.order_id,
+                     items: existingItems || [],
+                     saleTime: existingPayment.created_at,
+                     performedBy: existingPayment.cashier_id,
+                 });
+                 return { success: true, message: "Already synced" };
+             }
         }
 
         let finalOrderId = localOrderId; 
@@ -272,6 +369,7 @@ export async function processPaymentAction(payload: any) {
             if (orderErr && orderErr.code !== '23505') throw orderErr; // 23505 คือ Error ID ซ้ำ ปล่อยผ่านได้
 
             receiptItems = cart.map((i: any) => ({ 
+                id: crypto.randomUUID(),
                 order_id: finalOrderId, 
                 product_id: i.id, 
                 product_name: i.name, 
@@ -301,6 +399,15 @@ export async function processPaymentAction(payload: any) {
 
         // อัปเดต payment_id กลับไปที่บิลหลัก
         await supabase.from('orders').update({ payment_id: payRecord.id }).eq('id', finalOrderId);
+
+        await applyIngredientConsumption(supabase, {
+            brandId,
+            paymentId: payRecord.id,
+            orderId: finalOrderId,
+            items: receiptItems,
+            saleTime,
+            performedBy: userId,
+        });
 
         // 🔄 คืนโต๊ะ
         if (type === 'tables') {
@@ -376,15 +483,41 @@ export async function getPendingAndPreparingOrdersAction(brandId: string) {
 }
 
 // --- 5. Cancel Actions ---
-export async function cancelOrderAction(orderId: string) {
+export async function cancelOrderAction(orderId: string | string[], cancelledBy?: string, cancelledAt?: string) {
     const supabase = await getSupabase();
-    const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId);
-    return { success: !error, error: error?.message };
+    const ids = Array.isArray(orderId) ? orderId : [orderId];
+    const now = cancelledAt || new Date().toISOString();
+    
+    // Update orders
+    const { error: orderErr } = await supabase.from('orders').update({ 
+        status: 'cancelled',
+        cancelled_by: cancelledBy || null,
+        cancelled_at: now
+    }).in('id', ids);
+    
+    if (orderErr) return { success: false, error: orderErr.message };
+
+    // Update order items
+    const { error: itemsErr } = await supabase.from('order_items').update({
+        status: 'cancelled',
+        cancelled_by: cancelledBy || null,
+        cancelled_at: now
+    }).in('order_id', ids);
+
+    return { success: !itemsErr, error: itemsErr?.message };
 }
 
-export async function cancelOrderItemAction(itemId: string) {
+export async function cancelOrderItemAction(itemId: string | string[], cancelledBy?: string, cancelledAt?: string) {
     const supabase = await getSupabase();
-    const { error } = await supabase.from('order_items').update({ status: 'cancelled' }).eq('id', itemId);
+    const ids = Array.isArray(itemId) ? itemId : [itemId];
+    const now = cancelledAt || new Date().toISOString();
+    
+    const { error } = await supabase.from('order_items').update({ 
+        status: 'cancelled',
+        cancelled_by: cancelledBy || null,
+        cancelled_at: now
+    }).in('id', ids);
+    
     return { success: !error, error: error?.message };
 }
 

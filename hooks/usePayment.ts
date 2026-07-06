@@ -70,6 +70,8 @@ export function usePayment() {
     // UI
     const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
     const [cart, setCart] = useState<any[]>([]);
+    const [cancelledCart, setCancelledCart] = useState<any[]>([]);
+    const [walkInDraftOrderId, setWalkInDraftOrderId] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [receivedAmount, setReceivedAmount] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'promptpay'>('cash');
@@ -146,32 +148,25 @@ export function usePayment() {
     const playScanSound = useCallback(() => {
         if (!scanAudioRef.current) return;
         scanAudioRef.current.currentTime = 0;
-        scanAudioRef.current.play().catch(e => console.error("Scan sound failed:", e));
+        scanAudioRef.current.play().catch(e => console.error("Scan playback failed:", e));
     }, []);
 
-    const toggleAutoKitchen = () => {
-        const newState = !autoKitchen;
-        setAutoKitchen(newState);
-        if (newState && !isAudioUnlocked) {
-            unlockAudio();
-        }
-    };
+    const toggleAutoKitchen = useCallback(() => {
+        setAutoKitchen(prev => !prev);
+    }, []);
 
-    // --- Init ---
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const savedAuto = localStorage.getItem('auto_kitchen_enabled');
             if (savedAuto === 'true') setAutoKitchen(true);
-            
-            const savedCart = localStorage.getItem('pos_cart');
-            if (savedCart) {
-                try { const parsed = JSON.parse(savedCart); if (parsed.length > 0) setCart(parsed); } catch (e) { console.error(e); }
-            }
         }
         
         const init = async () => {
             const cachedBrandId = typeof window !== 'undefined'
                 ? window.localStorage.getItem('foodscan_last_brand_id')
+                : null;
+            const cachedUserId = typeof window !== 'undefined'
+                ? window.localStorage.getItem('foodscan_last_user_id')
                 : null;
             try {
                 if (!db.isOpen()) await db.open();
@@ -200,6 +195,7 @@ export function usePayment() {
                 const res = await getPaymentInitialDataAction();
                 if (res.success) {
                     window.localStorage.setItem('foodscan_last_brand_id', String(res.brandId));
+                    window.localStorage.setItem('foodscan_last_user_id', String(res.user?.id || ''));
                     setBrandId(res.brandId!);
                     setCurrentUser(res.user);
                     setCurrentProfile(res.profile);
@@ -231,6 +227,30 @@ export function usePayment() {
                     const usage = await getOrderUsage(res.brandId!);
                     setLimitStatus(usage);
 
+                    // Load Walk-in draft
+                    const userId = res.user?.id;
+                    if (userId) {
+                        const pendingWalkInOrders = await db.orders
+                            .where('brand_id').equals(res.brandId!)
+                            .and(o => o.status === 'pending' && o.table_label === 'Walk-in' && o.cashier_id === userId)
+                            .toArray();
+                        
+                        pendingWalkInOrders.sort((a: any, b: any) => new Date(b.created_at || b.updated_at || 0).getTime() - new Date(a.created_at || a.updated_at || 0).getTime());
+                        const latestDraft = pendingWalkInOrders[0];
+                        if (latestDraft) {
+                            setWalkInDraftOrderId(latestDraft.id);
+                            const items = await db.order_items.where('order_id').equals(latestDraft.id).toArray();
+                            const activeItems = items.filter((i: any) => i.status !== 'cancelled');
+                            const cancelledItems = items.filter((i: any) => i.status === 'cancelled');
+                            setCart(activeItems);
+                            setCancelledCart(cancelledItems);
+                        } else {
+                            setCart([]);
+                            setCancelledCart([]);
+                            setWalkInDraftOrderId(null);
+                        }
+                    }
+
                     const orders = await getUnpaidOrdersAction(res.brandId!);
                     const localSyncQueue = await db.sync_queue.toArray();
                     const paidLocalOrderIds = localSyncQueue
@@ -238,21 +258,49 @@ export function usePayment() {
                         .map(q => q.payload.localOrderId);
 
                     const trulyUnpaidOrders = orders.filter((o: any) => !paidLocalOrderIds.includes(o.id));
-                    processedOrdersRef.current = new Set(trulyUnpaidOrders.map((order: any) => String(order.id)));
-                    setUnpaidOrders(trulyUnpaidOrders);
-                    unpaidOrdersRef.current = trulyUnpaidOrders;
+                    
+                    // Merge local unsaved items of active table orders
+                    const localItems = await db.order_items.filter(item => item.is_local === true || item.is_local === 1).toArray();
+                    const mergedUnpaidOrders = trulyUnpaidOrders.map((order: any) => {
+                        const orderLocalItems = localItems.filter(item => item.order_id === order.id);
+                        if (orderLocalItems.length > 0) {
+                            const newOrderItems = [...(order.order_items || [])];
+                            orderLocalItems.forEach(localItem => {
+                                const matchIndex = newOrderItems.findIndex(i => 
+                                    i.product_id === localItem.product_id && 
+                                    i.variant === localItem.variant && 
+                                    (i.note || '') === (localItem.note || '') &&
+                                    i.status !== 'cancelled' &&
+                                    localItem.status !== 'cancelled'
+                                );
+                                if (matchIndex >= 0) {
+                                    newOrderItems[matchIndex].quantity += localItem.quantity;
+                                } else {
+                                    newOrderItems.push(localItem);
+                                }
+                            });
+                            order.order_items = newOrderItems;
+                        }
+                        // Recalculate totals (excluding cancelled)
+                        const activeItems = (order.order_items || []).filter((i: any) => i.status !== 'cancelled');
+                        order.total_price = activeItems.reduce((sum: number, i: any) => sum + (Number(i.price) * i.quantity), 0);
+                        return order;
+                    });
+
+                    processedOrdersRef.current = new Set(mergedUnpaidOrders.map((order: any) => String(order.id)));
+                    setUnpaidOrders(mergedUnpaidOrders);
+                    unpaidOrdersRef.current = mergedUnpaidOrders;
                 } else {
                     throw new Error("Cannot fetch from cloud"); 
                 }
-           } catch (error) {
+            } catch (error) {
                 console.warn("⚠️ Offline Mode: Loading from local Dexie database");
                 if (!db.isOpen()) await db.open().catch(() => undefined);
                 const localCats = await db.categories.toArray().catch(() => []);
                 const localProds = await db.products.toArray().catch(() => []);
                 const localDiscs = await db.discounts.toArray().catch(() => []);
-                const localDiscProds = await db.discount_products.toArray().catch(() => []); // 🌟 ดึงตารางความสัมพันธ์มาด้วย
-
-                // 🌟 ประกอบร่างให้เหมือนดึงมาจาก Cloud
+                const localDiscProds = await db.discount_products.toArray().catch(() => []);
+                
                 const offlineCats = cachedBrandId ? localCats.filter(item => String(item.brand_id) === cachedBrandId) : [];
                 const offlineProds = cachedBrandId ? localProds.filter(item => String(item.brand_id) === cachedBrandId) : [];
                 const offlineDiscs = cachedBrandId ? localDiscs.filter(item => String(item.brand_id) === cachedBrandId) : [];
@@ -263,7 +311,29 @@ export function usePayment() {
                 
                 if (offlineCats.length > 0) setCategories(offlineCats);
                 if (offlineProds.length > 0) setProducts(offlineProds);
-                if (mappedDiscounts.length > 0) setDiscounts(mappedDiscounts); // 🌟 ใช้ตัวที่ประกอบร่างแล้ว
+                if (mappedDiscounts.length > 0) setDiscounts(mappedDiscounts);
+
+                // Load Walk-in draft in offline mode
+                if (cachedUserId && cachedBrandId) {
+                    const pendingWalkInOrders = await db.orders
+                        .where('brand_id').equals(cachedBrandId)
+                        .and(o => o.status === 'pending' && o.table_label === 'Walk-in' && o.cashier_id === cachedUserId)
+                        .toArray();
+                    pendingWalkInOrders.sort((a: any, b: any) => new Date(b.created_at || b.updated_at || 0).getTime() - new Date(a.created_at || a.updated_at || 0).getTime());
+                    const latestDraft = pendingWalkInOrders[0];
+                    if (latestDraft) {
+                        setWalkInDraftOrderId(latestDraft.id);
+                        const items = await db.order_items.where('order_id').equals(latestDraft.id).toArray();
+                        const activeItems = items.filter((i: any) => i.status !== 'cancelled');
+                        const cancelledItems = items.filter((i: any) => i.status === 'cancelled');
+                        setCart(activeItems);
+                        setCancelledCart(cancelledItems);
+                    } else {
+                        setCart([]);
+                        setCancelledCart([]);
+                        setWalkInDraftOrderId(null);
+                    }
+                }
             }
             setProductsLoading(false);
             setLoading(false);
@@ -273,10 +343,9 @@ export function usePayment() {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            localStorage.setItem('pos_cart', JSON.stringify(cart));
             localStorage.setItem('auto_kitchen_enabled', String(autoKitchen));
         }
-    }, [cart, autoKitchen]);
+    }, [autoKitchen]);
 
     useEffect(() => {
         unpaidOrdersRef.current = unpaidOrders;
@@ -437,39 +506,476 @@ export function usePayment() {
     }, [discounts, products]);
 
   // --- Logic: Cart ---
-    const addToCart = useCallback((product: any, variant: string, note: string = "") => {
-        // 🌟 คำนวณราคาสุทธิและส่วนลดจาก calculatePrice ให้เสร็จสรรพ
+    const addToCart = useCallback(async (product: any, variant: string, note: string = "") => {
         const pricing = calculatePrice(product, variant);
-        
-        setCart(prev => {
-            const idx = prev.findIndex(item => item.id === product.id && item.variant === variant && (item.note || "") === note);
+        const nowIso = new Date().toISOString();
+
+        if (selectedOrder) {
+            const newOrderItems = [...(selectedOrder.order_items || [])];
             
-            if (idx > -1) {
-                const newCart = [...prev];
-                newCart[idx] = { ...newCart[idx], quantity: newCart[idx].quantity + 1 };
-                return newCart;
+            const matchIndex = newOrderItems.findIndex(item => 
+                (item.product_id === product.id || item.id === product.id) && 
+                item.variant === variant && 
+                (item.note || "") === note && 
+                item.status !== 'cancelled'
+            );
+            
+            let updatedItem: any;
+            if (matchIndex > -1) {
+                updatedItem = {
+                    ...newOrderItems[matchIndex],
+                    quantity: newOrderItems[matchIndex].quantity + 1,
+                    updated_at: nowIso
+                };
+                newOrderItems[matchIndex] = updatedItem;
+            } else {
+                updatedItem = {
+                    id: generateUUID(),
+                    order_id: selectedOrder.id,
+                    product_id: product.id,
+                    product_name: product.name,
+                    variant,
+                    note,
+                    price: pricing.final,
+                    original_price: pricing.original,
+                    discount: pricing.discount,
+                    quantity: 1,
+                    status: 'pending',
+                    is_local: true,
+                    created_at: nowIso,
+                    updated_at: nowIso
+                };
+                newOrderItems.push(updatedItem);
             }
+
+            const activeItems = newOrderItems.filter((i: any) => i.status !== 'cancelled');
+            const newTotal = activeItems.reduce((s: number, i: any) => s + (Number(i.price) * i.quantity), 0);
             
-            return [...prev, { 
-                id: product.id, 
-                name: product.name, 
-                variant, 
-                note, 
-                // 🌟 ใช้ค่าจาก pricing ทังหมด ไม่ใช้ product.price แล้ว
-                price: pricing.final, 
-                original_price: pricing.original, // ใช้ snake_case เพื่อให้ตรงกับ Database
-                discount: pricing.discount,       // ยัดยอดลดลงไปในตะกร้า
-                quantity: 1, 
-                image_url: product.image_url || product.image || product.image_name || product.thumbnail_url || null,
-                promotion_snapshot: pricing.promoDetails 
-            }];
-        });
+            const updatedOrder = {
+                ...selectedOrder,
+                order_items: newOrderItems,
+                total_price: newTotal,
+                updated_at: nowIso
+            };
+
+            setSelectedOrder(updatedOrder);
+            setUnpaidOrders(prev => prev.map(o => o.id === selectedOrder.id ? updatedOrder : o));
+
+            try {
+                if (!db.isOpen()) await db.open();
+                await db.order_items.put(updatedItem);
+                await db.orders.put({
+                    id: selectedOrder.id,
+                    brand_id: brandId,
+                    table_label: selectedOrder.table_label,
+                    status: selectedOrder.status,
+                    total_price: newTotal,
+                    type: 'table',
+                    created_at: selectedOrder.created_at || nowIso,
+                    updated_at: nowIso
+                });
+            } catch (dbErr) {
+                console.error("Failed to save local item to IndexedDB:", dbErr);
+            }
+
+        } else {
+            let draftId = walkInDraftOrderId;
+            if (!draftId) {
+                draftId = generateUUID();
+                setWalkInDraftOrderId(draftId);
+                
+                const draftOrder = {
+                    id: draftId,
+                    brand_id: brandId,
+                    cashier_id: currentUser?.id || 'unknown',
+                    table_label: 'Walk-in',
+                    status: 'pending',
+                    type: 'pos',
+                    created_at: nowIso,
+                    updated_at: nowIso,
+                    total_price: 0
+                };
+                try {
+                    if (!db.isOpen()) await db.open();
+                    await db.orders.put(draftOrder);
+                } catch (dbErr) {
+                    console.error("Failed to create walk-in draft:", dbErr);
+                }
+            }
+
+            let updatedItem: any;
+            let newCart = [...cart];
+            const matchIndex = cart.findIndex(item => 
+                (item.id === product.id || item.product_id === product.id) && 
+                item.variant === variant && 
+                (item.note || "") === note
+            );
+
+            if (matchIndex > -1) {
+                updatedItem = {
+                    ...cart[matchIndex],
+                    quantity: cart[matchIndex].quantity + 1,
+                    updated_at: nowIso
+                };
+                newCart[matchIndex] = updatedItem;
+            } else {
+                updatedItem = {
+                    id: generateUUID(),
+                    order_id: draftId,
+                    product_id: product.id,
+                    product_name: product.name,
+                    variant,
+                    note,
+                    price: pricing.final,
+                    original_price: pricing.original,
+                    discount: pricing.discount,
+                    quantity: 1,
+                    status: 'pending',
+                    created_at: nowIso,
+                    updated_at: nowIso,
+                    image_url: product.image_url || product.image || product.image_name || product.thumbnail_url || null,
+                    promotion_snapshot: pricing.promoDetails
+                };
+                newCart.push(updatedItem);
+            }
+
+            setCart(newCart);
+
+            const activeItems = newCart.filter((i: any) => i.status !== 'cancelled');
+            const newTotal = activeItems.reduce((s: number, i: any) => s + (Number(i.price) * i.quantity), 0);
+
+            try {
+                if (!db.isOpen()) await db.open();
+                await db.order_items.put({
+                    id: updatedItem.id,
+                    order_id: draftId,
+                    product_id: updatedItem.product_id,
+                    product_name: updatedItem.product_name,
+                    variant: updatedItem.variant,
+                    note: updatedItem.note,
+                    price: updatedItem.price,
+                    original_price: updatedItem.original_price,
+                    discount: updatedItem.discount,
+                    quantity: updatedItem.quantity,
+                    status: 'pending',
+                    created_at: updatedItem.created_at,
+                    updated_at: nowIso
+                });
+                
+                await db.orders.update(draftId, {
+                    total_price: newTotal,
+                    updated_at: nowIso
+                });
+            } catch (dbErr) {
+                console.error("Failed to update walk-in item in IndexedDB:", dbErr);
+            }
+        }
         setVariantModalProduct(null);
-    }, [calculatePrice]);
+    }, [calculatePrice, activeTab, selectedOrder, walkInDraftOrderId, cart, brandId, currentUser]);
 
-    const removeFromCart = (index: number) => setCart(prev => prev.filter((_, i) => i !== index));
+    const removeFromCart = (index: number) => {
+        // Fallback for direct index removal if needed
+        setCart(prev => prev.filter((_, i) => i !== index));
+    };
 
-    const rawTotal = useMemo(() => activeTab === 'tables' ? (selectedOrder?.total_price || 0) : cart.reduce((s, i) => s + (i.price * i.quantity), 0), [activeTab, selectedOrder, cart]);
+    const cancelItem = useCallback(async (item: any) => {
+        const nowIso = new Date().toISOString();
+        const userId = currentUser?.id || 'unknown';
+
+        if (selectedOrder) {
+            const newOrderItems = selectedOrder.order_items.map((i: any) => {
+                if (i.id === item.id) {
+                    return {
+                        ...i,
+                        status: 'cancelled',
+                        cancelled_by: userId,
+                        cancelled_at: nowIso
+                    };
+                }
+                return i;
+            });
+
+            const activeItems = newOrderItems.filter((i: any) => i.status !== 'cancelled');
+            const newTotal = activeItems.reduce((s: number, i: any) => s + (Number(i.price) * i.quantity), 0);
+
+            const updatedOrder = {
+                ...selectedOrder,
+                order_items: newOrderItems,
+                total_price: newTotal,
+                updated_at: nowIso
+            };
+
+            setSelectedOrder(updatedOrder);
+            setUnpaidOrders(prev => prev.map(o => o.id === selectedOrder.id ? updatedOrder : o));
+
+            let onlineSuccess = false;
+            if (navigator.onLine) {
+                try {
+                    const res = await cancelOrderItemAction(item.id, userId, nowIso);
+                    if (res.success) {
+                        onlineSuccess = true;
+                    }
+                } catch (err) {
+                    console.error("Failed to cancel order item online:", err);
+                }
+            }
+
+            try {
+                if (!db.isOpen()) await db.open();
+                await db.order_items.update(item.id, {
+                    status: 'cancelled',
+                    cancelled_by: userId,
+                    cancelled_at: nowIso,
+                    is_local: item.is_local ? true : undefined
+                });
+
+                await db.orders.update(selectedOrder.id, {
+                    total_price: newTotal,
+                    updated_at: nowIso
+                });
+
+                if (!onlineSuccess) {
+                    await db.sync_queue.add({
+                        type: 'PAYMENT',
+                        status: 'pending',
+                        payload: {
+                            action: 'cancel_order_item',
+                            orderId: selectedOrder.id,
+                            itemId: item.id,
+                            cancelledAt: nowIso,
+                            cancelledBy: userId,
+                            brandId: brandId
+                        }
+                    });
+                }
+            } catch (dbErr) {
+                console.error("Local IndexedDB error during cancelItem:", dbErr);
+            }
+
+        } else {
+            const targetItem = cart.find(i => i.id === item.id);
+            if (!targetItem) return;
+
+            const cancelledItem = {
+                ...targetItem,
+                status: 'cancelled',
+                cancelled_by: userId,
+                cancelled_at: nowIso
+            };
+
+            const newCart = cart.filter(i => i.id !== item.id);
+            const newCancelledCart = [...cancelledCart, cancelledItem];
+
+            setCart(newCart);
+            setCancelledCart(newCancelledCart);
+
+            const activeItems = newCart.filter((i: any) => i.status !== 'cancelled');
+            const newTotal = activeItems.reduce((s: number, i: any) => s + (Number(i.price) * i.quantity), 0);
+
+            try {
+                if (!db.isOpen()) await db.open();
+                
+                await db.order_items.update(item.id, {
+                    status: 'cancelled',
+                    cancelled_by: userId,
+                    cancelled_at: nowIso
+                });
+
+                const draftId = walkInDraftOrderId;
+                if (draftId) {
+                    if (newCart.length === 0) {
+                        await db.orders.update(draftId, {
+                            status: 'cancelled',
+                            total_price: 0,
+                            cancelled_by: userId,
+                            cancelled_at: nowIso,
+                            updated_at: nowIso
+                        });
+
+                        let onlineSuccess = false;
+                        if (navigator.onLine) {
+                            try {
+                                const res = await cancelOrderAction(draftId, userId, nowIso);
+                                if (res.success) onlineSuccess = true;
+                            } catch (err) {
+                                console.error(err);
+                            }
+                        }
+
+                        if (!onlineSuccess) {
+                            const draftItems = await db.order_items.where('order_id').equals(draftId).toArray();
+                            const newOrderData = {
+                                id: draftId, brand_id: brandId, status: 'cancelled', total_price: 0,
+                                table_label: 'Walk-in', type: 'pos', created_at: nowIso, updated_at: nowIso,
+                                cancelled_by: userId, cancelled_at: nowIso
+                            };
+                            const itemsToSave = draftItems.map(i => ({ ...i, status: i.id === item.id ? 'cancelled' : i.status }));
+
+                            await db.sync_queue.add({
+                                type: 'PAYMENT',
+                                status: 'pending',
+                                payload: {
+                                    action: 'cancel_order',
+                                    orderId: draftId,
+                                    cancelledAt: nowIso,
+                                    cancelledBy: userId,
+                                    isNewOffline: true,
+                                    newOrderData,
+                                    itemsToSave,
+                                    brandId: brandId
+                                }
+                            });
+                        }
+
+                        setCart([]);
+                        setCancelledCart([]);
+                        setWalkInDraftOrderId(null);
+
+                    } else {
+                        await db.orders.update(draftId, {
+                            total_price: newTotal,
+                            updated_at: nowIso
+                        });
+                    }
+                }
+            } catch (dbErr) {
+                console.error("Local IndexedDB error during Walk-in cancelItem:", dbErr);
+            }
+        }
+    }, [activeTab, selectedOrder, cart, cancelledCart, walkInDraftOrderId, currentUser, brandId]);
+
+    const cancelActiveOrder = useCallback(async () => {
+        const nowIso = new Date().toISOString();
+        const userId = currentUser?.id || 'unknown';
+
+        if (selectedOrder) {
+            const orderIdsToCancel = selectedOrder.original_ids && selectedOrder.original_ids.length > 0 
+                ? selectedOrder.original_ids.map(String) 
+                : [String(selectedOrder.id)];
+
+            setUnpaidOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
+            setSelectedOrder(null);
+
+            let onlineSuccess = false;
+            if (navigator.onLine) {
+                try {
+                    const res = await cancelOrderAction(orderIdsToCancel, userId, nowIso);
+                    if (res.success) {
+                        onlineSuccess = true;
+                    }
+                } catch (err) {
+                    console.error("Failed to cancel order online:", err);
+                }
+            }
+
+            try {
+                if (!db.isOpen()) await db.open();
+                for (const oId of orderIdsToCancel) {
+                    await db.orders.update(oId, {
+                        status: 'cancelled',
+                        cancelled_by: userId,
+                        cancelled_at: nowIso,
+                        updated_at: nowIso
+                    });
+                    
+                    await db.order_items.where('order_id').equals(oId).modify({
+                        status: 'cancelled',
+                        cancelled_by: userId,
+                        cancelled_at: nowIso
+                    });
+                }
+
+                if (!onlineSuccess) {
+                    await db.sync_queue.add({
+                        type: 'PAYMENT',
+                        status: 'pending',
+                        payload: {
+                            action: 'cancel_order',
+                            orderIds: orderIdsToCancel,
+                            cancelledAt: nowIso,
+                            cancelledBy: userId,
+                            brandId: brandId
+                        }
+                    });
+                }
+            } catch (dbErr) {
+                console.error("Local IndexedDB error during cancelActiveOrder:", dbErr);
+            }
+
+        } else {
+            const draftId = walkInDraftOrderId;
+            if (draftId) {
+                setCart([]);
+                setCancelledCart([]);
+                setWalkInDraftOrderId(null);
+
+                let onlineSuccess = false;
+                if (navigator.onLine) {
+                    try {
+                        const res = await cancelOrderAction(draftId, userId, nowIso);
+                        if (res.success) onlineSuccess = true;
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+
+                try {
+                    if (!db.isOpen()) await db.open();
+                    await db.orders.update(draftId, {
+                        status: 'cancelled',
+                        total_price: 0,
+                        cancelled_by: userId,
+                        cancelled_at: nowIso,
+                        updated_at: nowIso
+                    });
+
+                    await db.order_items.where('order_id').equals(draftId).modify({
+                        status: 'cancelled',
+                        cancelled_by: userId,
+                        cancelled_at: nowIso
+                    });
+
+                    if (!onlineSuccess) {
+                        const draftItems = await db.order_items.where('order_id').equals(draftId).toArray();
+                        const newOrderData = {
+                            id: draftId, brand_id: brandId, status: 'cancelled', total_price: 0,
+                            table_label: 'Walk-in', type: 'pos', created_at: nowIso, updated_at: nowIso,
+                            cancelled_by: userId, cancelled_at: nowIso
+                        };
+                        const itemsToSave = draftItems.map(i => ({ ...i, status: 'cancelled', cancelled_by: userId, cancelled_at: nowIso }));
+
+                        await db.sync_queue.add({
+                            type: 'PAYMENT',
+                            status: 'pending',
+                            payload: {
+                                action: 'cancel_order',
+                                orderId: draftId,
+                                cancelledAt: nowIso,
+                                cancelledBy: userId,
+                                isNewOffline: true,
+                                newOrderData,
+                                itemsToSave,
+                                brandId: brandId
+                            }
+                        });
+                    }
+                } catch (dbErr) {
+                    console.error("Local IndexedDB error during Walk-in cancelActiveOrder:", dbErr);
+                }
+            }
+        }
+    }, [activeTab, selectedOrder, walkInDraftOrderId, currentUser, brandId]);
+
+    const rawTotal = useMemo(() => {
+        if (selectedOrder) {
+            if (!selectedOrder.order_items) return 0;
+            const activeItems = selectedOrder.order_items.filter((i: any) => i.status !== 'cancelled');
+            return activeItems.reduce((s: number, i: any) => s + (Number(i.price) * i.quantity), 0);
+        } else {
+            const activeItems = cart.filter((i: any) => i.status !== 'cancelled');
+            return activeItems.reduce((s: number, i: any) => s + (Number(i.price) * i.quantity), 0);
+        }
+    }, [selectedOrder, cart]);
     
     const payableAmount = useMemo(() => {
         if (paymentMethod === 'cash') return roundForCash(rawTotal);
@@ -539,7 +1045,7 @@ export function usePayment() {
         }
 
         // 🛡️ ด่านสกัด: เช็คว่าเครื่องอื่นเพิ่งจ่ายไปเมื่อกี้หรือไม่ (อันนี้ต้องคง await ไว้ เพราะมันเช็คเร็วและสำคัญมาก กันจ่ายซ้ำ)
-        if (activeTab === 'tables' && selectedOrder && navigator.onLine) {
+        if (selectedOrder && navigator.onLine) {
             try {
                 const { data: latestOrder } = await supabase
                     .from('orders')
@@ -564,29 +1070,66 @@ export function usePayment() {
         let finalOrderId = '';
         let tableLabel = 'Walk-in';
         let itemsToSave: any[] = [];
-        let orderType = activeTab === 'pos' ? 'pos' : 'table';
+        let orderType = selectedOrder ? 'table' : 'pos';
         let nextTableTokens: string[] = []; 
 
-        if (activeTab === 'tables' && selectedOrder) {
+        if (selectedOrder) {
             finalOrderId = selectedOrder.id;
             tableLabel = selectedOrder.table_label;
             const tableForPayment = allTables.find(t => t.label === selectedOrder.table_label);
             nextTableTokens = removeUsedTokens(getTableTokens(tableForPayment), selectedOrder.table_access_tokens || []);
-            itemsToSave = selectedOrder.order_items
-                .filter((i: any) => i.status !== 'cancelled')
-                .map((i: any) => ({ ...i, order_id: finalOrderId, updated_at: nowIso }));
-        } else {
-            finalOrderId = generateUUID();
-            itemsToSave = cart.map((i: any) => ({
-                id: generateUUID(), order_id: finalOrderId, product_id: i.id, product_name: i.name,
-                quantity: i.quantity, price: i.price, variant: i.variant, note: i.note, promotion_snapshot: i.promotion_snapshot,
-                original_price: i.original_price, discount: i.discount, status: 'active', created_at: nowIso
+            // Keep all items (including cancelled ones) for audit!
+            itemsToSave = selectedOrder.order_items.map((i: any) => ({ 
+                ...i, 
+                order_id: finalOrderId, 
+                updated_at: nowIso 
             }));
+        } else {
+            finalOrderId = walkInDraftOrderId || generateUUID();
+            
+            const activeItems = cart.map((i: any) => ({
+                id: i.id || generateUUID(),
+                order_id: finalOrderId,
+                product_id: i.product_id || i.id,
+                product_name: i.product_name || i.name,
+                quantity: i.quantity,
+                price: i.price,
+                variant: i.variant,
+                note: i.note || '',
+                promotion_snapshot: i.promotion_snapshot || null,
+                original_price: i.original_price || i.price,
+                discount: i.discount || 0,
+                status: 'active',
+                created_at: i.created_at || nowIso,
+                updated_at: nowIso
+            }));
+
+            const cancelledItems = cancelledCart.map((i: any) => ({
+                id: i.id || generateUUID(),
+                order_id: finalOrderId,
+                product_id: i.product_id || i.id,
+                product_name: i.product_name || i.name,
+                quantity: i.quantity,
+                price: i.price,
+                variant: i.variant,
+                note: i.note || '',
+                promotion_snapshot: i.promotion_snapshot || null,
+                original_price: i.original_price || i.price,
+                discount: i.discount || 0,
+                status: 'cancelled',
+                cancelled_by: i.cancelled_by || currentUser?.id,
+                cancelled_at: i.cancelled_at || nowIso,
+                created_at: i.created_at || nowIso,
+                updated_at: nowIso
+            }));
+
+            itemsToSave = [...activeItems, ...cancelledItems];
         }
 
         const newOrderData = {
             id: finalOrderId, brand_id: brandId, status: 'paid', total_price: safePayable,
-            table_label: tableLabel, type: orderType, payment_id: localPayId, created_at: nowIso, updated_at: nowIso
+            table_label: tableLabel, type: orderType, payment_id: localPayId, created_at: nowIso, updated_at: nowIso,
+            cashier_id: currentUser?.id
         };
 
         const paiOrderData = {
@@ -605,8 +1148,9 @@ export function usePayment() {
                     type: 'PAYMENT',
                     payload: {
                         brandId, userId: currentUser?.id, totalAmount: safePayable, receivedAmount: paiOrderData.received_amount,
-                        changeAmount: paiOrderData.change_amount, paymentMethod, type: activeTab,
-                        selectedOrder: activeTab === 'tables' ? selectedOrder : null, cart: activeTab === 'pos' ? cart : [],
+                        changeAmount: paiOrderData.change_amount, paymentMethod, type: selectedOrder ? 'tables' : 'pos',
+                        selectedOrder: selectedOrder ? selectedOrder : null, 
+                        cart: !selectedOrder ? itemsToSave.filter(i => i.status !== 'cancelled') : [],
                         localOrderId: finalOrderId, localPayId, tableLabel, paymentTime: nowIso
                     },
                     status: 'pending'
@@ -626,10 +1170,12 @@ export function usePayment() {
             setStatusModal({ show: false, type: 'success', title: '', message: '' });
             setReceivedAmount(0);
 
-            if (activeTab === 'pos') {
+            if (!selectedOrder) {
                 setCart([]);
+                setCancelledCart([]);
+                setWalkInDraftOrderId(null);
                 localStorage.removeItem('pos_cart');
-            } else if (activeTab === 'tables' && selectedOrder) {
+            } else {
                 setUnpaidOrders(prev => prev.filter(o => o.table_label !== selectedOrder.table_label));
                 setAllTables(prev => prev.map(t => t.label === selectedOrder.table_label ? { ...t, status: 'available', access_token: nextTableTokens[0], access_tokens: nextTableTokens } : t));
                 setSelectedOrder(null);
@@ -703,7 +1249,7 @@ if (typeof window !== 'undefined' && (window as any).AndroidBridge && receiptPri
 }
 
             // สั่งล้างโต๊ะบน Cloud และยิง FCM แจ้งเตือนแบบไม่บล็อกการทำงานหลัก (ลบคำว่า await ออกแล้ว)
-            if (activeTab === 'tables' && brandId && navigator.onLine) {
+            if (tableLabel && tableLabel !== 'Walk-in' && brandId && navigator.onLine) {
                 clearTableOnCloud(brandId, tableLabel, selectedOrder?.table_access_tokens || [], localPayId).catch(e => console.error("Background clear fail", e));
 
                 fetch('/api/send-notification', {
@@ -751,7 +1297,8 @@ if (typeof window !== 'undefined' && (window as any).AndroidBridge && receiptPri
         getFullImageUrl,
         handleSelectTableForQR,
         handleProductClick: (p: any) => (p.price_special || p.price_jumbo) ? setVariantModalProduct(p) : addToCart(p, 'normal'),
-        addToCart, removeFromCart,
+        addToCart, removeFromCart, cancelItem, cancelActiveOrder,
+        walkInDraftOrderId, cancelledCart,
         handlePayment,
         calculatePrice,
         formatCurrency: (amt: number) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 2 }).format(amt || 0),

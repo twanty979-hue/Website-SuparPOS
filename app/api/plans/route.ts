@@ -39,32 +39,35 @@ export async function GET(request: Request) {
 
     const brandId = profile.brand_id;
 
-    // 🌟 1. ดึงโครงสร้างราคาทั้งหมดที่เปิดขาย
-    const { data: plans, error: planError } = await supabaseAdmin
-      .from('subscription_plans')
-      .select('*')
-      .eq('is_active', true)
-      .order('price_monthly', { ascending: true });
+    // ข้อมูลทั้งสามชุดไม่ขึ้นต่อกัน จึงดึงพร้อมกันเพื่อลดเวลา response
+    const [
+      { data: plans, error: planError },
+      { data: successfulPayments, error: paymentError },
+      { data: brand, error: brandError },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price_monthly', { ascending: true }),
+      supabaseAdmin
+        .from('payment_logs')
+        .select('id')
+        .eq('brand_id', brandId)
+        .eq('status', 'successful')
+        .limit(1),
+      supabaseAdmin
+        .from('brands')
+        .select('plan, expiry_basic, expiry_pro, expiry_ultimate')
+        .eq('id', brandId)
+        .single(),
+    ]);
 
     if (planError) throw planError;
-
-    // 🌟 2. เช็คประวัติการชำระเงินว่าเคยจ่ายสำเร็จไหม (หาความเป็น First-time buyer)
-    const { count } = await supabaseAdmin
-      .from('payment_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('brand_id', brandId)
-      .eq('status', 'successful');
-
-    const isFirstTimeBuyer = !count || count === 0;
-
-    // 🌟 3. ดึงข้อมูลแบรนด์เพื่อดูแพ็กเกจปัจจุบันและวันหมดอายุมาคำนวณวันคงเหลือ
-    const { data: brand, error: brandError } = await supabaseAdmin
-      .from('brands')
-      .select('plan, expiry_basic, expiry_pro, expiry_ultimate')
-      .eq('id', brandId)
-      .single();
-
+    if (paymentError) throw paymentError;
     if (brandError) throw brandError;
+
+    const isFirstTimeBuyer = !successfulPayments?.length;
 
     let daysLeft = 0;
     let expiryDate: string | null = null;

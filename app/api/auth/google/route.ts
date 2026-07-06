@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { authCorsHeaders } from '../../_authCors'
 
 const client = () => createClient(
   process.env.SUPABASE_URL!,
@@ -13,18 +14,26 @@ const admin = () => createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
+export async function OPTIONS(request: Request) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: authCorsHeaders(request),
+  })
+}
+
 export async function POST(request: Request) {
+  const headers = authCorsHeaders(request)
   try {
     const { idToken } = await request.json()
     if (!idToken || typeof idToken !== 'string') {
-      return NextResponse.json({ error: 'Google ID token is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Google ID token is required' }, { status: 400, headers })
     }
     const { data, error } = await client().auth.signInWithIdToken({
       provider: 'google',
       token: idToken,
     })
     if (error || !data.session) {
-      return NextResponse.json({ error: error?.message || 'Google sign-in failed' }, { status: 401 })
+      return NextResponse.json({ error: error?.message || 'Google sign-in failed' }, { status: 401, headers })
     }
     const user = data.user
     const metadata = user.user_metadata || {}
@@ -37,7 +46,7 @@ export async function POST(request: Request) {
       .eq('id', user.id)
       .maybeSingle()
     if (profileReadError) {
-      return NextResponse.json({ error: profileReadError.message }, { status: 500 })
+      return NextResponse.json({ error: profileReadError.message }, { status: 500, headers })
     }
     if (!existing) {
       const { error: insertError } = await db.from('profiles').insert({
@@ -47,7 +56,7 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       })
       if (insertError) {
-        return NextResponse.json({ error: insertError.message }, { status: 500 })
+        return NextResponse.json({ error: insertError.message }, { status: 500, headers })
       }
     } else {
       const missingGoogleData = {
@@ -61,8 +70,8 @@ export async function POST(request: Request) {
         }).eq('id', user.id)
       }
     }
-    return NextResponse.json({ success: true, session: data.session })
+    return NextResponse.json({ success: true, session: data.session }, { headers })
   } catch {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400, headers })
   }
 }

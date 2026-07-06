@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { authCorsHeaders } from '../../_authCors'
 
 function ticketUserId(ticket: unknown) {
   if (typeof ticket !== 'string') return null
@@ -21,16 +22,24 @@ function ticketUserId(ticket: unknown) {
   }
 }
 
+export async function OPTIONS(request: Request) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: authCorsHeaders(request),
+  })
+}
+
 export async function POST(request: Request) {
+  const headers = authCorsHeaders(request)
   try {
     const authorization = request.headers.get('authorization')
     const { password, ticket } = await request.json()
     const recoveryUserId = ticketUserId(ticket)
     if (!authorization?.startsWith('Bearer ') && !recoveryUserId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers })
     }
     if (typeof password !== 'string' || password.length < 6) {
-      return NextResponse.json({ error: 'Password must contain at least 6 characters' }, { status: 400 })
+      return NextResponse.json({ error: 'Password must contain at least 6 characters' }, { status: 400, headers })
     }
     if (recoveryUserId) {
       const admin = createClient(
@@ -39,8 +48,8 @@ export async function POST(request: Request) {
         { auth: { autoRefreshToken: false, persistSession: false } },
       )
       const { error } = await admin.auth.admin.updateUserById(recoveryUserId, { password })
-      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-      return NextResponse.json({ success: true })
+      if (error) return NextResponse.json({ error: error.message }, { status: 400, headers })
+      return NextResponse.json({ success: true }, { headers })
     }
     const supabase = createClient(
       process.env.SUPABASE_URL!,
@@ -51,9 +60,9 @@ export async function POST(request: Request) {
       },
     )
     const { error } = await supabase.auth.updateUser({ password })
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-    return NextResponse.json({ success: true })
+    if (error) return NextResponse.json({ error: error.message }, { status: 400, headers })
+    return NextResponse.json({ success: true }, { headers })
   } catch {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400, headers })
   }
 }

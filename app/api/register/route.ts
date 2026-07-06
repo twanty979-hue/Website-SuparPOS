@@ -1,6 +1,7 @@
 // app/api/register/route.ts
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { authRedirectTargets } from '../_authRedirect';
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
@@ -22,12 +23,17 @@ export async function OPTIONS() {
 export async function POST(request: Request) {
   try {
     const { email, password, source } = await request.json();
-    const requestOrigin = new URL(request.url).origin;
+    const { callbackOrigin, returnTo } = authRedirectTargets(request, source);
+    const callbackUrl = new URL('/auth/callback', callbackOrigin);
+    callbackUrl.searchParams.set('source', source === 'app' ? 'app' : 'web');
+    if (returnTo) callbackUrl.searchParams.set('return_to', returnTo);
+    callbackUrl.searchParams.set(
+      'next',
+      source === 'app' ? '/login?verified=1' : '/setup',
+    );
     // Email verification is completed on the trusted web callback. The app
     // never receives Supabase codes or project keys directly.
-    const emailRedirectTo = source === 'app'
-      ? `${requestOrigin}/auth/callback?source=app&next=${encodeURIComponent('/login?verified=1')}`
-      : `${requestOrigin}/auth/callback?next=/setup`;
+    const emailRedirectTo = callbackUrl.toString();
 
     // 2. สั่งสมัครสมาชิกผ่าน Supabase
     const { data, error } = await supabaseAdmin.auth.signUp({
