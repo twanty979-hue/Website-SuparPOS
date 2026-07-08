@@ -344,7 +344,7 @@ export default function LandingPage() {
                 {isAuthLoading ? (
                     <div className="w-24 h-10 bg-slate-200 animate-pulse rounded-full"></div>
                 ) : user ? (
-                    <Link href="/dashboard/pai_order" className="flex items-center gap-3 p-1 pr-4 bg-white border border-slate-200 rounded-full hover:border-emerald-500 hover:shadow-md transition-all group">
+                    <Link href="https://app.suparpos.com" className="flex items-center gap-3 p-1 pr-4 bg-white border border-slate-200 rounded-full hover:border-emerald-500 hover:shadow-md transition-all group">
                         <div className="w-8 h-8 rounded-full overflow-hidden bg-emerald-100 flex items-center justify-center border border-slate-100">
                             {profile?.avatar_url ? (
                                 <img src={getAvatarUrlForNavbar(profile.avatar_url)} alt="Profile" className="w-full h-full object-cover" />
@@ -357,7 +357,7 @@ export default function LandingPage() {
                         </span>
                     </Link>
                 ) : (
-                    <Link href="/login" className="relative px-6 py-2 bg-emerald-600 text-white hover:bg-emerald-700 font-bold rounded-full transition-all shadow-lg hover:shadow-emerald-500/50 hover:-translate-y-1 overflow-hidden group">
+                    <Link href="https://app.suparpos.com" className="relative px-6 py-2 bg-emerald-600 text-white hover:bg-emerald-700 font-bold rounded-full transition-all shadow-lg hover:shadow-emerald-500/50 hover:-translate-y-1 overflow-hidden group">
                         <span className="absolute top-0 left-0 w-full h-full bg-white/20 -skew-x-12 -translate-x-full group-hover:animate-shine"></span>
                         <span className="relative z-10">เข้าสู่ระบบ</span>
                     </Link>
@@ -376,7 +376,7 @@ export default function LandingPage() {
             <a href="#howitworks" className="text-lg font-medium hover:text-emerald-600">วิธีใช้งาน</a>
             
             {!isAuthLoading && user ? (
-                 <Link href="/dashboard/pai_order" className="flex items-center gap-3 text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2.5 rounded-full font-bold shadow-lg shadow-emerald-500/30">
+                 <Link href="https://app.suparpos.com" className="flex items-center gap-3 text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2.5 rounded-full font-bold shadow-lg shadow-emerald-500/30">
                     <div className="w-6 h-6 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
                         {profile?.avatar_url ? (
                             <img src={getAvatarUrlForNavbar(profile.avatar_url)} alt="Profile" className="w-full h-full object-cover" />
@@ -387,7 +387,7 @@ export default function LandingPage() {
                     เข้าสู่แดชบอร์ด
                  </Link>
             ) : (
-                <Link href="/register" className="text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2 rounded-full font-bold shadow-lg shadow-emerald-500/30">สมัครใช้งานฟรี</Link>
+                <Link href="https://app.suparpos.com" className="text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2 rounded-full font-bold shadow-lg shadow-emerald-500/30">สมัครใช้งานฟรี</Link>
             )}
         </div>
       </nav>
@@ -432,7 +432,7 @@ export default function LandingPage() {
                     ))}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <Link href={user ? "/dashboard/pai_order" : "/register"} className="relative px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 rounded-full text-white font-bold text-lg transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 group transform hover:-translate-y-1 hover:shadow-emerald-500/50 overflow-hidden active:scale-95 duration-100">
+                    <Link href={user ? "https://app.suparpos.com" : "https://app.suparpos.com"} className="relative px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 rounded-full text-white font-bold text-lg transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 group transform hover:-translate-y-1 hover:shadow-emerald-500/50 overflow-hidden active:scale-95 duration-100">
                         <span className="absolute top-0 left-0 w-full h-full bg-white/20 -skew-x-12 -translate-x-full group-hover:animate-shine"></span>
                         <i className={`fa-solid ${user ? 'fa-arrow-right-to-bracket' : 'fa-rocket'} group-hover:rotate-12 transition-transform`}></i> 
                         {user ? 'เข้าสู่แดชบอร์ด' : 'สมัครใช้งานฟรี'}
@@ -598,7 +598,7 @@ export default function LandingPage() {
                             <p className="text-slate-500 mb-10">กดปุ่มด้านล่างเพื่อเข้าสู่ระบบทดได้ทันที</p>
 
                             <Link 
-                                href={user ? "/dashboard/pai_order" : "/register"}
+                                href={user ? "https://app.suparpos.com" : "https://app.suparpos.com"}
                                 className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-black py-6 rounded-2xl text-2xl shadow-2xl shadow-emerald-500/40 transform transition-all hover:scale-[1.03] active:scale-95 duration-200 flex items-center justify-center gap-4 relative overflow-hidden group/btn">
                                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:animate-shine"></span>
                                 {user ? 'ไปที่แดชบอร์ด' : 'สมัครใช้งานฟรี'}

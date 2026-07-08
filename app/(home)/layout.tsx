@@ -64,7 +64,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
                     </Link>
                 ))}
                 
-                <Link href="/login" className="relative px-6 py-2 bg-emerald-600 text-white hover:bg-emerald-700 font-bold rounded-full transition-all shadow-lg hover:shadow-emerald-500/50 hover:-translate-y-1 overflow-hidden group">
+                <Link href="https://app.suparpos.com" className="relative px-6 py-2 bg-emerald-600 text-white hover:bg-emerald-700 font-bold rounded-full transition-all shadow-lg hover:shadow-emerald-500/50 hover:-translate-y-1 overflow-hidden group">
                     <span className="absolute top-0 left-0 w-full h-full bg-white/20 -skew-x-12 -translate-x-full group-hover:animate-shine"></span>
                     <span className="relative z-10">เข้าสู่ระบบ</span>
                 </Link>
@@ -82,7 +82,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
             <Link href="/features" className="text-lg font-medium hover:text-emerald-600">จุดเด่น</Link>
             <Link href="/pricing" className="text-lg font-medium hover:text-emerald-600">ราคา</Link>
             <Link href="/manual" className="text-lg font-medium hover:text-emerald-600">วิธีใช้งาน</Link>
-            <Link href="/register" className="text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2 rounded-full font-bold shadow-lg shadow-emerald-500/30">สมัครใช้งานฟรี</Link>
+            <Link href="https://app.suparpos.com" className="text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2 rounded-full font-bold shadow-lg shadow-emerald-500/30">สมัครใช้งานฟรี</Link>
         </div>
       </nav>
 
