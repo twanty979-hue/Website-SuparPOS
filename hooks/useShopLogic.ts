@@ -229,10 +229,24 @@ export const useShopLogic = (params: any) => {
   const handleAddToCart = (product: any, variant: any, note: string = "") => {
     const pricing = calculatePrice(product, variant);
     const cleanNote = note ? note.trim() : "";
+    const toppingsSnapshot = Array.isArray(product.toppings_snapshot)
+      ? product.toppings_snapshot
+      : [];
+    const toppingTotal = toppingsSnapshot.reduce(
+      (sum: number, item: any) => sum + Number(item.price || 0),
+      0,
+    );
+    const toppingsKey = toppingsSnapshot
+      .map((item: any) => `${item.group_id || item.group_name}:${item.topping_id || item.topping_name}`)
+      .sort()
+      .join('|');
 
     setCart(prev => {
         const existingIndex = prev.findIndex(i => 
-            i.id === product.id && i.variant === variant && (i.note || "") === cleanNote 
+            i.id === product.id &&
+            i.variant === variant &&
+            (i.note || "") === cleanNote &&
+            (i.toppings_key || "") === toppingsKey
         );
 
         if (existingIndex !== -1) {
@@ -248,12 +262,14 @@ export const useShopLogic = (params: any) => {
         return [...prev, { 
             ...product, 
             variant, 
-            price: pricing.final,       
-            original_price: pricing.original,
-            discount: pricing.discount,       
+            price: pricing.final + toppingTotal,
+            original_price: pricing.original + toppingTotal,
+            discount: pricing.discount,
             quantity: 1, 
             image_url: getMenuUrl(product.image_name),
-            note: cleanNote 
+            note: cleanNote,
+            toppings_snapshot: toppingsSnapshot,
+            toppings_key: toppingsKey,
         }];
     });
     setSelectedProduct(null);

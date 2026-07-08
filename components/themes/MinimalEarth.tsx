@@ -101,7 +101,7 @@ export default function App({ state, actions, helpers }: any) {
       if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
         selectedProduct.options.forEach((opt: any, index: number) => {
             if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
-                initialOptions[index] = [opt.choices[0].name];
+                initialOptions[index] = [opt.choices[0]];
             } else {
                 initialOptions[index] = [];
             }
@@ -140,9 +140,9 @@ export default function App({ state, actions, helpers }: any) {
 
     let optTexts: string[] = [];
     selectedProduct.options.forEach((opt: any, index: number) => {
-        const selectedNames = selectedOptions[index];
-        if (selectedNames && selectedNames.length > 0) {
-            optTexts.push(`${opt.name}: ${selectedNames.join(', ')}`);
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
         }
     });
 
@@ -153,18 +153,38 @@ export default function App({ state, actions, helpers }: any) {
   const currentPriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
   
   // ท็อปปิ้งไม่มีราคา ดังนั้นราคารวมจึงเท่ากับราคาปกติครับ
-  const finalPriceWithOpts = currentPriceObj.final;
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = currentPriceObj.final + toppingTotal;
   // 🌟 ฟังก์ชันคลิกเลือก Option
-  const handleOptionToggle = (groupIndex: number, choiceName: string, type: string) => {
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
       setSelectedOptions((prev: any) => {
           const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
           if (type === 'single') {
-              return { ...prev, [groupIndex]: [choiceName] };
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
           } else {
-              if (currentSelected.includes(choiceName)) {
-                  return { ...prev, [groupIndex]: currentSelected.filter((n: string) => n !== choiceName) };
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
               } else {
-                  return { ...prev, [groupIndex]: [...currentSelected, choiceName] };
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
               }
           }
       });
@@ -194,8 +214,9 @@ export default function App({ state, actions, helpers }: any) {
         specialRequest: finalNote, 
         comment: finalNote,
         remark: finalNote,
-        price: basePriceObj.final, // ใช้ราคาปกติ
-        original_price: basePriceObj.original || basePriceObj.final + basePriceObj.discount 
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
 
     if (addToCartOnly) {
@@ -222,8 +243,9 @@ export default function App({ state, actions, helpers }: any) {
             specialRequest: finalNote,
             comment: finalNote,
             remark: finalNote,
-            price: basePriceObj.final,
-            original_price: basePriceObj.original || basePriceObj.final + basePriceObj.discount 
+            price: finalPriceWithOpts,
+            original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+            toppings_snapshot: selectedToppings,
         };
     }
     
@@ -518,16 +540,37 @@ export default function App({ state, actions, helpers }: any) {
                                     <label className="block text-[10px] text-[#1C1917] font-medium uppercase tracking-widest mb-3">{opt.name}</label>
                                     <div className="flex flex-col gap-2">
                                         {opt.choices.map((choice: any, cIdx: number) => {
-                                            const isSelected = selectedOptions[index]?.includes(choice.name);
+                                            const isSelected = selectedOptions[index]?.some(
+                                                (item: any) => String(item.id || item.name) === String(choice.id || choice.name)
+                                            );
                                             return (
-                                                <label key={cIdx} className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all active:scale-[0.99] ${isSelected ? 'border-[#1C1917] bg-[#FAFAF9]' : 'border-[#E7E5E4]'}`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-4 h-4 border flex items-center justify-center ${isSelected ? 'border-[#1C1917]' : 'border-[#A8A29E]'} ${opt.type === 'single' ? 'rounded-full' : 'rounded-sm'}`}>
-                                                            {isSelected && <div className={`w-2 h-2 bg-[#1C1917] ${opt.type === 'single' ? 'rounded-full' : ''}`} />}
+                                                <label
+                                                    key={cIdx}
+                                                    onClick={(event) => {
+                                                        event.preventDefault();
+                                                        handleOptionToggle(index, choice, opt.type);
+                                                    }}
+                                                    className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all active:scale-[0.99] ${isSelected ? 'border-[#1C1917] bg-[#FAFAF9]' : 'border-[#E7E5E4]'}`}
+                                                >
+                                                    <div className="flex items-center gap-3 w-full">
+                                                        <div className={`w-4 h-4 shrink-0 border flex items-center justify-center ${isSelected ? 'border-[#1C1917]' : 'border-[#A8A29E]'} ${opt.type === 'single' ? 'rounded-full' : 'rounded-sm'}`}>
+                                                            {isSelected && <div className={`w-2 h-2 shrink-0 bg-[#1C1917] ${opt.type === 'single' ? 'rounded-full' : ''}`} />}
                                                         </div>
+                                                        {(choice.image_url || choice.image_name) ? (
+                                                            <div className="w-10 h-10 shrink-0 bg-[#F5F5F4] rounded-lg overflow-hidden border border-[#E7E5E4]">
+                                                                <img src={choice.image_url?.startsWith('http') ? choice.image_url : choice.image_name?.startsWith('http') ? choice.image_name : getMenuUrl(choice.image_name)} className="w-full h-full object-cover" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-10 h-10 shrink-0 bg-[#F5F5F4] rounded-lg border border-[#E7E5E4] flex items-center justify-center text-[#A8A29E]">
+                                                                <Icon name="plus" size={16} />
+                                                            </div>
+                                                        )}
                                                         <span className="text-sm font-medium">{choice.name}</span>
+                                                        {Number(choice.price || 0) > 0 && (
+                                                            <span className="ml-auto shrink-0 text-xs font-semibold text-[#166534]">+{Number(choice.price || 0)}.-</span>
+                                                        )}
                                                     </div>
-                                                    <input type={opt.type === 'single' ? 'radio' : 'checkbox'} className="hidden" checked={isSelected || false} onChange={() => handleOptionToggle(index, choice.name, opt.type)} />
+                                                    <input type={opt.type === 'single' ? 'radio' : 'checkbox'} className="hidden" checked={isSelected || false} readOnly />
                                                 </label>
                                             )
                                         })}

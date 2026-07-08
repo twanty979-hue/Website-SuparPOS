@@ -100,7 +100,7 @@ export async function GET(request: Request) {
     }
 
     // 🚀 อ่านจากตารางสรุปทั้งหมด เพื่อให้ Dashboard ตอบสนองเร็วเมื่อข้อมูลโตขึ้น
-    const [salesRes, productsRes] = await Promise.all([
+    const [salesRes, productsRes, toppingsRes] = await Promise.all([
       supabase
         .from('dashboard_daily_sales')
         .select('*')
@@ -114,14 +114,23 @@ export async function GET(request: Request) {
         .select('*')
         .eq('brand_id', brandId)
         .gte('report_date', startDate.format('YYYY-MM-DD'))
+        .lte('report_date', endDate.format('YYYY-MM-DD')),
+
+      supabase
+        .from('dashboard_topping_stats')
+        .select('*')
+        .eq('brand_id', brandId)
+        .gte('report_date', startDate.format('YYYY-MM-DD'))
         .lte('report_date', endDate.format('YYYY-MM-DD'))
     ]);
 
     if (salesRes.error) throw salesRes.error;
     if (productsRes.error) throw productsRes.error;
+    if (toppingsRes.error) throw toppingsRes.error;
 
     const dailySales = salesRes.data || [];
     const productStats = productsRes.data || [];
+    const toppingStats = toppingsRes.data || [];
 
     // เติมข้อมูลวันที่ขาดหายไปด้วยยอดขาย 0 เพื่อให้กราฟพล็อตได้ตรงกับปฏิทินจริงและยอดสะสมไม่ข้ามวัน
     const filledDailySales: any[] = [];
@@ -177,6 +186,25 @@ export async function GET(request: Request) {
     });
 
     const topProducts = Object.values(productMap)
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 10);
+
+    const toppingMap: Record<string, { name: string, groupName: string, qty: number, revenue: number }> = {};
+    toppingStats.forEach(row => {
+      const key = row.topping_id || `${row.group_name}:${row.topping_name}`;
+      if (!toppingMap[key]) {
+        toppingMap[key] = {
+          name: row.topping_name,
+          groupName: row.group_name,
+          qty: 0,
+          revenue: 0
+        };
+      }
+      toppingMap[key].qty += Number(row.total_quantity || 0);
+      toppingMap[key].revenue += Number(row.total_revenue || 0);
+    });
+
+    const topToppings = Object.values(toppingMap)
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 10);
 
@@ -303,6 +331,7 @@ export async function GET(request: Request) {
         summary,
         chartData: filledDailySales,
         topProducts,
+        topToppings,
         effectivePlan,
         limitWarning,
         hourlySales,

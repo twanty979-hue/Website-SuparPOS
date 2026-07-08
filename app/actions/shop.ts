@@ -92,6 +92,102 @@ function calculateServerPrice(
   };
 }
 
+const buildToppingOptionsForProducts = (
+  groups: any[] = [],
+  items: any[] = [],
+  mappings: any[] = [],
+  productId: string,
+) => {
+  const assignedGroupIds = new Set(
+    mappings
+      .filter((row: any) => String(row.product_id) === String(productId))
+      .map((row: any) => String(row.group_id)),
+  );
+
+  return groups
+    .filter((group: any) => assignedGroupIds.has(String(group.id)))
+    .sort((a: any, b: any) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+    .map((group: any) => ({
+      id: group.id,
+      name: group.name,
+      type: group.type || 'multiple',
+      required: group.required || false,
+      source: 'topping_group',
+      choices: items
+        .filter((item: any) => String(item.group_id) === String(group.id) && item.is_active !== false)
+        .sort((a: any, b: any) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+        .map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          image_name: item.image_name || null,
+          image_url: item.image_name || null,
+          price: Number(item.price || 0),
+        })),
+    }));
+};
+
+const normalizeToppingSnapshot = (value: any) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const decoded = JSON.parse(value);
+      return Array.isArray(decoded) ? decoded : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
+const validateToppingsForProduct = (product: any, rawToppings: any[]) => {
+  const productOptions = Array.isArray(product.options) ? product.options : [];
+  const selected = normalizeToppingSnapshot(rawToppings);
+  const validSelections: any[] = [];
+
+  for (const option of productOptions) {
+    const choices = Array.isArray(option.choices) ? option.choices : [];
+    const selectedForGroup = selected.filter((item: any) =>
+      String(item.group_id || item.option_id || '') === String(option.id) ||
+      String(item.group_name || '') === String(option.name || ''),
+    );
+
+    if (option.required && selectedForGroup.length === 0) {
+      throw new Error(`Missing required topping: ${option.name}`);
+    }
+
+    const allowed = new Map(
+      choices.map((choice: any) => [String(choice.id || choice.name), choice]),
+    );
+    const accepted = selectedForGroup
+      .map((item: any) => {
+        const key = String(item.topping_id || item.id || item.topping_name || item.name || '');
+        const choice = allowed.get(key) as any;
+        if (!choice) return null;
+        return {
+          group_id: option.id,
+          group_name: option.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          price: Number(choice.price || 0),
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+        };
+      })
+      .filter(Boolean);
+
+    if (option.type === 'single' && accepted.length > 1) {
+      throw new Error(`Only one topping allowed: ${option.name}`);
+    }
+    validSelections.push(...accepted);
+  }
+
+  const toppingTotal = validSelections.reduce(
+    (sum, item) => sum + Number(item.price || 0),
+    0,
+  );
+  return { toppings: validSelections, toppingTotal };
+};
+
 // Helper Function: แปลงชื่อรูปเป็น Cloudflare URL เต็มๆ
 const getImageUrl = (imageName: string | null) => {
     if (!imageName) return null;
@@ -188,12 +284,24 @@ export async function fetchShopData(params: ShopParams) {
     }
 
     // 3. ดึงข้อมูลอื่นๆ แบบ Parallel
-    const [bannerRes, catRes, prodRes, discRes, ordersRes] = await Promise.all([
+    const [
+      bannerRes,
+      catRes,
+      prodRes,
+      discRes,
+      ordersRes,
+      toppingGroupRes,
+      toppingItemRes,
+      toppingMappingRes,
+    ] = await Promise.all([
       supabaseServer.from('banners').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
       supabaseServer.from('categories').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
       supabaseServer.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).order('is_recommended', { ascending: false }),
       supabaseServer.from('discounts').select(`*, discount_products(product_id)`).eq('brand_id', brandId).eq('is_active', true),
-      supabaseServer.from('orders').select(`*, order_items(*)`).eq('brand_id', brandId).eq('table_id', realTableId).neq('status', 'paid').order('created_at', { ascending: false })
+      supabaseServer.from('orders').select(`*, order_items(*)`).eq('brand_id', brandId).eq('table_id', realTableId).neq('status', 'paid').order('created_at', { ascending: false }),
+      supabaseServer.from('topping_groups').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
+      supabaseServer.from('topping_items').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
+      supabaseServer.from('product_topping_groups').select('product_id, group_id').eq('brand_id', brandId)
     ]);
 
     // ---------------------------------------------------------
@@ -215,6 +323,16 @@ export async function fetchShopData(params: ShopParams) {
 
     const mappedProducts = (prodRes.data || []).map(p => ({
       ...p,
+      options: [
+        ...buildToppingOptionsForProducts(
+          toppingGroupRes.data || [],
+          toppingItemRes.data || [],
+          toppingMappingRes.data || [],
+          p.id,
+        ),
+        ...((Array.isArray(p.options) ? p.options : []) as any[])
+          .filter((option: any) => option?.source !== 'topping_group'),
+      ],
       image_url: getImageUrl(p.image_name) // เพิ่ม property image_url เข้าไป
     }));
 
@@ -320,11 +438,17 @@ export async function submitOrder(payload: {
 
     const productIds = [...new Set(cart.map((item) => String(item.id || '')))]
       .filter(Boolean);
-    const [{ data: productRows, error: productError }, { data: discountRows, error: discountError }] =
+    const [
+      { data: productRows, error: productError },
+      { data: discountRows, error: discountError },
+      { data: toppingGroupRows, error: toppingGroupError },
+      { data: toppingItemRows, error: toppingItemError },
+      { data: toppingMappingRows, error: toppingMappingError },
+    ] =
       await Promise.all([
         supabaseServer
           .from('products')
-          .select('id,name,price,price_special,price_jumbo,is_available')
+          .select('id,name,price,price_special,price_jumbo,is_available,options')
           .eq('brand_id', brandId)
           .eq('is_available', true)
           .in('id', productIds),
@@ -333,14 +457,55 @@ export async function submitOrder(payload: {
           .select('*, discount_products(product_id)')
           .eq('brand_id', brandId)
           .eq('is_active', true),
+        supabaseServer
+          .from('topping_groups')
+          .select('*')
+          .eq('brand_id', brandId)
+          .eq('is_active', true),
+        supabaseServer
+          .from('topping_items')
+          .select('*')
+          .eq('brand_id', brandId)
+          .eq('is_active', true),
+        supabaseServer
+          .from('product_topping_groups')
+          .select('product_id, group_id')
+          .eq('brand_id', brandId),
       ]);
 
-    if (productError || discountError) {
-      throw productError || discountError;
+    if (
+      productError ||
+      discountError ||
+      toppingGroupError ||
+      toppingItemError ||
+      toppingMappingError
+    ) {
+      throw (
+        productError ||
+        discountError ||
+        toppingGroupError ||
+        toppingItemError ||
+        toppingMappingError
+      );
     }
 
     const productsById = new Map(
-      (productRows || []).map((product) => [String(product.id), product]),
+      (productRows || []).map((product) => [
+        String(product.id),
+        {
+          ...product,
+          options: [
+            ...buildToppingOptionsForProducts(
+              toppingGroupRows || [],
+              toppingItemRows || [],
+              toppingMappingRows || [],
+              product.id,
+            ),
+            ...((Array.isArray(product.options) ? product.options : []) as any[])
+              .filter((option: any) => option?.source !== 'topping_group'),
+          ],
+        },
+      ]),
     );
     const securedItems = cart.map((item) => {
       const product = productsById.get(String(item.id));
@@ -359,12 +524,24 @@ export async function submitOrder(payload: {
       }
 
       const pricing = calculateServerPrice(product, variant, discountRows || []);
+      const { toppings, toppingTotal } = validateToppingsForProduct(
+        product,
+        item.toppings_snapshot || item.toppings || [],
+      );
+      const finalPrice = roundToQuarter(pricing.final + toppingTotal);
+      const originalPrice = roundToQuarter(pricing.original + toppingTotal);
       return {
         product,
         quantity,
         variant,
         note: note || null,
-        pricing,
+        pricing: {
+          ...pricing,
+          final: finalPrice,
+          original: originalPrice,
+          discount: Math.max(0, originalPrice - finalPrice),
+        },
+        toppings,
       };
     });
     const serverTotal = roundToQuarter(
@@ -397,6 +574,7 @@ export async function submitOrder(payload: {
       price: item.pricing.final,
       variant: item.variant,
       note: item.note,
+      toppings_snapshot: item.toppings,
       original_price: item.pricing.original,
       discount: item.pricing.discount,
       promotion_snapshot: {

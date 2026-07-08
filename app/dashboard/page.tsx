@@ -271,6 +271,35 @@ export default function DashboardPage() {
                                 ข้ามไปก่อน (ไว้ทำทีหลัง)
                             </button>
                         </div>
+                        <div className="bg-white p-5 lg:p-6 rounded-[24px] shadow-[0_2px_20px_-4px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col mt-4">
+                            <h3 className="font-extrabold text-base text-slate-800 mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-4.5 bg-emerald-500 rounded-full inline-block"></span>
+                                ท็อปปิ้งขายดี Top 5
+                            </h3>
+                            <div className="space-y-3">
+                                {data?.topToppings?.length === 0 ? (
+                                    <div className="py-6 flex flex-col items-center justify-center text-slate-400 gap-2">
+                                        <span className="text-lg">＋</span>
+                                        <span className="text-xs font-bold">ยังไม่มีข้อมูลท็อปปิ้ง</span>
+                                    </div>
+                                ) : (
+                                    data?.topToppings?.slice(0, 5).map((p: any, idx: number) => (
+                                        <div key={idx} className="group flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-50 transition-colors">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${RANK_COLORS[idx] || RANK_COLORS[4]}`}>{idx + 1}</div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <p className="font-extrabold text-slate-700 truncate text-xs">{p.name}</p>
+                                                    <p className="font-black text-slate-900 text-xs shrink-0">{p.qty} <span className="text-[10px] text-slate-400 font-semibold">ครั้ง</span></p>
+                                                </div>
+                                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                    <div className={`h-full rounded-full transition-all duration-500 ${idx === 0 ? 'bg-emerald-500' : 'bg-slate-400'}`} style={{ width: `${(p.qty / (data.topToppings[0].qty || 1)) * 100}%` }}></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

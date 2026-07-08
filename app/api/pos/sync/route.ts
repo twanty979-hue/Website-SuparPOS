@@ -30,6 +30,16 @@ const removeUsedTokens = (currentTokens: any[], usedTokens: any[]) => {
   const remaining = uniqueTokens(currentTokens).filter(token => !used.has(token));
   return remaining.length > 0 ? remaining : [makeTableToken()];
 };
+const isUuidValue = (value: any) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+const safeJsonParse = (value: any, fallback: any) => {
+  if (typeof value !== 'string') return value ?? fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
 
 const getSupabaseAndBrandId = async (request: Request) => {
   const authHeader = request.headers.get('authorization');
@@ -168,6 +178,66 @@ export async function POST(request: Request) {
     newOrderData.brand_id = brandId;
     paiOrderData.brand_id = brandId;
 
+    const toNumber = (value: any, fallback = 0) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
+    const normalizeVatMode = (value: any) => {
+      const mode = String(value || '').toLowerCase();
+      if (mode === 'included' || mode === 'excluded') return mode;
+      return 'none';
+    };
+
+    const vatSnapshotFromPayload =
+      syncPayload?.vat_snapshot && typeof syncPayload.vat_snapshot === 'object'
+        ? syncPayload.vat_snapshot
+        : {};
+    const vatSnapshotFromPai =
+      typeof paiOrderData.vat_snapshot === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(paiOrderData.vat_snapshot);
+            } catch {
+              return {};
+            }
+          })()
+        : (paiOrderData.vat_snapshot && typeof paiOrderData.vat_snapshot === 'object'
+            ? paiOrderData.vat_snapshot
+            : {});
+
+    const vatRate = toNumber(
+      paiOrderData.vat_rate ?? syncPayload?.vat_rate ?? vatSnapshotFromPayload.vat_rate ?? vatSnapshotFromPai.vat_rate
+    );
+    const vatMode = vatRate > 0
+      ? normalizeVatMode(paiOrderData.vat_mode ?? syncPayload?.vat_mode ?? vatSnapshotFromPayload.vat_mode ?? vatSnapshotFromPai.vat_mode)
+      : 'none';
+    const vatAmount = toNumber(
+      paiOrderData.vat_amount ?? syncPayload?.vat_amount ?? vatSnapshotFromPayload.vat_amount ?? vatSnapshotFromPai.vat_amount
+    );
+    const totalWithVat = toNumber(
+      paiOrderData.total_with_vat ?? syncPayload?.total_with_vat ?? vatSnapshotFromPayload.total_with_vat ?? vatSnapshotFromPai.total_with_vat,
+      toNumber(paiOrderData.total_amount)
+    );
+    const subtotalBeforeVat = toNumber(
+      paiOrderData.subtotal_before_vat ?? syncPayload?.subtotal_before_vat ?? vatSnapshotFromPayload.subtotal_before_vat ?? vatSnapshotFromPai.subtotal_before_vat,
+      vatRate > 0 ? totalWithVat - vatAmount : toNumber(paiOrderData.total_amount)
+    );
+
+    paiOrderData.subtotal_before_vat = subtotalBeforeVat;
+    paiOrderData.vat_rate = vatRate;
+    paiOrderData.vat_mode = vatMode;
+    paiOrderData.vat_amount = vatAmount;
+    paiOrderData.total_with_vat = totalWithVat;
+    paiOrderData.vat_snapshot = {
+      ...vatSnapshotFromPai,
+      ...vatSnapshotFromPayload,
+      subtotal_before_vat: subtotalBeforeVat,
+      vat_rate: vatRate,
+      vat_mode: vatMode,
+      vat_amount: vatAmount,
+      total_with_vat: totalWithVat,
+    };
+
     // Keep the cashier who made the offline sale, not the user who happens to
     // press sync later. Only accept a cached cashier from the same brand.
     const requestedCashierId = String(paiOrderData.cashier_id || '');
@@ -194,9 +264,8 @@ export async function POST(request: Request) {
 
     const processedItems = itemsToSave.map((item: any) => ({
       ...item,
-      promotion_snapshot: typeof item.promotion_snapshot === 'string' 
-        ? JSON.parse(item.promotion_snapshot) 
-        : item.promotion_snapshot
+      promotion_snapshot: safeJsonParse(item.promotion_snapshot, null),
+      toppings_snapshot: safeJsonParse(item.toppings_snapshot, []),
     }));
 
     // ---------------------------------------------------------
@@ -258,6 +327,65 @@ export async function POST(request: Request) {
       saleTime: paymentCreatedAt,
       performedBy: resolvedCashierId,
     });
+
+    const toppingSalesRows = processedItems
+      .filter((item: any) => item.status !== 'cancelled')
+      .flatMap((item: any) => {
+        const quantity = Number(item.quantity ?? item.qty ?? 1);
+        const toppings = Array.isArray(item.toppings_snapshot)
+          ? item.toppings_snapshot
+          : [];
+        return toppings
+          .filter((topping: any) => topping && Number(topping.price ?? topping.unit_price ?? 0) !== 0)
+          .map((topping: any, index: number) => {
+            const unitPrice = Number(topping.price ?? topping.unit_price ?? 0);
+            const toppingQuantity = Number(topping.quantity ?? topping.qty ?? 1);
+            const normalizedToppingQuantity =
+              Number.isFinite(toppingQuantity) && toppingQuantity > 0 ? toppingQuantity : 1;
+            const itemQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+            const totalQuantity = itemQuantity * normalizedToppingQuantity;
+            const toppingKey =
+              topping.topping_id ||
+              topping.id ||
+              `${topping.group_name || 'group'}:${topping.topping_name || topping.name || index}`;
+            return {
+              brand_id: brandId,
+              order_id: newOrderData.id,
+              order_item_id: item.id,
+              product_id: item.product_id || null,
+              product_name: item.product_name || item.name || null,
+              group_id: isUuidValue(topping.group_id) ? topping.group_id : null,
+              group_name: topping.group_name || null,
+              topping_id: isUuidValue(topping.topping_id || topping.id)
+                ? (topping.topping_id || topping.id)
+                : null,
+              topping_name: topping.topping_name || topping.name || 'Topping',
+              unit_price: unitPrice,
+              quantity: totalQuantity,
+              total_amount: unitPrice * totalQuantity,
+              source_event_key: `TOPPING:${targetPaymentId}:${item.id}:${toppingKey}`,
+              created_at: paymentCreatedAt,
+            };
+          });
+      });
+
+    if (toppingSalesRows.length > 0) {
+      const { error: toppingSalesError } = await privilegedSupabase
+        .from('order_item_toppings')
+        .upsert(toppingSalesRows, {
+          onConflict: 'source_event_key',
+          ignoreDuplicates: true,
+        });
+      if (toppingSalesError) throw toppingSalesError;
+
+      const { error: toppingStatsError } = await privilegedSupabase.rpc(
+        'rebuild_dashboard_topping_stats',
+        { p_brand_id: brandId }
+      );
+      if (toppingStatsError) {
+        console.error('[SYNC] Dashboard topping summary failed:', toppingStatsError);
+      }
+    }
 
     // Dashboard summaries must never make a completed sale fail to sync.
     // They are derived data and can be rebuilt later from pai_orders.

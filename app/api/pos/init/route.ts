@@ -32,12 +32,45 @@ const getSupabaseAndBrandId = async (request: Request) => {
   return { supabase, brandId: profile.brand_id };
 };
 
+const buildToppingOptions = (
+  groups: any[] = [],
+  items: any[] = [],
+  mappings: any[] = [],
+  productId: string
+) => {
+  const assignedGroupIds = new Set(
+    (mappings || [])
+      .filter((row: any) => row.product_id === productId)
+      .map((row: any) => String(row.group_id))
+  );
+  return (groups || [])
+    .filter((group: any) => assignedGroupIds.has(String(group.id)))
+    .sort((a: any, b: any) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+    .map((group: any) => ({
+      id: group.id,
+      name: group.name,
+      type: group.type || 'multiple',
+      required: group.required || false,
+      source: 'topping_group',
+      choices: (items || [])
+        .filter((item: any) => String(item.group_id) === String(group.id) && item.is_active !== false)
+        .sort((a: any, b: any) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+        .map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          image_name: item.image_name || null,
+          image_url: item.image_name || null,
+          price: Number(item.price || 0),
+        })),
+    }));
+};
+
 export async function GET(request: Request) {
   try {
     // 🚀 ใช้ Token ดึงสิทธิ์แทน URL
     const { supabase, brandId } = await getSupabaseAndBrandId(request);
 
-    const [categoriesRes, productsRes, retailRes, discountsRes, tablesRes, unpaidOrdersRes] = await Promise.all([
+    const [categoriesRes, productsRes, retailRes, discountsRes, tablesRes, unpaidOrdersRes, groupsRes, itemsRes, mappingsRes] = await Promise.all([
       supabase.from('categories').select('*').eq('brand_id', brandId).order('sort_order'),
       supabase.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).is('deleted_at', null), 
       supabase.from('product_master').select('*').eq('brand_id', brandId).eq('is_active', true), 
@@ -48,10 +81,44 @@ export async function GET(request: Request) {
         .select('*, order_items(*)')
         .eq('brand_id', brandId)
         
-        .in('status', ['pending', 'preparing', 'done'])
+        .in('status', ['pending', 'preparing', 'done']),
+      supabase.from('topping_groups').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
+      supabase.from('topping_items').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
+      supabase.from('product_topping_groups').select('product_id, group_id').eq('brand_id', brandId)
     ]);
 
-    const formattedFood = (productsRes.data || []).map(p => ({ ...p, item_type: 'food' }));
+    const allToppingOptions = (groupsRes.data || [])
+      .sort((a: any, b: any) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+      .map((group: any) => ({
+        id: group.id,
+        name: group.name,
+        type: group.type || 'multiple',
+        required: false,
+        source: 'pos_topping_group',
+        choices: (itemsRes.data || [])
+          .filter((item: any) => String(item.group_id) === String(group.id) && item.is_active !== false)
+          .sort((a: any, b: any) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+          .map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            image_name: item.image_name || null,
+            image_url: item.image_name || null,
+            price: Number(item.price || 0),
+          })),
+      }));
+
+    const formattedFood = (productsRes.data || []).map(p => ({
+      ...p,
+      item_type: 'food',
+      topping_group_ids: (mappingsRes.data || [])
+        .filter((row: any) => row.product_id === p.id)
+        .map((row: any) => row.group_id),
+      options: [
+        ...buildToppingOptions(groupsRes.data || [], itemsRes.data || [], mappingsRes.data || [], p.id),
+        ...((Array.isArray(p.options) ? p.options : []) as any[])
+          .filter((option: any) => option?.source !== 'topping_group'),
+      ],
+    }));
     const formattedRetail = (retailRes.data || []).map(p => ({
         ...p,
         item_type: 'retail',
@@ -65,6 +132,7 @@ export async function GET(request: Request) {
       success: true,
       categories: categoriesRes.data || [],
       products: allCombinedProducts,
+      topping_options: allToppingOptions,
       discounts: discountsRes.data || [],
       tables: tablesRes.data || [],
       unpaid_orders: unpaidOrdersRes.data || [] 
