@@ -340,6 +340,10 @@ export default function LandingPage() {
                     วิธีใช้งาน
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
+                <Link href="/setup-printer" className="hover:text-emerald-500 transition-colors font-medium relative group">
+                    ตั้งค่าเครื่องพิมพ์
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all duration-300 group-hover:w-full"></span>
+                </Link>
 
                 {isAuthLoading ? (
                     <div className="w-24 h-10 bg-slate-200 animate-pulse rounded-full"></div>
@@ -374,6 +378,7 @@ export default function LandingPage() {
             <a href="features" className="text-lg font-medium hover:text-emerald-600">จุดเด่น</a>
             <a href="pricing" className="text-lg font-medium hover:text-emerald-600">ราคา</a>
             <a href="#howitworks" className="text-lg font-medium hover:text-emerald-600">วิธีใช้งาน</a>
+            <Link href="/setup-printer" className="text-lg font-medium hover:text-emerald-600">ตั้งค่าเครื่องพิมพ์ (Win)</Link>
             
             {!isAuthLoading && user ? (
                  <Link href="https://app.suparpos.com" className="flex items-center gap-3 text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2.5 rounded-full font-bold shadow-lg shadow-emerald-500/30">
@@ -437,7 +442,10 @@ export default function LandingPage() {
                         <i className={`fa-solid ${user ? 'fa-arrow-right-to-bracket' : 'fa-rocket'} group-hover:rotate-12 transition-transform`}></i> 
                         {user ? 'เข้าสู่แดชบอร์ด' : 'สมัครใช้งานฟรี'}
                     </Link>
-                    <a href="https://www.youtube.com/watch?v=xiuRS7e-5R8" className="px-8 py-4 bg-white/80 border border-slate-200 hover:bg-white text-slate-700 rounded-full font-medium transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-lg backdrop-blur-sm hover:-translate-y-1 active:scale-95 duration-100">
+                    <Link href="/setup-printer" className="px-8 py-4 bg-white/80 border border-slate-200 hover:bg-white text-slate-700 rounded-full font-medium transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-lg backdrop-blur-sm hover:-translate-y-1 active:scale-95 duration-100">
+                        <i className="fa-solid fa-print text-emerald-500 text-xl"></i> คู่มือตั้งค่าเครื่องพิมพ์
+                    </Link>
+                    <a href="https://www.youtube.com/watch?v=xiuRS7e-5R8" className="px-8 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-medium transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-lg backdrop-blur-sm hover:-translate-y-1 active:scale-95 duration-100">
                         <i className="fa-regular fa-circle-play text-emerald-500 text-xl"></i> ดูวิดีโอตัวอย่าง
                     </a>
                 </div>
