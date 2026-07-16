@@ -142,7 +142,13 @@ export async function POST(request: Request) {
         const { error: orderError } = await supabase.from('orders').upsert(newOrderData);
         if (orderError) throw orderError;
         
-        const { error: itemsError } = await supabase.from('order_items').upsert(itemsToSave);
+        const processedCancelItems = itemsToSave.map((item: any) => ({
+          ...item,
+          promotion_snapshot: safeJsonParse(item.promotion_snapshot, null),
+          toppings_snapshot: safeJsonParse(item.toppings_snapshot, []),
+        }));
+
+        const { error: itemsError } = await supabase.from('order_items').upsert(processedCancelItems);
         if (itemsError) throw itemsError;
       } else {
         // ออเดอร์ที่มีอยู่บน Cloud อยู่แล้ว แค่อัปเดตสถานะ
