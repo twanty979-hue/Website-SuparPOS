@@ -84,9 +84,21 @@ export async function DELETE(request: NextRequest) {
   const employeeId = String(body.employeeId || '')
   const { data: target } = await db.from('profiles').select('brand_id,own_brand_id,invited_brand_id').eq('id', employeeId).maybeSingle()
   if (!target || (target.brand_id !== profile.brand_id && target.invited_brand_id !== profile.brand_id)) return NextResponse.json({ success: false, error: 'ไม่พบพนักงานในร้านนี้' }, { status: 404 })
+  
+  const isOriginalOwnerOfOtherBrand = 
+    target.own_brand_id != null && 
+    target.own_brand_id !== target.brand_id;
+
   const update = target.brand_id === profile.brand_id
-    ? { brand_id: target.own_brand_id, own_brand_id: null, invited_brand_id: null, role: target.own_brand_id ? 'owner' : 'staff', is_joined: false }
+    ? { 
+        brand_id: isOriginalOwnerOfOtherBrand ? target.own_brand_id : null, 
+        own_brand_id: isOriginalOwnerOfOtherBrand ? target.own_brand_id : null, 
+        invited_brand_id: null, 
+        role: isOriginalOwnerOfOtherBrand ? 'owner' : 'cashier', 
+        is_joined: false 
+      }
     : { invited_brand_id: null, is_joined: false }
+    
   const { error } = await db.from('profiles').update(update).eq('id', employeeId)
   if (error) return NextResponse.json({ success: false, error: error.message }, { status: 400 })
   await db.from('invitation_logs').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('employee_id', employeeId).eq('from_brand_id', profile.brand_id).eq('status', 'pending')

@@ -70,7 +70,7 @@ function calculateNewExpiryForTier(currentExpiry: string | null, period: 'monthl
         const oldExpiry = dayjs(currentExpiry);
         if (oldExpiry.isAfter(now)) baseDate = oldExpiry;
     }
-    return period === 'monthly' ? baseDate.add(30, 'day').toISOString() : baseDate.add(1, 'year').toISOString();
+    return period === 'monthly' ? baseDate.add(30, 'day').toISOString() : baseDate.add(365, 'day').toISOString();
 }
 
 export async function getAvailablePlansAction(brandId: string) {

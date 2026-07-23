@@ -6,6 +6,7 @@ import {
   Plus, Trash2, Phone, Mail, Shield, X, ChevronRight, UserCheck, Clock, History, CheckCircle2, XCircle, MinusCircle
 } from 'lucide-react';
 import AddEmployeeForm from './AddEmployeeForm' 
+import { deleteEmployee } from '@/app/actions/backend/actions'
 
 // ฟังก์ชันจัดเบอร์โทรสวยๆ
 const formatPhone = (phone: string) => {
@@ -39,7 +40,7 @@ export default function EmployeeManager({
   initialEmployees: any[], 
   brandId: string,
   invitationLogs?: any[]
-}) {
+  }) {
   const [employees, setEmployees] = useState(initialEmployees || []);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
@@ -61,10 +62,15 @@ export default function EmployeeManager({
 
   const handleDelete = async (id: string) => {
     if(!confirm('ยืนยันการยกเลิกสิทธิ์หรือลบคำเชิญของพนักงานคนนี้?')) return;
-    // ... เรียกใช้ Server Action ลบของนายตามปกติ ...
-    setEmployees(prev => prev.filter(e => e.id !== id));
-    setSelectedEmployee(null);
-    router.refresh();
+    
+    const res = await deleteEmployee(id);
+    if (res.success) {
+      setEmployees(prev => prev.filter(e => e.id !== id));
+      setSelectedEmployee(null);
+      router.refresh();
+    } else {
+      alert(res.error || 'เกิดข้อผิดพลาดในการลบพนักงาน');
+    }
   };
 
   const handleSuccessAdd = () => {

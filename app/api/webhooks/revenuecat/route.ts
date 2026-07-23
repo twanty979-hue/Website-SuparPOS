@@ -189,10 +189,10 @@ function normalizeIdentifier(value: unknown) {
 }
 
 function planFromIdentifier(value: unknown): PlanKey | null {
-  const tokens = normalizeIdentifier(value).split('_');
-  if (tokens.includes('ultimate')) return 'ultimate';
-  if (tokens.includes('pro')) return 'pro';
-  if (tokens.includes('basic')) return 'basic';
+  const normalized = normalizeIdentifier(value);
+  if (normalized.includes('ultimate')) return 'ultimate';
+  if (normalized.includes('pro')) return 'pro';
+  if (normalized.includes('basic')) return 'basic';
   return null;
 }
 
@@ -225,11 +225,20 @@ function inferPeriod(event: any, productId: string): BillingPeriod | null {
 }
 
 function periodFromIdentifier(value: unknown): BillingPeriod | null {
-  const tokens = normalizeIdentifier(value).split('_');
-  if (tokens.some((token) => ['yearly', 'annual', 'year', 'p1y'].includes(token))) {
+  const normalized = normalizeIdentifier(value);
+  if (
+    normalized.includes('yearly') ||
+    normalized.includes('annual') ||
+    normalized.includes('year') ||
+    normalized.includes('p1y')
+  ) {
     return 'yearly';
   }
-  if (tokens.some((token) => ['monthly', 'month', 'p1m'].includes(token))) {
+  if (
+    normalized.includes('monthly') ||
+    normalized.includes('month') ||
+    normalized.includes('p1m')
+  ) {
     return 'monthly';
   }
   return null;
@@ -244,8 +253,8 @@ function inferExpiryDate(event: any, period: BillingPeriod): string {
   const purchasedMs = Number(event.purchased_at_ms ?? event.purchasedAtMs ?? Date.now());
   const base = Number.isFinite(purchasedMs) && purchasedMs > 0 ? dayjs(purchasedMs) : dayjs();
   return period === 'yearly'
-    ? base.add(1, 'year').toISOString()
-    : base.add(1, 'month').toISOString();
+    ? base.add(365, 'day').toISOString()
+    : base.add(30, 'day').toISOString();
 }
 
 function isSandboxEvent(event: any) {

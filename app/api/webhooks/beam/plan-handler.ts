@@ -14,7 +14,7 @@ function calculateNewExpiryForTier(currentExpiry: string | null, period: string)
     }
 
     if (period === 'monthly') return baseDate.add(30, 'day').toISOString();
-    if (period === 'yearly') return baseDate.add(1, 'year').toISOString();
+    if (period === 'yearly') return baseDate.add(365, 'day').toISOString();
     
     return null; 
 }

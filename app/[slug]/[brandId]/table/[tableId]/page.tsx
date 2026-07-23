@@ -105,7 +105,7 @@ export default function Page({ params }: { params: any }) {
       );
   }
 
-  const themeMode = brand.theme_mode || 'standard';
+  const themeMode = brand.theme_mode || 'mkinimalearth';
 
   // 🌟 3. ส่ง helpers ตัวใหม่ (ที่ดัดแปลงแล้ว) ลงไปให้ทุกธีม!
   switch (themeMode) {
@@ -165,8 +165,9 @@ export default function Page({ params }: { params: any }) {
     case 'darkluxury': return <DarkLuxury state={state} actions={actions} helpers={helpers} />;
     case 'leafgreen': return <LeafGreen state={state} actions={actions} helpers={helpers} />;
     case 'cozywood': return <CozyWood state={state} actions={actions} helpers={helpers} />;
-    case 'standard':
+    case 'standard': return <StandardTheme state={state} actions={actions} helpers={helpers} />;
+    case 'mkinimalearth':
     default:
-        return <StandardTheme state={state} actions={actions} helpers={helpers} />;
+        return <MinimalEarth state={state} actions={actions} helpers={helpers} />;
   }
 }

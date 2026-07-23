@@ -9,6 +9,7 @@ export default function AdminLayout({
   // เมนูตามโครงสร้างในโฟลเดอร์ admin
   const menuItems = [
     { name: 'clear-test-data', href: '/admin' },
+    { name: 'app-settings (ควบคุมแอป)', href: '/admin/app-settings' },
     { name: 'adphoto', href: '/admin/adphoto' },
     { name: 'brands', href: '/admin/brands' },
     { name: 'marketplace-categories', href: '/admin/marketplace-categories' },

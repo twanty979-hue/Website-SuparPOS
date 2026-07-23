@@ -90,11 +90,14 @@ export async function inviteEmployee(formData: FormData) {
 
     return { success: true, message: 'ส่งคำเชิญสำเร็จแล้ว พนักงานจะไม่หลุดจากระบบเดิมจนกว่าจะกดยอมรับครับ!' }
 
+
+    return { success: true, message: 'ส่งคำเชิญสำเร็จแล้ว พนักงานจะไม่หลุดจากระบบเดิมจนกว่าจะกดยอมรับครับ!' }
+
   } catch (error: any) {
     return { success: false, error: error.message }
   }
 }
-// 🟢 เพิ่มฟังก์ชันนี้เข้าไปที่ท้ายไฟล์ app/actions/backend/actions.ts ครับนาย
+
 export async function searchEmployeeByEmail(email: string) {
   try {
     if (!email) return { success: false, message: 'กรุณากรอกอีเมล' };
@@ -146,6 +149,11 @@ export async function acceptInvitation(employeeId: string, invitedBrandId: strin
       backupBrandId = currentProfile.brand_id;
     }
 
+    // ⚡️ แมปบทบาทเข้ากับ Enum ของตาราง profiles ในฐานข้อมูลจริง
+    const dbRole = targetRole === 'chef' || targetRole === 'kitchen'
+      ? 'kitchen'
+      : (targetRole === 'owner' ? 'owner' : 'cashier');
+
     // ⚡️ ทำการอัปเดตสลับร้านทันที
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
@@ -153,7 +161,7 @@ export async function acceptInvitation(employeeId: string, invitedBrandId: strin
         brand_id: invitedBrandId,       // เปลี่ยนแบรนด์หลักเป็นร้านใหม่ที่ไปทำงาน
         own_brand_id: backupBrandId,     // ล็อกแบรนด์ตัวเองไว้ในช่องสำรอง
         invited_brand_id: null,          // เคลียร์ช่องเชิญออก
-        role: targetRole,                // เปลี่ยนบทบาทตามที่ร้านใหม่กำหนด
+        role: dbRole,                    // เปลี่ยนบทบาทตามที่ร้านใหม่กำหนด (แมปให้ตรง enum)
         is_joined: true                  // ยืนยันการเข้าร่วมสำเร็จ
       })
       .eq('id', employeeId)
@@ -254,20 +262,33 @@ export async function deleteEmployee(employeeId: string) {
       throw new Error('ไม่พบรหัสพนักงานที่ต้องการดำเนินการ');
     }
 
-    // 1. เคลียร์สังกัดในตาราง profiles (ปลดบล็อกให้เขากลับไปอยู่ร้านตัวเอง หรือพร้อมโดนเชิญใหม่)
+    const { data: target } = await supabaseAdmin
+      .from('profiles')
+      .select('brand_id, own_brand_id')
+      .eq('id', employeeId)
+      .maybeSingle();
+
+    if (!target) {
+      throw new Error('ไม่พบโปรไฟล์พนักงานในระบบ');
+    }
+
+    const isOriginalOwnerOfOtherBrand = 
+      target.own_brand_id != null && 
+      target.own_brand_id !== target.brand_id;
+
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .update({
-        brand_id: null, // ถ้าเป็นพนักงานปัจจุบัน ก็เคลียร์ออก
-        invited_brand_id: null, // ถ้าเป็นสถานะรอเชิญ (Pending) ก็ล้างทิ้งตัวนี้
+        brand_id: isOriginalOwnerOfOtherBrand ? target.own_brand_id : null,
+        own_brand_id: isOriginalOwnerOfOtherBrand ? target.own_brand_id : null,
+        invited_brand_id: null,
         is_joined: false,
-        role: 'staff' // รีเซ็ตตำแหน่งกลับเป็นพนักงานทั่วไป
+        role: isOriginalOwnerOfOtherBrand ? 'owner' : 'cashier'
       })
       .eq('id', employeeId);
 
     if (profileError) throw profileError;
 
-    // 2. ปรับสถานะคำเชิญล่าสุดในตาราง Log ให้กลายเป็นยกเลิก (cancelled) เพื่อเก็บประวัติ
     const { error: logError } = await supabaseAdmin
       .from('invitation_logs')
       .update({ 
@@ -275,7 +296,7 @@ export async function deleteEmployee(employeeId: string) {
         updated_at: new Date().toISOString() 
       })
       .eq('employee_id', employeeId)
-      .eq('status', 'pending'); // เจาะจงเปลี่ยนเฉพาะอันที่ยังค้างพิจารณาอยู่
+      .eq('status', 'pending');
 
     if (logError) throw logError;
 
