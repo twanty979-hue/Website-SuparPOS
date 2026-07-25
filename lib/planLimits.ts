@@ -1,5 +1,5 @@
 export const PLAN_LIMITS = {
-  free: { maxFreeThemes: 3, maxOrders: 30 },
+  free: { maxFreeThemes: 3, maxOrders: 100 },
   basic: { maxFreeThemes: 10, maxOrders: Infinity },
   pro: { maxFreeThemes: 30, maxOrders: Infinity },
   ultimate: { maxFreeThemes: Infinity, maxOrders: Infinity }

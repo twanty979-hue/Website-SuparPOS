@@ -4,7 +4,7 @@ import { getMarketplaceDataAction } from '@/app/actions/marketplaceActions'; // 
 import ThemeShowcase from '@/components/ThemeShowcase';
 
 export default async function FeaturesPage() {
-  
+
   // 1. ดึงข้อมูลธีมจาก Server (เฉพาะ 6 อันแรกมาโชว์เป็นตัวอย่าง)
   const { themes, success } = await getMarketplaceDataAction();
   const displayThemes = success ? themes.slice(0, 6) : [];
@@ -56,17 +56,17 @@ export default async function FeaturesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-white py-20 px-4 sm:px-6 lg:px-8 font-sans">
-      
+
       {/* Background Decor */}
       <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-green-100/40 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-100/40 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        
+
         {/* Header Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-4">
-            ฟีเจอร์ที่ช่วยให้ร้านคุณ <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-500">"โปร"</span> กว่าใคร
+            ฟีเจอร์ที่ช่วยให้ร้านคุณ <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-500">&quot;โปร&quot;</span> กว่าใคร
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
             SuparPOS ไม่ใช่แค่เมนูออนไลน์ แต่คือระบบปฏิบัติการร้านอาหารครบวงจร
@@ -76,7 +76,7 @@ export default async function FeaturesPage() {
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-24">
           {features.map((feature, index) => (
-            <div 
+            <div
               key={index}
               className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
             >
@@ -106,16 +106,16 @@ export default async function FeaturesPage() {
                             เปลี่ยนสไตล์ร้านอาหารของคุณได้ทันที ไม่ต้องเขียนโค้ด
                         </p>
                     </div>
-                    <Link href="/register" className="hidden md:flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 px-6 py-3 rounded-full hover:bg-emerald-100 transition-colors">
+                    <Link href="https://app.suparpos.com/" className="hidden md:flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 px-6 py-3 rounded-full hover:bg-emerald-100 transition-colors">
                         ดูธีมทั้งหมด <i className="fa-solid fa-arrow-right"></i>
                     </Link>
                 </div>
-                
+
                 {/* ใส่ Component Slider ตรงนี้ */}
                 <ThemeShowcase themes={displayThemes} />
-                
+
                 <div className="mt-8 text-center md:hidden">
-                    <Link href="/register" className="inline-flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 px-6 py-3 rounded-full hover:bg-emerald-100 transition-colors">
+                    <Link href="https://app.suparpos.com/" className="inline-flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 px-6 py-3 rounded-full hover:bg-emerald-100 transition-colors">
                         ดูธีมทั้งหมด <i className="fa-solid fa-arrow-right"></i>
                     </Link>
                 </div>
@@ -125,7 +125,7 @@ export default async function FeaturesPage() {
 
         {/* Feature Highlight Sections */}
         <div className="space-y-20">
-          
+
           {/* Highlight 1 */}
           <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
             <div className="w-full md:w-1/2 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-emerald-500/20 transform hover:scale-[1.02] transition-transform">
@@ -164,7 +164,7 @@ export default async function FeaturesPage() {
                  <h2 className="text-2xl font-bold text-slate-800">ความปลอดภัยสูงสุด</h2>
               </div>
               <p className="text-slate-500 text-lg leading-relaxed mb-6">
-                เราใช้เทคโนโลยี Cloud Server มาตรฐานระดับโลก (Supabase) ข้อมูลของคุณจะถูกเข้ารหัสและสำรองข้อมูลอัตโนมัติ มั่นใจได้ว่าข้อมูลการขายและลูกค้าจะไม่สูญหาย
+                เราใช้เทคโนโลยี Cloud Server มาตรฐานความปลอดภัยสูง (Supabase) ข้อมูลของคุณจะถูกเข้ารหัสและสำรองข้อมูลอัตโนมัติ ช่วยเพิ่มความปลอดภัยของข้อมูลการขายและลูกค้า
               </p>
             </div>
              <div className="w-full md:w-1/2">
@@ -172,7 +172,7 @@ export default async function FeaturesPage() {
               <p className="text-slate-600 mb-6 leading-relaxed">
                 เพราะเราเข้าใจปัญหาของร้านอาหาร ทั้งเรื่องออเดอร์ตกหล่น การทุจริต หรือการสรุปยอดบัญชีที่ยุ่งยาก เราจึงออกแบบระบบมาเพื่อแก้ปัญหาเหล่านี้โดยเฉพาะ
               </p>
-              <Link href="/register" className="inline-flex items-center gap-2 text-emerald-600 font-bold hover:gap-3 transition-all">
+              <Link href="https://app.suparpos.com/" className="inline-flex items-center gap-2 text-emerald-600 font-bold hover:gap-3 transition-all">
                 ทดลองใช้งานฟรี <i className="fa-solid fa-arrow-right"></i>
               </Link>
             </div>
@@ -189,14 +189,14 @@ export default async function FeaturesPage() {
               สมัครวันนี้ ใช้งานฟรีตลอดชีพสำหรับร้านขนาดเล็ก ไม่ต้องผูกบัตรเครดิต
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link 
-                href="/register" 
+              <Link
+                href="https://app.suparpos.com/"
                 className="bg-white text-emerald-600 font-bold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl hover:bg-slate-50 transition-all active:scale-95"
               >
                 เริ่มต้นใช้งานฟรี
               </Link>
-              <Link 
-                href="/pricing" 
+              <Link
+                href="/pricing"
                 className="bg-emerald-700/50 border border-emerald-400 text-white font-bold py-3.5 px-8 rounded-xl hover:bg-emerald-700 transition-all"
               >
                 ดูราคาแพ็กเกจ

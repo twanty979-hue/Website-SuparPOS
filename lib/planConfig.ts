@@ -3,7 +3,7 @@
 export const PLAN_LIMITS = {
   free: { 
       maxFreeThemes: 3, 
-      maxOrders: 30 // ✅ ตัวฟรี จำกัด 30 ออเดอร์/เดือน
+      maxOrders: 100 // ✅ ตัวฟรี จำกัด 100 ออเดอร์ต่อรอบ 30 วัน
   },
   basic: { 
       maxFreeThemes: 10, 

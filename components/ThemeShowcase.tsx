@@ -29,7 +29,17 @@ const getImageUrl = (fileName: string | null) => {
   return `${CDN_BASE_URL}/themes/${fileName}`;
 };
 
-export default function ThemeShowcase({ themes }: { themes: any[] }) {
+interface ShowcaseTheme {
+  id?: string | number;
+  marketplace_theme_id?: string | number;
+  price_weekly?: number;
+  price_monthly?: number;
+  price_yearly?: number;
+  name?: string;
+  image_url?: string;
+}
+
+export default function ThemeShowcase({ themes }: { themes: ShowcaseTheme[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -70,14 +80,14 @@ export default function ThemeShowcase({ themes }: { themes: any[] }) {
               theme={theme}
               isOwned={false}
               getImageUrl={getImageUrl} // ✅ ใช้ฟังก์ชันที่อัปเกรดแล้ว
-              onClick={() => { window.location.href = '/register'; }}
+              onClick={() => { window.location.href = 'https://app.suparpos.com/'; }}
             />
           </div>
         ))}
 
         {/* Card เชิญชวนใบสุดท้าย */}
         <div className="flex-shrink-0 w-[260px] md:w-[280px] snap-center flex flex-col justify-center items-center bg-white/50 backdrop-blur-sm rounded-[3rem] border-2 border-dashed border-blue-200 min-h-[500px] p-6 text-center hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer group/more">
-          <Link href="/register" className="flex flex-col items-center w-full h-full justify-center">
+          <Link href="https://app.suparpos.com/" className="flex flex-col items-center w-full h-full justify-center">
             <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-6 group-hover/more:scale-110 transition-transform shadow-inner">
                <i className="fa-solid fa-plus text-3xl"></i>
             </div>

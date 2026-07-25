@@ -98,7 +98,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 mb-12">
             
             {/* Column 1: Logo & Address */}
-            <div className="lg:col-span-5 space-y-6">
+            <div className="lg:col-span-4 space-y-6">
                 <Link href="/" className="flex items-center gap-2 group relative">
                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-all duration-300 overflow-hidden border border-emerald-100">
                         <LogoIcon className="w-full h-full p-1" />
@@ -115,8 +115,8 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
                         SuparPOS System <span className="font-normal text-slate-500">(ดำเนินการโดย นาย วรธน นำทอง)</span>
                     </p>
                     <p>
-                        บ้านเลขที่78หมู่ 4 ต.นาเยีย อ.นาเยีย<br/>
-                         จังหวัด อุบลราชธานี รหัสไปรษณีย์ 34160
+                        บ้านเลขที่ 78 หมู่ 4 ต.นาเยีย อ.นาเยีย<br/>
+                        จังหวัด อุบลราชธานี รหัสไปรษณีย์ 34160
                     </p>
                     <p className="flex items-center gap-2">
                         <span className="font-bold text-slate-700">โทร:</span> 
@@ -129,29 +129,42 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
                 </div>
             </div>
 
-            {/* Column 2: Services */}
+            {/* Column 2: Solutions */}
+            <div className="lg:col-span-3">
+                <h4 className="font-bold text-slate-900 mb-6 uppercase tracking-wider text-xs">โซลูชันสำหรับธุรกิจ</h4>
+                <div className="flex flex-col gap-3 text-sm font-medium">
+                    <Link href="/pos-retail" className="hover:text-emerald-500 transition-colors">POS ร้านค้าปลีก & โชห่วย</Link>
+                    <Link href="/pos-cafe" className="hover:text-emerald-500 transition-colors">โปรแกรมร้านกาแฟ & คาเฟ่</Link>
+                    <Link href="/pos-restaurant" className="hover:text-emerald-500 transition-colors">ระบบจัดการร้านอาหาร & ชาบู</Link>
+                    <Link href="/qr-ordering" className="hover:text-emerald-500 transition-colors">สแกนสั่งอาหารผ่าน QR Code</Link>
+                    <Link href="/stock-barcode" className="hover:text-emerald-500 transition-colors">ระบบจัดการสต๊อก & บาร์โค้ด</Link>
+                    <Link href="/online-offline-pos" className="hover:text-emerald-500 transition-colors">ระบบ POS ออนไลน์ & คลาวด์</Link>
+                </div>
+            </div>
+
+            {/* Column 3: Services */}
             <div className="lg:col-span-2">
                 <h4 className="font-bold text-slate-900 mb-6 uppercase tracking-wider text-xs">บริการของเรา</h4>
                 <div className="flex flex-col gap-3 text-sm font-medium">
                     <Link href="/" className="hover:text-emerald-500 transition-colors">หน้าแรก</Link>
                     <Link href="/pricing" className="hover:text-emerald-500 transition-colors">แพ็กเกจราคา</Link>
                     <Link href="/manual" className="hover:text-emerald-500 transition-colors">คู่มือการใช้งาน</Link>
+                    <Link href="/foodscan" className="hover:text-emerald-500 transition-colors">เกี่ยวกับ FoodScan</Link>
                 </div>
             </div>
 
-            {/* Column 3: Policy */}
-            <div className="lg:col-span-2">
+            {/* Column 4: Policy */}
+            <div className="lg:col-span-1">
                 <h4 className="font-bold text-slate-900 mb-6 uppercase tracking-wider text-xs">นโยบาย</h4>
                 <div className="flex flex-col gap-3 text-sm font-medium">
-                    <Link href="/terms" className="hover:text-emerald-500 transition-colors">เงื่อนไขการบริการ</Link>
+                    <Link href="/terms" className="hover:text-emerald-500 transition-colors">เงื่อนไข</Link>
                     <Link href="/privacy" className="hover:text-emerald-500 transition-colors">ความเป็นส่วนตัว</Link>
-                    <Link href="/refund" className="hover:text-emerald-500 transition-colors">นโยบายการคืนเงิน</Link>
+                    <Link href="/refund" className="hover:text-emerald-500 transition-colors">คืนเงิน</Link>
                 </div>
             </div>
 
-            {/* Column 4: Social & Payment (ใส่ครบแล้วครับ) */}
-            <div className="lg:col-span-3 flex flex-col items-start lg:items-end gap-8">
-                
+            {/* Column 5: Social & Payment */}
+            <div className="lg:col-span-2 flex flex-col items-start lg:items-end gap-8">
                 {/* Social Icons */}
                 <div className="flex gap-4 text-2xl text-slate-400">
                     <a href="#" target="_blank" className="hover:text-[#00B900] transition-transform hover:scale-110"><i className="fa-brands fa-line"></i></a>

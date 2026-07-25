@@ -77,7 +77,7 @@ const handleTestPrint = async (printer: PrinterSettings) => {
     // 🌟 จุดที่แก้: เติม (printer.connectionType as any) เพื่อหลอก TypeScript ให้มันยอมให้ผ่านครับนาย
     } else if ((printer.connectionType as any) === 'e_receipt') {
       // จำลองการสร้าง URL ใบเสร็จ แล้วแปลงเป็น QR Code
-      const mockReceiptUrl = `https://pos-foodscan.com/receipt/test-${printer.id}`;
+      const mockReceiptUrl = `https://suparpos.com/receipt/test-${printer.id}`;
       const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(mockReceiptUrl)}`;
       setTestQrUrl(qrImageUrl);
     } else {

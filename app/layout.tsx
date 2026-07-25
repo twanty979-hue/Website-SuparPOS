@@ -10,18 +10,22 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://pos-foodscan.com'),
-  title: "ระบบ POS ร้านอาหาร พร้อม QR Code สแกนสั่งอาหาร | POS FoodScan",
-  description: "POS FoodScan คือระบบ POS ร้านอาหาร และสแกนสั่งอาหาร QR Code ที่ดีที่สุด ใช้งานง่าย ลดต้นทุน พนักงานไม่ต้องจด เริ่มต้นใช้งานฟรีวันนี้",
+  metadataBase: new URL('https://suparpos.com'),
+  title: "ระบบ POS ร้านค้าและร้านอาหาร จัดการสต๊อก คิดเงิน สแกนสั่งซื้อ | SuparPOS",
+  description: "SuparPOS คือระบบ POS สำหรับร้านค้าปลีก ร้านอาหาร คาเฟ่ และร้านค้าทุกประเภท ช่วยจัดการสต๊อกสินค้า คิดเงินหน้าร้าน และสแกนสั่งซื้อ/สั่งอาหาร ใช้งานง่าย เริ่มต้นฟรี",
   keywords: [
-    "POS", "FoodScan", "Food Scan", "ระบบ POS", "POS System",
-    "POS-FoodScan", "สแกนสั่งอาหาร", "ระบบสแกนสั่งอาหารผ่าน QR Code"
+    "POS", "SuparPOS", "suparpos", "supar pos", "ระบบ POS", "POS System", "ระบบคิดเงิน",
+    "จัดการสต๊อกสินค้า", "ระบบร้านค้าปลีก", "ระบบร้านอาหาร", "ระบบ POS คาเฟ่",
+    "เครื่องคิดเงิน", "สแกนสั่งอาหาร", "ระบบจัดการร้านค้า", "FoodScan",
+    "โปรแกรมขายหน้าร้าน", "ระบบบาร์โค้ด", "โปรแกรมร้านโชห่วย", "โปรแกรมร้านกาแฟ",
+    "โปรแกรมสต๊อกสินค้า", "แอปคิดเงินหน้าร้าน", "ระบบ POS ออนไลน์",
+    "ระบบสั่งอาหารผ่านมือถือ", "สแกนสั่งอาหาร QR Code"
   ],
   openGraph: {
-    title: "POS & FoodScan - ระบบร้านอาหารยุคใหม่",
-    description: "ลดต้นทุนร้านอาหาร พนักงานไม่ต้องจดออเดอร์ เริ่มต้นใช้งานฟรี",
-    url: 'https://pos-foodscan.com',
-    siteName: 'POS-FoodScan',
+    title: "SuparPOS - ระบบจัดการร้านค้า ร้านอาหาร คาเฟ่ และคิดเงินครบวงจร",
+    description: "ระบบ POS สำหรับร้านค้าและร้านอาหารทุกประเภท จัดการสต๊อก ยอดขาย คิดเงินหน้าร้าน สแกนสั่งสินค้า เริ่มต้นใช้งานฟรีกับ SuparPOS",
+    url: 'https://suparpos.com',
+    siteName: 'SuparPOS',
     locale: 'th_TH',
     type: 'website',
     images: [
@@ -29,7 +33,7 @@ export const metadata: Metadata = {
         url: '/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: 'POS FoodScan Preview',
+        alt: 'SuparPOS Preview',
       },
     ],
   },

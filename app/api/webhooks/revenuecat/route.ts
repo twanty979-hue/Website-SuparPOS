@@ -2,6 +2,7 @@
 import dayjs from 'dayjs';
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { sendBrandNotification } from '@/lib/brandNotifications';
 
 type PlanKey = 'basic' | 'pro' | 'ultimate';
 type BillingPeriod = 'monthly' | 'yearly';
@@ -340,6 +341,18 @@ async function applyPlanPurchase(params: {
     })
     .eq('id', brandId);
 
+  try {
+    await sendBrandNotification({
+      brandId,
+      title: 'อัปเกรดแพ็กเกจสำเร็จ! 🎉',
+      message: `ร้านค้าของคุณได้รับการอัปเกรดเป็นแพ็กเกจ ${effectivePlan.toUpperCase()} เรียบร้อยแล้ว`,
+      type: 'PLAN_UPDATED',
+    });
+    console.log(`[RevenueCat] Sent plan update FCM to brand ${brandId}`);
+  } catch (notificationError) {
+    console.error('[RevenueCat] Failed to send FCM on upgrade:', notificationError);
+  }
+
   if (bonusCoins > 0) {
     await supabaseAdmin.from('coin_logs').insert({
       brand_id: brandId,
@@ -354,6 +367,7 @@ async function applyPlanPurchase(params: {
     brand_id: brandId,
     charge_id: chargeId,
     amount,
+    currency: String(event.currency ?? 'thb').toLowerCase(),
     status: 'successful',
     payment_method: event.store ? `revenuecat_${String(event.store).toLowerCase()}` : 'revenuecat',
     type: 'upgrade_plan',
@@ -396,6 +410,7 @@ async function logRevenueCatEvent(
     brand_id: brandId,
     charge_id: chargeId,
     amount,
+    currency: String(event.currency ?? 'thb').toLowerCase(),
     status: eventType === 'BILLING_ISSUE' ? 'failed' : 'pending',
     payment_method: event.store ? `revenuecat_${String(event.store).toLowerCase()}` : 'revenuecat',
     type: 'upgrade_plan',
