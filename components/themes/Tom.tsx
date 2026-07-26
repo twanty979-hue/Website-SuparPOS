@@ -30,16 +30,16 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {(icons as any)[name] || icons.home}
@@ -57,7 +57,7 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart = [], cartTotal = 0, ordersList = []
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -69,9 +69,10 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
 
@@ -80,6 +81,17 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+          if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+            initialOptions[index] = [opt.choices[0]];
+          } else {
+            initialOptions[index] = [];
+          }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -89,12 +101,12 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
   useEffect(() => {
     if (pendingCookNow) {
         if (cart?.length > prevCartLength.current) {
-             handleCheckout(""); 
+             handleCheckout("");
              setPendingCookNow(false);
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(""); 
+                 handleCheckout("");
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -106,53 +118,100 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#fef3c7] flex items-center justify-center text-[#92400e] font-black text-2xl animate-pulse">Chasing...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const basePriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
 
-  // --- 📝 Logic Handlers (100% Preserved) ---
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id, group_name: opt.name,
+          topping_id: choice.id, topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        })))
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const currentPriceObj = selectedProduct
+    ? { ...basePriceObj, final: finalPriceWithOpts, original: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal }
+    : { final: 0, original: 0, discount: 0 };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+      const sc = selectedOptions[index];
+      if (sc && sc.length > 0) optTexts.push(`${opt.name}: ${sc.map((c: any) => c.name).join(', ')}`);
+    });
+    const os = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (os + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+    setSelectedOptions((prev: any) => {
+      const cur = prev[groupIndex] || [];
+      const ck = String(choice.id || choice.name);
+      const req = !!selectedProduct?.options?.[groupIndex]?.required;
+      const sel = cur.some((i: any) => String(i.id || i.name) === ck);
+      if (type === 'single') {
+        if (sel && !req) return { ...prev, [groupIndex]: [] };
+        return { ...prev, [groupIndex]: [choice] };
+      } else {
+        if (sel) return { ...prev, [groupIndex]: cur.filter((i: any) => String(i.id || i.name) !== ck) };
+        return { ...prev, [groupIndex]: [...cur, choice] };
+      }
+    });
+  };
+
+  // --- 📝 Logic Handlers ---
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    
-    // 💥 Force Bind Safety (from previous safe version)
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
-        note: finalNote,
-        specialRequest: finalNote, 
-        comment: finalNote,
-        remark: finalNote
+    if (selectedProduct.options) {
+      for (let i = 0; i < selectedProduct.options.length; i++) {
+        const opt = selectedProduct.options[i];
+        if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+          alert(`กรุณาเลือก: ${opt.name}`); return;
+        }
+      }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+      ...selectedProduct, variant,
+      note: finalNote, specialRequest: finalNote, comment: finalNote, remark: finalNote,
+      price: finalPriceWithOpts, original_price: currentPriceObj.original,
+      toppings_snapshot: selectedToppings,
     };
-
     if (addToCartOnly) {
-        for(let i=0; i<qty; i++) {
-            handleAddToCart(productToAdd, variant, finalNote);
-        }
-        setSelectedProduct(null);
+      for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote);
+      setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) {
-            setShowConfirm(true); 
-        } else {
-            performCookNow();
-        }
+      if (cart && cart.length > 0) setShowConfirm(true);
+      else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
-        note: finalNote,
-        specialRequest: finalNote,
-        comment: finalNote,
-        remark: finalNote
-    };
-    
-    for(let i=0; i<qty; i++) {
-        handleAddToCart(productToAdd, variant, finalNote);
+    if (!selectedProduct) return;
+    if (selectedProduct.options) {
+      for (let i = 0; i < selectedProduct.options.length; i++) {
+        const opt = selectedProduct.options[i];
+        if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+          alert(`กรุณาเลือก: ${opt.name}`); return;
+        }
+      }
     }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+      ...selectedProduct, variant,
+      note: finalNote, specialRequest: finalNote, comment: finalNote, remark: finalNote,
+      price: finalPriceWithOpts, original_price: currentPriceObj.original,
+      toppings_snapshot: selectedToppings,
+    };
+    for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
@@ -164,12 +223,12 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
 
   return (
     // Theme: Tom & Jerry's Kitchen
-    <div className="w-full max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-slate-300 font-sans text-slate-800">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-slate-300 font-sans text-slate-800">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Mali:ital,wght@0,300;0,400;0,600;0,700;1,600&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --tom-gray: #64748b;
                 --tom-dark: #334155;
@@ -183,7 +242,7 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                 font-family: 'Sarabun', sans-serif;
                 background-color: var(--bg-kitchen);
                 /* Cheese Pattern */
-                background-image: 
+                background-image:
                     radial-gradient(circle at 20% 30%, var(--cheese-yellow) 2%, transparent 3%),
                     radial-gradient(circle at 80% 70%, var(--cheese-yellow) 4%, transparent 5%),
                     radial-gradient(circle at 40% 80%, var(--cheese-yellow) 3%, transparent 4%);
@@ -256,9 +315,9 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                 100% { opacity: 1; transform: scale3d(1, 1, 1); }
             }
             .animate-bounce-in { animation: bounceIn 0.8s; }
-            
+
             .page-transition { animation: bounceIn 0.6s; }
-            
+
             @keyframes slideUp {
                 from { transform: translateY(100%); }
                 to { transform: translateY(0); }
@@ -275,7 +334,7 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
         {/* --- Header --- */}
         <header className="bg-slate-500 text-white pt-8 pb-16 px-6 rounded-b-[4rem] relative overflow-hidden shadow-xl z-10 border-b-8 border-slate-700">
              <div className="absolute inset-0 opacity-10" style={{backgroundImage: `repeating-linear-gradient(45deg, #000 0, #000 5px, transparent 5px, transparent 20px)`}}></div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-[#fbbf24] w-fit px-4 py-1 rounded-full border-2 border-[#92400e] shadow-sm transform -rotate-2">
@@ -286,7 +345,7 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                          {brand?.name || "Tom's Kitchen"}
                      </h1>
                  </div>
-                 
+
                  <div className="w-20 h-20 bg-white rounded-full border-4 border-slate-700 flex items-center justify-center relative shadow-lg overflow-hidden group">
                      <div className="absolute bottom-0 w-12 h-14 bg-[#2d1a12]" style={{clipPath: 'ellipse(50% 60% at 50% 100%)'}}></div>
                      <div className="relative z-10 mt-4 text-[#92400e] group-hover:animate-bounce">
@@ -320,8 +379,8 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                              Menu <Icon name="menu" size={16} />
                          </button>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 pb-10">
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -474,13 +533,13 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/90 backdrop-blur-sm animate-fade-in">
-                <div className="w-full max-w-md bg-white border-t-[8px] border-x-[4px] border-slate-700 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[3rem] relative">
-                    <div className="relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-slate-900/90 backdrop-blur-sm animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-[8px] border-x-[4px] border-slate-700 h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col overflow-hidden shadow-2xl rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] relative">
+                    <div className="relative shrink-0">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-slate-800 rounded-full border-4 border-slate-800 flex items-center justify-center hover:bg-red-50 transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-80 overflow-hidden border-b-[6px] border-slate-700 rounded-b-[2.5rem] bg-slate-100">
+                        <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-[6px] border-slate-700 rounded-b-[2.5rem] bg-slate-100">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-6 py-2 bg-[#fbbf24] text-[#92400e] font-black text-3xl cartoon-font rounded-2xl border-4 border-[#92400e] shadow-[6px_6px_0_rgba(0,0,0,0.2)] transform -rotate-3 flex flex-col items-center leading-none">
@@ -493,7 +552,7 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-8 pb-32 relative">
+                    <div className="px-8 pt-8 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl cartoon-font text-slate-800 mb-6 leading-tight drop-shadow-sm">{selectedProduct.name}</h2>
                         <div className="space-y-6">
                             {/* PRICES VARIANT SELECTOR */}
@@ -505,8 +564,8 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'BIG', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'HUGE', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-2xl border-4 transition-all flex flex-col items-center justify-between h-28 cartoon-font ${variant === v.key ? 'bg-slate-700 border-slate-800 shadow-[4px_4px_0_#000] -translate-y-1 text-white' : 'bg-white border-slate-200 text-slate-400 hover:border-[#fbbf24] hover:text-[#d97706]'}`}
                                         >
@@ -520,6 +579,39 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                              <div className="space-y-4">
+                                {selectedProduct.options.map((opt: any, index: number) => (
+                                  <div key={index} className="bg-white border-4 border-amber-200 rounded-2xl p-4 shadow-sm">
+                                    <div className="flex justify-between items-center mb-3">
+                                      <label className="text-lg font-bold text-slate-800">{opt.name}{opt.required && <span className="text-red-500 ml-2 text-sm">*</span>}</label>
+                                      <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md">{opt.type === 'single' ? 'เลือก 1' : 'เลือกได้หลายอย่าง'}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {opt.choices.map((choice: any, cIndex: number) => {
+                                        const ck = String(choice.id || choice.name);
+                                        const isSel = (selectedOptions[index] || []).some((i: any) => String(i.id || i.name) === ck);
+                                        return (
+                                          <div key={cIndex} onClick={() => handleOptionToggle(index, choice, opt.type)}
+                                            className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${isSel ? 'bg-amber-50 border-amber-500 text-slate-800 shadow-sm -translate-y-0.5' : 'bg-white border-gray-200 text-gray-500 hover:border-amber-300'}`}>
+                                            <div className="flex items-center gap-3">
+                                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSel ? 'bg-amber-500 border-amber-600 text-white' : 'bg-gray-50 border-gray-300'}`}>
+                                                {isSel && <Icon name="check" size={14} />}
+                                              </div>
+                                              {(choice.image_url || choice.image_name) && <img src={choice.image_url || getMenuUrl(choice.image_name)} alt={choice.name} className="w-10 h-10 object-cover rounded-lg border" />}
+                                              <span className="font-bold text-base">{choice.name}</span>
+                                            </div>
+                                            {Number(choice.price) > 0 && <span className={`font-black text-base ${isSel ? 'text-amber-700' : 'text-amber-400'}`}>+{Number(choice.price)}.-</span>}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
 
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 mt-2">
@@ -539,11 +631,10 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                                 <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notes for the chef (Keep it quiet!)..." className="w-full p-6 bg-white border-4 border-slate-700 rounded-[2rem] focus:border-[#fbbf24] focus:outline-none h-36 resize-none text-xl font-bold text-slate-800 placeholder:text-slate-300 transition-colors shadow-inner cartoon-font" />
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-5 mt-8">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-slate-800 text-slate-800 font-black text-xl rounded-2xl active:scale-95 transition-all shadow-[6px_6px_0_#fbbf24] cartoon-font">Stash It</button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-cheese text-2xl active:scale-95 transition-all flex items-center justify-center gap-2">EAT! <Icon name="star" size={24} /></button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-4 border-slate-700 grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-slate-800 text-slate-800 font-black text-xl rounded-2xl active:scale-95 transition-all shadow-[6px_6px_0_#fbbf24] cartoon-font">Stash It</button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-cheese text-2xl active:scale-95 transition-all flex items-center justify-center gap-2">EAT! <Icon name="star" size={24} /></button>
                     </div>
                 </div>
             </div>
@@ -553,28 +644,28 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
         {activeTab === 'cart' && (
             <>
                 {/* Overlay */}
-                <div 
-                    id="orderSummaryOverlay" 
-                    className="fixed inset-0 bg-slate-900/80 z-[130] backdrop-blur-sm animate-fade-in block" 
+                <div
+                    id="orderSummaryOverlay"
+                    className="fixed inset-0 bg-slate-900/80 z-[130] backdrop-blur-sm animate-fade-in block"
                     onClick={() => setActiveTab('menu')}
                 ></div>
-                
+
                 {/* Modal Sheet */}
-                <div 
-                    id="orderSummary" 
-                    className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t-[8px] border-slate-700 z-[140] flex flex-col shadow-[0_-20px_60px_rgba(0,0,0,0.3)] h-[90vh] rounded-t-[3.5rem] animate-slide-up"
+                <div
+                    id="orderSummary"
+                    className="fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-[8px] border-slate-700 z-[140] flex flex-col shadow-[0_-20px_60px_rgba(0,0,0,0.3)] h-[90vh] md:h-[85vh] xl:h-[90vh] rounded-t-[3.5rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3.5rem] animate-slide-up"
                 >
                     <div className="sticky top-0 bg-white z-20 rounded-t-[3.5rem] border-b-4 border-slate-50 p-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                         <div className="w-24 h-2 bg-slate-200 rounded-full mx-auto mt-2"></div>
                     </div>
-                    
+
                     <div className="flex justify-between items-center mb-6 px-10 pt-6">
                         <h2 className="text-4xl cartoon-font text-slate-800 transform -rotate-1">Mouse Hole Stash</h2>
                         <div className="w-14 h-14 bg-[#fbbf24] text-[#92400e] border-4 border-slate-800 rounded-2xl flex items-center justify-center font-black text-2xl cartoon-font shadow-[4px_4px_0_#92400e]">
                             <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
                         </div>
                     </div>
-                    
+
                     <div className="flex-1 overflow-y-auto space-y-5 px-8 pb-8 no-scrollbar">
                         {cart.map((item: any, idx: any) => (
                             <div key={idx} className="flex items-center gap-4 bg-white p-4 border-4 border-slate-200 rounded-[2rem] shadow-sm relative overflow-hidden hover:shadow-md hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
@@ -632,7 +723,7 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-[#fbbf24] text-white rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-[#92400e] shadow-lg relative z-10">
                         <Icon name="clock" size={60} className="animate-pulse" />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-4xl cartoon-font text-slate-800 mb-4 leading-tight relative z-10">Hold It!</h3>

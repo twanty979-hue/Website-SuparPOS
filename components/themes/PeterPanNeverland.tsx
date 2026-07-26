@@ -4,24 +4,24 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Treehouse
-    home: <path d="M2 22 12 2l10 20H2zM12 6v4M10 14h4" />, 
+    home: <path d="M2 22 12 2l10 20H2zM12 6v4M10 14h4" />,
     // Menu -> Treasure Map / Scroll
-    menu: <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Leaf Bundle
     basket: <path d="M2 12h20 M12 2v10 M12 12l-6 10 M12 12l6 10" />,
     // Clock -> Tic-Toc Croc (Clock face)
     clock: <circle cx="12" cy="12" r="10" strokeWidth="3" />,
     // Chef -> Peter's Hat with Feather
-    chef: <path d="M3 20l9-16 9 16H3z M12 4l6 4" />, 
+    chef: <path d="M3 20l9-16 9 16H3z M12 4l6 4" />,
     plus: <path d="M5 12h14M12 5v14" />,
     minus: <path d="M5 12h14" />,
     x: <path d="M18 6 6 18M6 6l12 12" />,
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Pixie Dust / Sparkles
-    flame: <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" />, 
-    
+    flame: <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" />,
+
     // Specifics
     feather: <path d="M19 13c-1.5-3-4-6-9-6s-6 2-5 6c2 1 5 3 9 3s5-1 5-3z M10 7v10" />,
     star: <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z" />,
@@ -29,18 +29,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -56,7 +56,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -68,17 +68,30 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -93,7 +106,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -105,35 +118,136 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#f0fdf4] flex items-center justify-center text-[#14532d] font-black text-2xl animate-fly">FLYING TO NEVERLAND...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const basePriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+  const originalPriceWithOpts = (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal;
+
+  const currentPriceObj = {
+    final: finalPriceWithOpts,
+    original: originalPriceWithOpts,
+    discount: basePriceObj.discount
+  };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
     if (addToCartOnly) {
-        for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+        const finalNote = generateOptionNote();
+        const productToAdd = {
+            ...selectedProduct,
+            variant: variant,
+            note: finalNote,
+            specialRequest: finalNote,
+            comment: finalNote,
+            remark: finalNote,
+            price: finalPriceWithOpts,
+            original_price: originalPriceWithOpts,
+            toppings_snapshot: selectedToppings,
+        };
+        for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: originalPriceWithOpts,
+        toppings_snapshot: selectedToppings,
+    };
+    for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
 
   return (
     // Theme: Peter Pan - Neverland System
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#14532d]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#14532d]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Itim&family=Mali:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --peter-green: #22c55e;
                 --forest-deep: #14532d;
@@ -148,7 +262,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Itim', 'Sarabun', sans-serif;
                 background-color: var(--bg-neverland);
                 /* Starry Sky & Leaf Pattern */
-                background-image: 
+                background-image:
                     radial-gradient(circle at 10% 20%, rgba(250, 204, 21, 0.1) 2px, transparent 3px),
                     radial-gradient(circle at 80% 80%, rgba(250, 204, 21, 0.1) 2px, transparent 3px),
                     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 2L22 18L38 20L22 22L20 38L18 22L2 20L18 18L20 2Z' fill='%23facc15' fill-opacity='0.03'/%3E%3C/svg%3E");
@@ -244,7 +358,7 @@ export default function App({ state, actions, helpers }: any) {
              <div className="absolute top-4 right-10 text-[#facc15] text-4xl animate-sparkle">
                 <Icon name="star" size={32} />
              </div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-[#ffffff]/10 w-fit px-4 py-1.5 rounded-full border border-[#22c55e] transform -rotate-1">
@@ -266,7 +380,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-fade-in">
@@ -274,9 +388,9 @@ export default function App({ state, actions, helpers }: any) {
                     {banners?.length > 0 && (
                         <div className="relative w-full h-56 bg-white rounded-[2rem] overflow-hidden shadow-xl mb-10 border-4 border-[#dcfce7] p-2 group animate-image-pop">
                              <div className="h-full w-full rounded-[1.5rem] overflow-hidden bg-[#f0fdf4] relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                  />
                              </div>
                              <div className="absolute bottom-4 right-4 bg-[#22c55e] text-white px-5 py-2 rounded-full border-2 border-white shadow-lg transform rotate-[-2deg]">
@@ -295,7 +409,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -346,7 +460,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2 px-1 animate-image-pop">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-lg font-bold adventure-font ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -400,7 +514,7 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="space-y-6">
                         {ordersList?.map((o: any) => (
                             <div key={o.id} className="bg-white p-6 border-2 border-[#bbf7d0] rounded-[2.5rem] shadow-sm relative overflow-hidden">
-                                
+
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-4">
                                      <span className="text-xs text-[#15803d] font-bold uppercase tracking-widest flex items-center gap-1">
@@ -419,18 +533,18 @@ export default function App({ state, actions, helpers }: any) {
                                         const quantity = i.quantity || 1;
                                         const finalPriceTotal = i.price * quantity;
                                         const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                                        const originalPriceTotal = hasDiscount 
-                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+                                        const originalPriceTotal = hasDiscount
+                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                             : finalPriceTotal;
                                         const discountAmount = originalPriceTotal - finalPriceTotal;
 
                                         return (
                                             <div key={idx} className="flex justify-between items-start text-sm text-[#14532d] font-bold border-b border-dashed border-[#86efac] pb-2 last:border-0 adventure-font">
-                                                
+
                                                 {/* Left Info */}
                                                 <div className="flex flex-col items-start pr-2">
                                                     <span className="leading-tight text-base">{quantity}x {i.product_name}</span>
-                                                    
+
                                                     {/* Variant Badge (Neverland Style) */}
                                                     {i.variant !== 'normal' && (
                                                         <span className={`text-[10px] bg-[#15803d] text-white px-2 py-0.5 rounded-sm border border-[#22c55e] font-sans font-bold mt-1 shadow-sm uppercase tracking-wider transform -rotate-1`}>
@@ -519,13 +633,13 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Forest Panel - FIXED 3 PRICES) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#0f172a]/70 backdrop-blur-md animate-fade-in">
-                <div className="w-full max-w-md bg-white border-t-8 border-[#22c55e] h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[4rem] relative animate-image-pop">
-                    <div className="relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#0f172a]/70 backdrop-blur-md animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-8 border-[#22c55e] h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col shadow-2xl rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem] relative animate-image-pop">
+                    <div className="relative shrink-0">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-[#15803d] rounded-full border-2 border-[#22c55e] flex items-center justify-center hover:bg-[#dcfce7] transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-85 overflow-hidden border-b-4 border-[#bbf7d0] rounded-b-[3.5rem] bg-white">
+                        <div className="relative shrink-0 w-full h-64 md:h-52 xl:h-64 overflow-hidden border-b-4 border-[#bbf7d0] rounded-b-[3.5rem] bg-white">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-[#15803d] text-white font-black text-3xl adventure-font rounded-full border-4 border-[#dcfce7] shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
@@ -540,11 +654,11 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl adventure-font text-[#14532d] mb-6 leading-tight drop-shadow-sm uppercase tracking-wider">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
-                            
+
                             {/* ✅ FIXED: 3 Variants Grid (LOST BOY/CAPTAIN/PAN) */}
                             <div>
                                 <label className="block text-lg font-bold text-[#15803d] mb-3 adventure-font ml-1 tracking-wide">CHOOSE RANK:</label>
@@ -554,12 +668,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'CAPTAIN', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'PAN', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-2xl border-4 transition-all flex flex-col items-center justify-between h-24 adventure-font
-                                                ${variant === v.key 
-                                                    ? 'bg-[#dcfce7] border-[#15803d] shadow-[3px_3px_0_#14532d] -translate-y-1 text-[#15803d]' 
+                                                ${variant === v.key
+                                                    ? 'bg-[#dcfce7] border-[#15803d] shadow-[3px_3px_0_#14532d] -translate-y-1 text-[#15803d]'
                                                     : 'bg-white border-[#86efac] text-[#86efac] hover:border-[#22c55e] hover:text-[#22c55e]'}`}
                                         >
                                             <span className="text-[10px] font-black tracking-widest uppercase">{v.label}</span>
@@ -587,25 +701,75 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
+                            {/* Product Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="space-y-6">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => {
+                                        const selectedChoices = selectedOptions[groupIndex] || [];
+                                        return (
+                                            <div key={groupIndex} className="bg-white p-5 border-4 border-[#bbf7d0] rounded-[2.5rem] shadow-md relative overflow-hidden">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <label className="text-lg font-bold text-[#14532d] adventure-font tracking-wide">
+                                                        {opt.name}
+                                                        {opt.required && <span className="text-[#ef4444] ml-1">*</span>}
+                                                    </label>
+                                                    <span className="text-xs bg-[#dcfce7] text-[#15803d] px-3 py-1 rounded-full font-bold uppercase tracking-wider border border-[#bbf7d0]">
+                                                        {opt.type === 'single' ? 'Pick 1' : 'Multi'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {opt.choices.map((choice: any) => {
+                                                        const isSelected = selectedChoices.some((item: any) => String(item.id || item.name) === String(choice.id || choice.name));
+                                                        const hasImage = choice.image_url || choice.image_name;
+                                                        return (
+                                                            <button
+                                                                key={choice.id || choice.name}
+                                                                type="button"
+                                                                onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                                className={`p-3 rounded-2xl border-4 transition-all flex flex-col items-center justify-between text-center min-h-[90px] relative
+                                                                    ${isSelected
+                                                                        ? 'bg-[#dcfce7] border-[#15803d] shadow-[3px_3px_0_#14532d] -translate-y-1 text-[#15803d]'
+                                                                        : 'bg-white border-[#86efac] text-[#86efac] hover:border-[#22c55e] hover:text-[#22c55e]'}`}
+                                                            >
+                                                                {hasImage && (
+                                                                    <div className="w-14 h-14 rounded-xl overflow-hidden mb-2 border border-[#bbf7d0] bg-[#f0fdf4] shrink-0">
+                                                                        <img src={getMenuUrl(choice.image_url || choice.image_name)} className="w-full h-full object-cover" alt={choice.name} />
+                                                                    </div>
+                                                                )}
+                                                                <span className="text-sm font-bold adventure-font leading-tight">{choice.name}</span>
+                                                                <span className="text-xs font-black mt-1">
+                                                                    {Number(choice.price || 0) > 0 ? `+${choice.price}.-` : 'Free'}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             {/* 📝 Note Input */}
                             <div className="relative">
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Leave a note on the map..." 
+                                    placeholder="Leave a note on the map..."
                                     className="w-full p-6 bg-[#f0fdf4] border-4 border-white rounded-[2.5rem] focus:border-[#86efac] focus:outline-none h-36 resize-none text-xl font-bold text-[#14532d] placeholder:text-[#86efac] transition-colors shadow-inner adventure-font"
                                 />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-[#bbf7d0] text-[#15803d] font-black text-xl rounded-full active:scale-95 transition-all shadow-md adventure-font">
-                                Stash Loot
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-adventure text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 adventure-font tracking-widest">
-                                FLY! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-4 border-[#bbf7d0] grid grid-cols-2 gap-5 z-30 rounded-b-[4rem] md:rounded-b-2xl xl:rounded-b-none">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-[#bbf7d0] text-[#15803d] font-black text-xl rounded-full active:scale-95 transition-all shadow-md adventure-font">
+                            Stash Loot
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-adventure text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 adventure-font tracking-widest">
+                            FLY! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -613,18 +777,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ORDER SUMMARY MODAL --- */}
         <div id="orderSummaryOverlay" className={`fixed inset-0 bg-[#0f172a]/60 z-[130] backdrop-blur-sm animate-fade-in ${activeTab === 'cart' ? 'block' : 'hidden'}`} onClick={() => setActiveTab('menu')}></div>
-        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t-[10px] border-[#15803d] z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-[10px] border-[#15803d] z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="sticky top-0 bg-white z-20 rounded-t-[4rem] border-b-4 border-[#f0fdf4] p-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                 <div className="w-24 h-1.5 bg-[#bbf7d0] rounded-full mx-auto mt-2 opacity-50"></div>
             </div>
-            
+
             <div className="flex justify-between items-center mb-6 px-10 pt-8">
                 <h2 className="text-4xl adventure-font text-[#14532d] transform -rotate-1 tracking-widest italic">Treasure Stash</h2>
                 <div className="w-14 h-14 bg-[#dcfce7] text-[#15803d] border-4 border-white rounded-2xl flex items-center justify-center font-black text-2xl shadow-sm">
                     <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
                 </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto space-y-6 px-8 pb-10 no-scrollbar">
                 {cart.map((item: any, idx: any) => (
                     <div key={idx} className="flex items-center gap-4 bg-white p-4 border-3 border-[#bbf7d0] rounded-[2rem] shadow-sm relative overflow-hidden hover:shadow-md transition-shadow">
@@ -678,18 +842,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-[#f0fdf4] text-[#15803d] rounded-full flex items-center justify-center mx-auto mb-8 border border-[#bbf7d0] shadow-lg relative z-10 animate-fly">
                         <Icon name="flame" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-3xl adventure-font text-[#14532d] mb-4 leading-tight relative z-10 uppercase tracking-widest">Take Flight?</h3>
                             <p className="text-lg text-[#15803d] mb-10 font-bold adventure-font relative z-10">Add "{selectedProduct.name}" and fly?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-[#15803d] text-white font-black border border-white shadow-xl active:scale-95 transition-all text-xl adventure-font uppercase tracking-widest rounded-2xl">YES! SECOND STAR TO THE RIGHT!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-white border-4 border-[#bbf7d0] text-[#15803d] font-black text-lg active:scale-95 transition-transform hover:bg-[#f0fdf4] adventure-font rounded-full uppercase">Just Stash</button>

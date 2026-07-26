@@ -4,16 +4,16 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Tent
-    home: <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2ZM12 3v18M3 12h18" />, 
+    home: <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2ZM12 3v18M3 12h18" />,
     // Menu -> Map
-    menu: <path d="M3 6h18M3 12h18M3 18h18" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M3 6h18M3 12h18M3 18h18" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Backpack
     basket: <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2 M9 14h6" />,
     // Clock -> Compass
     clock: <circle cx="12" cy="12" r="10" />,
     // Chef -> Scout Hat
-    chef: <path d="M2 12h20 M12 4v8 M7 12l5-8 5 8" />, 
+    chef: <path d="M2 12h20 M12 4v8 M7 12l5-8 5 8" />,
     star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />,
     plus: <path d="M5 12h14M12 5v14" />,
     minus: <path d="M5 12h14" />,
@@ -26,18 +26,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -54,7 +54,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -71,14 +71,48 @@ export default function App({ state, actions, helpers }: any) {
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   // --- 🔥 AUTO-CHECKOUT LOGIC ---
   const prevCartLength = useRef(cart?.length || 0);
@@ -91,7 +125,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -103,30 +137,93 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#DCEDC8]" />;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const currentPriceObj = { ...basePriceObj, final: basePriceObj.final + toppingTotal };
+  const finalPriceWithOpts = currentPriceObj.final;
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
 
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+
     if (addToCartOnly) {
         for(let i=0; i<qty; i++) {
-            handleAddToCart(selectedProduct, variant, note);
+            handleAddToCart(productToAdd, variant, finalNote);
         }
         setSelectedProduct(null);
     } else {
         if (cart && cart.length > 0) {
-            setShowConfirm(true); 
+            setShowConfirm(true);
         } else {
-            performCookNow();
+            performCookNow(productToAdd, finalNote);
         }
     }
   };
 
-  const performCookNow = () => {
+  const performCookNow = (prod?: any, pNote?: string) => {
+    const productToAdd = prod || {
+        ...selectedProduct,
+        variant: variant,
+        note: generateOptionNote(),
+        specialRequest: generateOptionNote(),
+        comment: generateOptionNote(),
+        remark: generateOptionNote(),
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+    const finalNote = pNote || generateOptionNote();
+
     for(let i=0; i<qty; i++) {
-        handleAddToCart(selectedProduct, variant, note);
+        handleAddToCart(productToAdd, variant, finalNote);
     }
     setPendingCookNow(true);
     setSelectedProduct(null);
@@ -134,11 +231,11 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Camp Lazlo (Bean Scouts)
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#1B5E20]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#1B5E20]">
+
         <style jsx global>{`
             @import url('https://fonts.googleapis.com/css2?family=Mali:ital,wght@0,300;0,400;0,600;0,700;1,600&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --primary: #558B2F; /* Bean Scout Green */
                 --primary-light: #C5E1A5;
@@ -151,7 +248,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Sarabun', sans-serif;
                 background-color: #DCEDC8; /* Light Green Bg */
                 /* --- 🌲 WOOD/NATURE PATTERN --- */
-                background-image: 
+                background-image:
                     radial-gradient(#AED581 15%, transparent 16%),
                     radial-gradient(#AED581 15%, transparent 16%);
                 background-position: 0 0, 20px 20px;
@@ -222,12 +319,12 @@ export default function App({ state, actions, helpers }: any) {
         {/* --- Header (Scout Style) --- */}
         <header className="bg-[#558B2F] text-white pt-8 pb-16 px-6 rounded-b-[3rem] relative overflow-hidden shadow-xl z-10 border-b-4 border-[#3E2723]">
              {/* Pattern on header */}
-             <div className="absolute inset-0 opacity-10 pointer-events-none" 
+             <div className="absolute inset-0 opacity-10 pointer-events-none"
                   style={{
-                      backgroundImage: `repeating-linear-gradient(45deg, #33691E 25%, transparent 25%, transparent 75%, #33691E 75%, #33691E), 
+                      backgroundImage: `repeating-linear-gradient(45deg, #33691E 25%, transparent 25%, transparent 75%, #33691E 75%, #33691E),
                                         repeating-linear-gradient(45deg, #33691E 25%, #fff 25%, #fff 75%, #33691E 75%, #33691E)`,
                       backgroundSize: '40px 40px'
-                  }} 
+                  }}
              />
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
@@ -250,7 +347,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-jelly">
@@ -276,7 +373,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -326,7 +423,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-6 py-3 text-lg font-bold rounded-2xl cartoon-font flex items-center gap-2 ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -379,7 +476,7 @@ export default function App({ state, actions, helpers }: any) {
         <div className="space-y-4">
             {ordersList?.map((o: any) => (
                 <div key={o.id} className="bg-[#FFF8E1] p-5 border-4 border-[#3E2723] rounded-[2rem] relative overflow-hidden shadow-[6px_6px_0_#AED581]">
-                    
+
                     {/* Header: Order ID & Status */}
                     <div className="flex justify-between items-start mb-4">
                          <span className="text-xs text-[#558B2F] font-black uppercase tracking-widest flex items-center gap-1 font-bold">
@@ -397,22 +494,22 @@ export default function App({ state, actions, helpers }: any) {
                             // ✅ LOGIC: คำนวณราคาและส่วนลด
                             const quantity = i.quantity || 1;
                             const finalPriceTotal = i.price * quantity;
-                            
+
                             const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                            
-                            const originalPriceTotal = hasDiscount 
-                                ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+
+                            const originalPriceTotal = hasDiscount
+                                ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                 : finalPriceTotal;
-                                
+
                             const discountAmount = originalPriceTotal - finalPriceTotal;
 
                             return (
                                 <div key={idx} className="flex justify-between items-start text-sm text-[#33691E] font-bold mb-2 border-b-2 border-dashed border-[#C5E1A5] pb-2 last:border-0 cartoon-font">
-                                    
+
                                     {/* Left: Info */}
                                     <div className="flex flex-col items-start pr-2">
                                         <span className="leading-tight text-base">{quantity}x {i.product_name}</span>
-                                        
+
                                         {/* Variant Badge (Scout Badge Style) */}
                                         {i.variant !== 'normal' && (
                                             <span className={`text-[10px] bg-[#558B2F] text-white px-2 py-0.5 rounded-sm border border-[#3E2723] font-sans font-bold mt-1 shadow-sm uppercase tracking-wider transform -rotate-1`}>
@@ -462,7 +559,7 @@ export default function App({ state, actions, helpers }: any) {
                     </div>
                 </div>
             ))}
-            
+
             {/* Empty State */}
             {(!ordersList || ordersList.length === 0) && (
                  <div className="text-center py-12 opacity-50">
@@ -513,13 +610,13 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Recipe Card) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#3E2723]/60 backdrop-blur-sm animate-in fade-in duration-300">
-                <div className="w-full max-w-md bg-[#FFF8E1] border-t-4 border-x-4 border-[#3E2723] h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#3E2723]/60 backdrop-blur-sm animate-in fade-in duration-300">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-[#FFF8E1] border-t-4 border-x-4 border-[#3E2723] max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] shadow-2xl rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-in slide-in-from-bottom duration-300 flex flex-col overflow-hidden">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-[#FFF8E1] text-[#3E2723] rounded-full border-4 border-[#3E2723] flex items-center justify-center hover:bg-[#DCEDC8] transition-colors shadow-[2px_2px_0_#3E2723] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
                             <Icon name="x" />
                         </button>
-                        <div className="relative w-full h-72 overflow-hidden border-b-4 border-[#3E2723] rounded-b-[2rem] bg-[#DCEDC8]">
+                        <div className="relative w-full h-56 sm:h-64 md:h-52 xl:h-72 shrink-0 overflow-hidden border-b-4 border-[#3E2723] rounded-b-[2rem] bg-[#DCEDC8]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#FFD600] text-[#3E2723] font-black text-2xl cartoon-font rounded-xl border-4 border-[#3E2723] shadow-[4px_4px_0_#3E2723] transform -rotate-3 flex flex-col items-center leading-none">
@@ -534,9 +631,9 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-8 pb-32" style={{backgroundImage: 'radial-gradient(#AED581 20%, transparent 20%)', backgroundSize: '20px 20px', backgroundPosition: '0 0'}}>
+                    <div className="flex-1 overflow-y-auto no-scrollbar px-8 pt-8 pb-6" style={{backgroundImage: 'radial-gradient(#AED581 20%, transparent 20%)', backgroundSize: '20px 20px', backgroundPosition: '0 0'}}>
                         <h2 className="text-3xl font-black text-[#3E2723] mb-6 leading-tight cartoon-font transform rotate-1">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-5">
                             {/* --- 🏷️ VARIANT SELECTOR (3 PRICES) --- */}
                             <div>
@@ -547,12 +644,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'SPECIAL', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'JUMBO', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-xl border-4 transition-all flex flex-col items-center justify-between h-24 cartoon-font
-                                                ${variant === v.key 
-                                                    ? 'bg-[#FFECB3] border-[#FF6F00] shadow-[3px_3px_0_#3E2723] -translate-y-1 text-[#3E2723]' 
+                                                ${variant === v.key
+                                                    ? 'bg-[#FFECB3] border-[#FF6F00] shadow-[3px_3px_0_#3E2723] -translate-y-1 text-[#3E2723]'
                                                     : 'bg-white border-[#C5E1A5] text-[#9CCC65] hover:border-[#558B2F] hover:text-[#558B2F]'}`}
                                         >
                                             <span className="text-xs font-black tracking-widest">{v.label}</span>
@@ -580,14 +677,66 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
+                            {/* --- 🌟 PRODUCT OPTIONS --- */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="space-y-4 mb-4">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => (
+                                        <div key={groupIndex} className="bg-white/80 backdrop-blur rounded-2xl p-4 border-2 border-[#C5E1A5]">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <label className="block text-lg font-bold text-[#33691E] cartoon-font ml-1 tracking-wide">
+                                                    {opt.name}
+                                                    {opt.required && <span className="text-[#D32F2F] ml-1">*</span>}
+                                                </label>
+                                                <span className="text-xs bg-[#DCEDC8] text-[#558B2F] px-2 py-1 rounded-lg font-bold border border-[#AED581]">
+                                                    {opt.type === 'single' ? 'Pick 1' : 'Pick multiple'}
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {opt.choices.map((choice: any, choiceIdx: number) => {
+                                                    const isSelected = (selectedOptions[groupIndex] || []).some((item: any) => String(item.id || item.name) === String(choice.id || choice.name));
+                                                    return (
+                                                        <div
+                                                            key={choiceIdx}
+                                                            onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                            className={`flex items-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                                                                isSelected
+                                                                    ? 'bg-[#FFECB3] border-[#FF6F00] shadow-[2px_2px_0_#3E2723] transform -translate-y-[1px]'
+                                                                    : 'bg-white border-[#C5E1A5] hover:border-[#558B2F]'
+                                                            }`}
+                                                        >
+                                                            <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center border-2 mr-3 ${opt.type === 'single' ? 'rounded-full' : 'rounded-md'} ${
+                                                                isSelected ? 'border-[#FF6F00] bg-[#FF6F00]' : 'border-[#C5E1A5] bg-white'
+                                                            }`}>
+                                                                {isSelected && <Icon name="check" size={12} className="text-white" />}
+                                                            </div>
+                                                            {(choice.image_url || choice.image_name) && (
+                                                                <img src={choice.image_url || getMenuUrl(choice.image_name)} alt={choice.name} className="w-10 h-10 object-cover rounded-lg border border-[#C5E1A5] mr-3" />
+                                                            )}
+                                                            <div className="flex-1 text-[#3E2723] font-bold cartoon-font text-sm">
+                                                                {choice.name}
+                                                            </div>
+                                                            {Number(choice.price) > 0 && (
+                                                                <div className="text-[#FF6F00] font-black cartoon-font text-sm">
+                                                                    +{Number(choice.price)}.-
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* 📝 Note Input */}
                             <div className="relative">
                                 <label className="block text-sm font-bold text-[#33691E] mb-2 cartoon-font ml-1">Message to Chef:</label>
                                 <div className="relative">
-                                    <textarea 
+                                    <textarea
                                         value={note}
                                         onChange={(e) => setNote(e.target.value)}
-                                        placeholder="E.g., No spicy, Extra sauce..." 
+                                        placeholder="E.g., No spicy, Extra sauce..."
                                         className="w-full p-4 pl-12 bg-white border-4 border-[#C5E1A5] rounded-2xl font-bold text-[#3E2723] placeholder:text-[#9CCC65] focus:outline-none focus:border-[#558B2F] focus:shadow-[0_0_0_4px_#DCEDC8] transition-all cartoon-font resize-none h-24 shadow-inner"
                                     />
                                     <div className="absolute top-4 left-4 text-[#9CCC65]">
@@ -596,15 +745,14 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4 mt-8">
-                            <button onClick={() => handleAdd(true)} className="py-4 bg-white border-4 border-[#3E2723] text-[#3E2723] font-black text-lg rounded-xl active:scale-95 transition-all shadow-[4px_4px_0_#ccc] cartoon-font">
-                                Add to Pot
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 btn-theme text-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                                COOK NOW! <Icon name="flame" />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-[#FFF8E1] border-t-4 border-[#3E2723] grid grid-cols-2 gap-4 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-4 bg-white border-4 border-[#3E2723] text-[#3E2723] font-black text-lg rounded-xl active:scale-95 transition-all shadow-[4px_4px_0_#ccc] cartoon-font">
+                            Add to Pot
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 btn-theme text-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                            COOK NOW! <Icon name="flame" />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -613,7 +761,7 @@ export default function App({ state, actions, helpers }: any) {
         {/* --- CART SHEET (Tray) --- */}
         {activeTab === 'cart' && (
              <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#3E2723]/60 backdrop-blur-sm animate-in fade-in duration-300">
-                 <div className="w-full max-w-md bg-[#FFF8E1] border-t-4 border-[#3E2723] flex flex-col shadow-[0_-20px_60px_rgba(62,39,35,0.3)] h-[85vh] rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
+                 <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#FFF8E1] border-t-4 border-[#3E2723] flex flex-col shadow-[0_-20px_60px_rgba(62,39,35,0.3)] h-[85vh] md:h-[80vh] xl:h-[85vh] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
                      <div className="w-full py-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                          <div className="w-20 h-2 bg-[#3E2723] rounded-full mx-auto opacity-20" />
                      </div>
@@ -675,18 +823,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-24 h-24 bg-[#DCEDC8] text-[#33691E] rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#3E2723]">
                         <Icon name="basket" size={48} className="animate-bounce" />
                     </div>
-                    
+
                     {selectedProduct ? (
                         <>
                             <h3 className="text-3xl font-black text-[#3E2723] mb-2 leading-tight cartoon-font">Tray not empty!</h3>
                             <p className="text-lg text-[#558B2F] mb-8 font-bold cartoon-font">Order {selectedProduct.name} together with tray items?</p>
                             <div className="flex flex-col gap-3">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-4 bg-[#558B2F] text-white font-black border-4 border-[#3E2723] shadow-[4px_4px_0_#3E2723] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all text-lg cartoon-font rounded-xl">YES, ORDER ALL!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-4 bg-white border-4 border-gray-300 text-gray-400 font-black text-sm active:scale-95 transition-transform hover:bg-gray-50 cartoon-font rounded-xl">NO, JUST ADD TO POT</button>

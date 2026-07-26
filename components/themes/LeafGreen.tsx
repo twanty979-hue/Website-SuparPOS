@@ -53,18 +53,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -78,7 +78,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -90,17 +90,31 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
+    } else {
+      setSelectedOptions({});
     }
   }, [selectedProduct]);
 
@@ -110,12 +124,12 @@ export default function App({ state, actions, helpers }: any) {
   useEffect(() => {
     if (pendingCookNow) {
         if (cart?.length > prevCartLength.current) {
-             handleCheckout(""); 
+             handleCheckout("");
              setPendingCookNow(false);
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(""); 
+                 handleCheckout("");
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -127,25 +141,94 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#f0fdf4] flex items-center justify-center text-[#166534] font-bold text-xl">Loading Freshness...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
+
+  const getChoiceImageUrl = (choice: any) => {
+    const src = choice.image_url || choice.image_name;
+    if (!src) return null;
+    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
+        return src;
+    }
+    return getMenuUrl(src);
+  };
 
   // --- 📝 Robust Data Passing ---
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    const pricing = calculatePrice(selectedProduct, variant);
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
-        specialRequest: finalNote, 
+        specialRequest: finalNote,
         comment: finalNote,
         remark: finalNote,
-        price: pricing.final,
-        original_price: pricing.original_value || pricing.final + pricing.discount 
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original_value || basePriceObj.final + (basePriceObj.discount || 0)) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
 
     if (addToCartOnly) {
@@ -154,28 +237,41 @@ export default function App({ state, actions, helpers }: any) {
         }
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
-        else performCookNow();
+        if (cart && cart.length > 0) setShowConfirm(true);
+        else performCookNow(productToAdd, finalNote);
     }
   };
 
-  const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const pricing = calculatePrice(selectedProduct, variant);
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
-        note: finalNote,
-        specialRequest: finalNote,
-        comment: finalNote,
-        remark: finalNote,
-        price: pricing.final,
-        original_price: pricing.original_value || pricing.final + pricing.discount 
-    };
-    
+  const performCookNow = (prodObj = selectedProduct, nNote = note) => {
+    let finalObj = prodObj;
+    let finalNote = nNote;
+
+    if (!finalObj || finalObj === selectedProduct) {
+        if (selectedProduct.options) {
+            for (let i = 0; i < selectedProduct.options.length; i++) {
+                const opt = selectedProduct.options[i];
+                if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                    alert(`กรุณาเลือก: ${opt.name}`);
+                    return;
+                }
+            }
+        }
+        finalNote = generateOptionNote();
+        finalObj = {
+            ...selectedProduct,
+            variant: variant,
+            note: finalNote,
+            specialRequest: finalNote,
+            comment: finalNote,
+            remark: finalNote,
+            price: finalPriceWithOpts,
+            original_price: (basePriceObj.original_value || basePriceObj.final + (basePriceObj.discount || 0)) + toppingTotal,
+            toppings_snapshot: selectedToppings,
+        };
+    }
+
     for(let i=0; i<qty; i++) {
-        handleAddToCart(productToAdd, variant, finalNote);
+        handleAddToCart(finalObj, variant, finalNote);
     }
     setPendingCookNow(true);
     setSelectedProduct(null);
@@ -193,12 +289,12 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Fresh Garden (Nature & Vibrant Green)
-    <div className="w-full max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden bg-[#f0fdf4] font-sans text-[#14532d]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden bg-[#f0fdf4] font-sans text-[#14532d]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Sarabun:wght@300;400;500;600&display=swap');
-            
+
             :root {
                 --primary-green: #16a34a; /* green-600 */
                 --primary-dark: #14532d; /* green-900 */
@@ -261,7 +357,7 @@ export default function App({ state, actions, helpers }: any) {
         <header className="bg-gradient-to-b from-green-600 to-green-500 text-white pt-10 pb-20 px-6 rounded-b-[3rem] relative shadow-lg z-10 overflow-hidden">
              {/* Subtle Leaf Pattern Overlay */}
              <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/axiom-pattern.png')]"></div>
-             
+
              <div className="flex justify-between items-center relative z-10">
                  <div>
                      <div className="flex items-center gap-2 mb-1 opacity-90">
@@ -279,16 +375,16 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-14 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-pop">
                     {/* Banner Slider */}
                     {banners?.length > 0 && (
                         <div className="relative w-full h-56 bg-white rounded-[2rem] overflow-hidden shadow-md mb-8 group border-4 border-white">
-                             <img 
-                                src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                             <img
+                                src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                              />
                              <div className="absolute top-4 left-4 bg-lime-400 text-green-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 font-friendly">
                                  <Icon name="star" size={12} className="fill-current" /> เมนูแนะนำ
@@ -306,7 +402,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pb-28">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-28">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -320,7 +416,7 @@ export default function App({ state, actions, helpers }: any) {
                                          )}
                                      </div>
                                      <h3 className="font-bold text-green-800 text-sm line-clamp-2 mb-auto leading-tight font-friendly">{p.name}</h3>
-                                     
+
                                      <div className="flex justify-between items-end mt-3">
                                          <div className="flex flex-col">
                                              {pricing.discount > 0 && (
@@ -357,7 +453,7 @@ export default function App({ state, actions, helpers }: any) {
                     {/* Filter Tabs */}
                     <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm font-friendly
                                     ${selectedCategoryId === c.id ? 'chip-active' : 'chip-inactive'}`}>
                                 {c.name}
@@ -374,7 +470,7 @@ export default function App({ state, actions, helpers }: any) {
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                      </div>
                                      <h3 className="font-bold text-green-800 text-sm line-clamp-2 mb-auto leading-tight font-friendly">{p.name}</h3>
-                                     
+
                                      <div className="flex justify-between items-end mt-3">
                                          <div className="flex flex-col">
                                              {pricing.discount > 0 && <span className="text-[10px] text-green-400 line-through font-medium">{pricing.original}</span>}
@@ -485,40 +581,40 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Fixed Click-Through) --- */}
         {selectedProduct && (
-            <div 
-                className="fixed inset-0 z-[100] flex items-end justify-center bg-green-900/40 backdrop-blur-sm animate-pop"
+            <div
+                className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-green-900/40 backdrop-blur-sm animate-pop"
                 onClick={() => setSelectedProduct(null)} // ✅ Close on backdrop click
             >
-                <div 
-                    className="w-full max-w-md bg-white rounded-t-[2.5rem] shadow-2xl relative overflow-hidden max-h-[90vh] flex flex-col"
+                <div
+                    className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white rounded-t-[2.5rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[2.5rem] shadow-2xl relative overflow-hidden max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] flex flex-col"
                     onClick={stopProp} // ✅ Prevent close on content click
                 >
-                    <div className="relative h-72 shrink-0 bg-green-50">
+                    <div className="relative h-56 sm:h-64 md:h-52 xl:h-72 shrink-0 bg-green-50">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-green-900/60 to-transparent"></div>
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 w-10 h-10 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-green-600 transition-colors border border-white/40">
                             <Icon name="x" size={20} />
                         </button>
-                        
+
                         <div className="absolute bottom-0 left-0 w-full p-6 text-white">
                             <h2 className="text-2xl font-extrabold mb-1 leading-tight font-friendly">{selectedProduct.name}</h2>
                             <div className="flex items-center gap-2 mt-2">
-                                {currentPriceObj.discount > 0 && (
+                                {basePriceObj.discount > 0 && (
                                     <span className="text-sm text-white/80 line-through font-medium">
-                                        {currentPriceObj.original}
+                                        {basePriceObj.original}
                                     </span>
                                 )}
-                                <span className="text-4xl font-extrabold text-lime-300 drop-shadow-sm font-friendly">{currentPriceObj.final}.-</span>
-                                {currentPriceObj.discount > 0 && (
+                                <span className="text-4xl font-extrabold text-lime-300 drop-shadow-sm font-friendly">{finalPriceWithOpts}.-</span>
+                                {basePriceObj.discount > 0 && (
                                     <span className="bg-lime-500 text-white text-[10px] px-2.5 py-1 rounded-full font-bold ml-2 font-friendly animate-pulse">
-                                        ลด {currentPriceObj.discount}
+                                        ลด {basePriceObj.discount}
                                     </span>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="p-6 pb-32 overflow-y-auto bg-white rounded-t-[2rem] -mt-6 relative z-10">
+                    <div className="p-6 pb-6 flex-1 overflow-y-auto no-scrollbar bg-white rounded-t-[2rem] -mt-6 relative z-10">
                         <div className="space-y-6">
                             {/* Variant Selector */}
                             <div>
@@ -529,12 +625,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'พิเศษ', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'จัมโบ้', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-3 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-1 relative font-friendly
-                                                ${variant === v.key 
-                                                    ? 'border-green-500 bg-green-50 text-green-700 shadow-sm' 
+                                                ${variant === v.key
+                                                    ? 'border-green-500 bg-green-50 text-green-700 shadow-sm'
                                                     : 'border-green-100 text-green-400 hover:bg-green-50 hover:border-green-200'}`}
                                         >
                                             <span className="text-sm font-bold">{v.label}</span>
@@ -554,14 +650,87 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
+                            {/* Product Options */}
+                            {selectedProduct.options && Array.isArray(selectedProduct.options) && selectedProduct.options.map((opt: any, groupIndex: number) => {
+                                const selectedChoices = selectedOptions[groupIndex] || [];
+                                return (
+                                    <div key={opt.id || groupIndex} className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-sm font-bold text-green-600 font-friendly flex items-center">
+                                                {opt.name}
+                                                {opt.required && (
+                                                    <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-600 rounded-full font-bold ml-2">
+                                                        จำเป็น
+                                                    </span>
+                                                )}
+                                            </label>
+                                            <span className="text-xs text-green-400 font-medium font-friendly">
+                                                {opt.type === 'single' ? 'เลือกได้ 1 อย่าง' : 'เลือกได้หลายอย่าง'}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {opt.choices && Array.isArray(opt.choices) && opt.choices.map((choice: any) => {
+                                                const choiceKey = String(choice.id || choice.name);
+                                                const isSelected = selectedChoices.some((item: any) => String(item.id || item.name) === choiceKey);
+                                                const imageUrl = getChoiceImageUrl(choice);
+
+                                                return (
+                                                    <button
+                                                        key={choiceKey}
+                                                        type="button"
+                                                        onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                        className={`p-3 rounded-2xl border-2 transition-all flex items-center justify-between gap-2 text-left font-friendly w-full min-h-[4rem]
+                                                            ${isSelected
+                                                                ? 'border-green-500 bg-green-50 text-green-700 shadow-sm'
+                                                                : 'border-green-100 text-green-600 hover:bg-green-50/50 hover:border-green-200 bg-white'}`}
+                                                    >
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            {imageUrl && (
+                                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-green-50 shrink-0 border border-green-100">
+                                                                    <img src={imageUrl} alt={choice.name} className="w-full h-full object-cover" />
+                                                                </div>
+                                                            )}
+                                                            <div className="min-w-0 flex flex-col justify-center">
+                                                                <span className="text-xs font-bold truncate leading-snug text-green-800">{choice.name}</span>
+                                                                {Number(choice.price || 0) > 0 && (
+                                                                    <span className="text-[10px] font-extrabold text-green-500 mt-0.5">
+                                                                        +{choice.price}.-
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="shrink-0 flex items-center justify-center">
+                                                            {opt.type === 'single' ? (
+                                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center
+                                                                    ${isSelected ? 'border-green-600 bg-green-600' : 'border-green-300'}`}
+                                                                >
+                                                                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                                                </div>
+                                                            ) : (
+                                                                <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center
+                                                                    ${isSelected ? 'border-green-600 bg-green-600 text-white' : 'border-green-300'}`}
+                                                                >
+                                                                    {isSelected && <Icon name="check" size={12} className="stroke-[3]" />}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
                             {/* Note Input */}
                             <div>
                                 <label className="block text-sm font-bold text-green-600 mb-2 font-friendly">โน๊ตเพิ่มเติมถึงครัว</label>
                                 <div className="relative">
-                                    <textarea 
+                                    <textarea
                                         value={note}
                                         onChange={(e) => setNote(e.target.value)}
-                                        placeholder="เช่น ไม่ใส่ผักชี, เผ็ดน้อย..." 
+                                        placeholder="เช่น ไม่ใส่ผักชี, เผ็ดน้อย..."
                                         className="w-full p-4 pl-11 bg-white border-2 border-green-100 rounded-2xl focus:border-green-500 focus:ring-0 focus:outline-none h-24 resize-none text-sm text-green-800 placeholder:text-green-300 font-medium transition-colors"
                                     />
                                     <div className="absolute top-4 left-4 text-green-400">
@@ -572,14 +741,14 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
 
                         {/* Actions */}
-                        <div className="grid grid-cols-2 gap-4 mt-8 font-friendly">
-                            <button onClick={() => handleAdd(true)} className="py-4 bg-white border-2 border-green-600 text-green-600 font-bold rounded-2xl active:scale-95 transition-all hover:bg-green-50">
-                                ใส่ตะกร้าไว้ก่อน
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 btn-green font-bold rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
-                                สั่งเลยทันที <Icon name="fire" size={20} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t border-green-100 grid grid-cols-2 gap-4 z-30 font-friendly">
+                        <button onClick={() => handleAdd(true)} className="py-4 bg-white border-2 border-green-600 text-green-600 font-bold rounded-2xl active:scale-95 transition-all hover:bg-green-50">
+                            ใส่ตะกร้าไว้ก่อน
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 btn-green font-bold rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
+                            สั่งเลยทันที <Icon name="fire" size={20} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -587,12 +756,12 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CART DRAWER (Fixed Click-Through) --- */}
         {activeTab === 'cart' && (
-             <div 
+             <div
                 className="fixed inset-0 z-[100] flex items-end justify-center bg-green-900/40 backdrop-blur-sm animate-pop"
                 onClick={() => setActiveTab('menu')} // ✅ Close on backdrop click
              >
-                 <div 
-                    className="w-full max-w-md bg-white rounded-t-[2.5rem] shadow-2xl h-[85vh] flex flex-col relative"
+                 <div
+                    className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white rounded-t-[2.5rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[2.5rem] shadow-2xl h-[85vh] md:h-[80vh] xl:h-[85vh] flex flex-col relative mx-auto"
                     onClick={stopProp} // ✅ Prevent close on content click
                  >
                      {/* Handle */}
@@ -626,7 +795,7 @@ export default function App({ state, actions, helpers }: any) {
                                              </span>
                                          )}
                                      </div>
-                                     
+
                                      <div className="flex justify-between items-end mt-2">
                                         <div className="flex items-center gap-3 bg-white px-2 py-1 rounded-full border border-green-100">
                                             <button onClick={() => updateQuantity(idx, -1)} className="text-green-400 hover:text-red-500 transition-colors"><Icon name="minus" size={16}/></button>
@@ -671,18 +840,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CONFIRMATION MODAL (Fixed Click-Through) --- */}
         {showConfirm && (
-            <div 
+            <div
                 className="fixed inset-0 z-[200] flex items-center justify-center bg-green-900/60 backdrop-blur-sm p-6 animate-pop"
                 onClick={() => setShowConfirm(false)} // ✅ Close on backdrop click
             >
-                <div 
+                <div
                     className="w-full max-w-sm bg-white rounded-[2rem] p-8 text-center shadow-2xl relative border-4 border-green-50"
                     onClick={stopProp} // ✅ Prevent close on content click
                 >
                     <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border-4 border-white animate-bounce">
                         <Icon name="check" size={48} strokeWidth={3} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                              <h3 className="text-xl font-extrabold text-green-800 mb-2 font-friendly">สั่งเลยไหมครับ?</h3>

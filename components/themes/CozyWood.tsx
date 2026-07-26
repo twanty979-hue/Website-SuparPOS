@@ -48,18 +48,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -73,7 +73,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -85,17 +85,30 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -105,12 +118,12 @@ export default function App({ state, actions, helpers }: any) {
   useEffect(() => {
     if (pendingCookNow) {
         if (cart?.length > prevCartLength.current) {
-             handleCheckout(""); 
+             handleCheckout("");
              setPendingCookNow(false);
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(""); 
+                 handleCheckout("");
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -122,25 +135,92 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#fffbeb] flex items-center justify-center text-[#92400e] font-bold text-xl">กำลังโหลดร้านค้า...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+
+  const basePriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
+
+  const currentPriceObj = {
+      ...basePriceObj,
+      final: basePriceObj.final + toppingTotal,
+      original: (basePriceObj.original_value || basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+  };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   // --- 📝 Robust Data Passing ---
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    const pricing = calculatePrice(selectedProduct, variant);
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const pricing = basePriceObj;
+
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
-        specialRequest: finalNote, 
+        specialRequest: finalNote,
         comment: finalNote,
         remark: finalNote,
-        price: pricing.final,
-        original_price: pricing.original_value || pricing.final + pricing.discount 
+        price: pricing.final + toppingTotal,
+        original_price: (pricing.original_value || pricing.final + pricing.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
 
     if (addToCartOnly) {
@@ -149,26 +229,36 @@ export default function App({ state, actions, helpers }: any) {
         }
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const pricing = calculatePrice(selectedProduct, variant);
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+    const finalNote = generateOptionNote();
+    const pricing = basePriceObj;
+
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
         specialRequest: finalNote,
         comment: finalNote,
         remark: finalNote,
-        price: pricing.final,
-        original_price: pricing.original_value || pricing.final + pricing.discount 
+        price: pricing.final + toppingTotal,
+        original_price: (pricing.original_value || pricing.final + pricing.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
-    
+
     for(let i=0; i<qty; i++) {
         handleAddToCart(productToAdd, variant, finalNote);
     }
@@ -187,12 +277,12 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Cozy Wood (บ้านๆ อบอุ่น)
-    <div className="w-full max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden bg-[#fffbeb] font-sans text-[#451a03]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden bg-[#fffbeb] font-sans text-[#451a03]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap');
-            
+
             :root {
                 --primary-brown: #78350f; /* amber-900 */
                 --wood-light: #d97706; /* amber-600 */
@@ -269,16 +359,16 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-10 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-fade">
                     {/* Simple Banner */}
                     {banners?.length > 0 && (
                         <div className="relative w-full h-48 bg-white rounded-xl overflow-hidden shadow-md mb-6 border-4 border-white">
-                             <img 
-                                src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                className="w-full h-full object-cover" 
+                             <img
+                                src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                className="w-full h-full object-cover"
                              />
                              <div className="absolute bottom-2 right-2 bg-[#ea580c] text-white px-3 py-1 rounded-lg text-xs font-bold font-mali shadow-sm">
                                  🔥 เมนูแนะนำ
@@ -293,7 +383,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pb-24">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-24">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -307,7 +397,7 @@ export default function App({ state, actions, helpers }: any) {
                                          )}
                                      </div>
                                      <h3 className="font-bold text-[#451a03] text-sm line-clamp-2 mb-auto leading-snug font-mali">{p.name}</h3>
-                                     
+
                                      <div className="flex justify-between items-end mt-2">
                                          <div className="flex flex-col">
                                              {pricing.discount > 0 && (
@@ -344,7 +434,7 @@ export default function App({ state, actions, helpers }: any) {
                     {/* Filter Tabs */}
                     <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`shrink-0 px-4 py-2 text-sm font-bold shadow-sm
                                     ${selectedCategoryId === c.id ? 'chip-active' : 'chip-inactive'}`}>
                                 {c.name}
@@ -361,7 +451,7 @@ export default function App({ state, actions, helpers }: any) {
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
                                      </div>
                                      <h3 className="font-bold text-[#451a03] text-sm line-clamp-2 mb-auto leading-snug font-mali">{p.name}</h3>
-                                     
+
                                      <div className="flex justify-between items-end mt-2">
                                          <div className="flex flex-col">
                                              {pricing.discount > 0 && <span className="text-[10px] text-gray-500 line-through">{pricing.original}</span>}
@@ -473,22 +563,22 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Simple & Big Buttons) --- */}
         {selectedProduct && (
-            <div 
-                className="fixed inset-0 z-[100] flex items-end justify-center bg-[#451a03]/50 backdrop-blur-sm animate-fade"
+            <div
+                className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#451a03]/50 backdrop-blur-sm animate-fade"
                 onClick={() => setSelectedProduct(null)}
             >
-                <div 
-                    className="w-full max-w-md bg-white rounded-t-[1.5rem] shadow-2xl relative overflow-hidden max-h-[90vh] flex flex-col"
+                <div
+                    className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white rounded-t-[1.5rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[1.5rem] shadow-2xl relative overflow-hidden max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] flex flex-col"
                     onClick={stopProp}
                 >
-                    <div className="relative h-64 shrink-0 bg-[#fef3c7]">
+                    <div className="relative h-52 sm:h-60 md:h-48 xl:h-64 shrink-0 bg-[#fef3c7]">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 w-9 h-9 bg-white/80 rounded-full flex items-center justify-center text-gray-700 hover:bg-white transition-colors shadow-sm">
                             <Icon name="x" size={20} />
                         </button>
                     </div>
 
-                    <div className="p-6 pb-28 overflow-y-auto bg-white flex-1">
+                    <div className="p-6 pb-6 overflow-y-auto bg-white flex-1 no-scrollbar">
                         <div className="mb-6 border-b border-gray-100 pb-4">
                             <h2 className="text-2xl font-bold text-[#451a03] mb-1 font-mali">{selectedProduct.name}</h2>
                             <div className="flex items-center gap-2">
@@ -511,12 +601,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'พิเศษ', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'จัมโบ้', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-1
-                                                ${variant === v.key 
-                                                    ? 'border-[#d97706] bg-[#fff7ed] text-[#d97706] font-bold' 
+                                                ${variant === v.key
+                                                    ? 'border-[#d97706] bg-[#fff7ed] text-[#d97706] font-bold'
                                                     : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
                                         >
                                             <span className="text-sm">{v.label}</span>
@@ -525,6 +615,57 @@ export default function App({ state, actions, helpers }: any) {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Options List */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="space-y-4">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => (
+                                        <div key={groupIndex} className="bg-[#fffbeb] p-3 rounded-lg border border-[#fde68a]">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <label className="block text-sm font-bold text-[#78350f] font-mali">
+                                                    {opt.name} {opt.required && <span className="text-red-500">*</span>}
+                                                </label>
+                                                <span className="text-xs text-[#d97706] font-mali bg-white px-2 py-0.5 rounded shadow-sm border border-[#fde68a]">
+                                                    {opt.type === 'single' ? 'เลือก 1 อย่าง' : 'เลือกได้หลายอย่าง'}
+                                                </span>
+                                            </div>
+                                            <div className="grid gap-2">
+                                                {opt.choices.map((choice: any, cIdx: number) => {
+                                                    const choiceKey = String(choice.id || choice.name);
+                                                    const isSelected = (selectedOptions[groupIndex] || []).some((item: any) => String(item.id || item.name) === choiceKey);
+                                                    const choiceImg = choice.image_url || choice.image_name;
+
+                                                    return (
+                                                        <label
+                                                            key={cIdx}
+                                                            className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all bg-white
+                                                                ${isSelected
+                                                                    ? 'border-[#d97706] shadow-sm'
+                                                                    : 'border-gray-200 hover:border-[#fcd34d]'
+                                                                }`}
+                                                            onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-5 h-5 flex items-center justify-center rounded-full border-2
+                                                                    ${isSelected ? 'border-[#d97706] bg-[#d97706]' : 'border-gray-300 bg-white'}`}>
+                                                                    {isSelected && <Icon name="check" size={12} className="text-white" />}
+                                                                </div>
+                                                                {choiceImg && (
+                                                                    <img src={getMenuUrl(choiceImg)} className="w-10 h-10 object-cover rounded shadow-sm border border-gray-100" />
+                                                                )}
+                                                                <span className="text-sm text-[#451a03] font-medium font-mali">{choice.name}</span>
+                                                            </div>
+                                                            <span className="text-sm font-bold text-[#d97706] font-mali">
+                                                                {Number(choice.price) > 0 ? `+${choice.price}.-` : 'ฟรี'}
+                                                            </span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Qty Control */}
                             <div className="flex items-center justify-between p-3 bg-[#fffbeb] rounded-lg border border-[#fde68a]">
@@ -539,24 +680,25 @@ export default function App({ state, actions, helpers }: any) {
                             {/* Note Input */}
                             <div>
                                 <label className="block text-sm font-bold text-[#78350f] mb-2 font-mali">รายละเอียดเพิ่มเติม (ถ้ามี)</label>
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="เช่น ไม่ใส่ผัก, เผ็ดน้อย, แยกน้ำ..." 
+                                    placeholder="เช่น ไม่ใส่ผัก, เผ็ดน้อย, แยกน้ำ..."
                                     className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:border-[#d97706] focus:ring-1 focus:ring-[#d97706] focus:outline-none h-20 resize-none text-sm text-[#451a03]"
                                 />
                             </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="grid grid-cols-2 gap-3 mt-8 font-mali">
-                            <button onClick={() => handleAdd(true)} className="py-3 bg-white border-2 border-[#d97706] text-[#d97706] font-bold rounded-lg active:scale-95 transition-all">
-                                ใส่ตะกร้า
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-3 bg-[#ea580c] text-white font-bold rounded-lg active:scale-95 transition-all shadow-md flex items-center justify-center gap-2">
-                                สั่งเลย! <Icon name="fire" size={18} />
-                            </button>
-                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t border-gray-100 grid grid-cols-2 gap-3 z-30 font-mali">
+                        <button onClick={() => handleAdd(true)} className="py-3 bg-white border-2 border-[#d97706] text-[#d97706] font-bold rounded-lg active:scale-95 transition-all">
+                            ใส่ตะกร้า
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-3 bg-[#ea580c] text-white font-bold rounded-lg active:scale-95 transition-all shadow-md flex items-center justify-center gap-2">
+                            สั่งเลย! <Icon name="fire" size={18} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -564,12 +706,12 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CART DRAWER --- */}
         {activeTab === 'cart' && (
-             <div 
+             <div
                 className="fixed inset-0 z-[100] flex items-end justify-center bg-[#451a03]/50 backdrop-blur-sm animate-fade"
                 onClick={() => setActiveTab('menu')}
              >
-                 <div 
-                    className="w-full max-w-md bg-white rounded-t-[1.5rem] shadow-2xl h-[85vh] flex flex-col relative"
+                 <div
+                    className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white rounded-t-[1.5rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[1.5rem] shadow-2xl h-[85vh] md:h-[80vh] xl:h-[85vh] flex flex-col relative mx-auto"
                     onClick={stopProp}
                  >
                      {/* Handle */}
@@ -598,7 +740,7 @@ export default function App({ state, actions, helpers }: any) {
                                          {item.variant !== 'normal' && <span className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-[#d97706]">{item.variant}</span>}
                                          {item.note && <span className="italic">"{item.note}"</span>}
                                      </div>
-                                     
+
                                      <div className="flex justify-between items-end mt-2">
                                         <div className="flex items-center gap-2">
                                             <button onClick={() => updateQuantity(idx, -1)} className="w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded text-gray-500"><Icon name="minus" size={12}/></button>
@@ -641,18 +783,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CONFIRMATION MODAL --- */}
         {showConfirm && (
-            <div 
+            <div
                 className="fixed inset-0 z-[200] flex items-center justify-center bg-[#451a03]/60 backdrop-blur-sm p-6 animate-fade"
                 onClick={() => setShowConfirm(false)}
             >
-                <div 
+                <div
                     className="w-full max-w-sm bg-white rounded-xl p-6 text-center shadow-2xl relative border-t-4 border-[#ea580c]"
                     onClick={stopProp}
                 >
                     <div className="w-16 h-16 bg-[#fff7ed] text-[#ea580c] rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-[#ffedd5]">
                         <Icon name="check" size={32} strokeWidth={3} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                              <h3 className="text-lg font-bold text-[#451a03] mb-1 font-mali">สั่งเลยไหมครับ?</h3>

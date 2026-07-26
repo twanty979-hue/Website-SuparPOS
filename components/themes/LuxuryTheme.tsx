@@ -5,7 +5,7 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     home: <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
     menu: <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />, // simplified utensils
-    search: <circle cx="11" cy="11" r="8" />, 
+    search: <circle cx="11" cy="11" r="8" />,
     basket: <path d="m15 11-1 9" />,
     clock: <circle cx="12" cy="12" r="10" />,
     chef: <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" />,
@@ -20,18 +20,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -48,7 +48,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -63,6 +63,7 @@ export default function App({ state, actions, helpers }: any) {
   const [variant, setVariant] = useState('normal'); // 'normal', 'special', 'jumbo'
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
 
@@ -71,6 +72,17 @@ export default function App({ state, actions, helpers }: any) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -85,7 +97,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -97,21 +109,91 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#f3e8ff]" />;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
 
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+
     if (addToCartOnly) {
         for(let i=0; i<qty; i++) {
-            handleAddToCart(selectedProduct, variant, note);
+            handleAddToCart(productToAdd, variant, finalNote);
         }
         setSelectedProduct(null);
     } else {
         if (cart && cart.length > 0) {
-            setShowConfirm(true); 
+            setShowConfirm(true);
         } else {
             performCookNow();
         }
@@ -119,8 +201,32 @@ export default function App({ state, actions, helpers }: any) {
   };
 
   const performCookNow = () => {
+    if (!selectedProduct) return;
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+
     for(let i=0; i<qty; i++) {
-        handleAddToCart(selectedProduct, variant, note);
+        handleAddToCart(productToAdd, variant, finalNote);
     }
     setPendingCookNow(true);
     setSelectedProduct(null);
@@ -128,11 +234,11 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Chowder (Mung Daal's Catering)
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#4c1d95]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#4c1d95]">
+
         <style jsx global>{`
             @import url('https://fonts.googleapis.com/css2?family=Mali:ital,wght@0,300;0,400;0,600;0,700;1,600&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --primary: #a855f7; /* Purple (Chowder) */
                 --primary-light: #d8b4fe;
@@ -145,7 +251,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Sarabun', sans-serif;
                 background-color: #f3e8ff;
                 /* --- 🏁 CHECKERBOARD PATTERN --- */
-                background-image: 
+                background-image:
                     linear-gradient(45deg, #e9d5ff 25%, transparent 25%, transparent 75%, #e9d5ff 75%, #e9d5ff),
                     linear-gradient(45deg, #e9d5ff 25%, transparent 25%, transparent 75%, #e9d5ff 75%, #e9d5ff);
                 background-position: 0 0, 20px 20px;
@@ -215,12 +321,12 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- Header (Chowder Hat Style) --- */}
         <header className="bg-purple-600 text-white pt-8 pb-16 px-6 rounded-b-[3rem] relative overflow-hidden shadow-xl z-10 border-b-4 border-purple-900">
-             <div className="absolute inset-0 opacity-20 pointer-events-none" 
+             <div className="absolute inset-0 opacity-20 pointer-events-none"
                   style={{
-                      backgroundImage: `repeating-linear-gradient(45deg, #a855f7 25%, transparent 25%, transparent 75%, #a855f7 75%, #a855f7), 
+                      backgroundImage: `repeating-linear-gradient(45deg, #a855f7 25%, transparent 25%, transparent 75%, #a855f7 75%, #a855f7),
                                         repeating-linear-gradient(45deg, #a855f7 25%, #fff 25%, #fff 75%, #a855f7 75%, #a855f7)`,
                       backgroundSize: '40px 40px'
-                  }} 
+                  }}
              />
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
@@ -242,7 +348,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-jelly">
@@ -268,7 +374,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -318,7 +424,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-6 py-3 text-lg font-bold rounded-2xl cartoon-font flex items-center gap-2 ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -371,7 +477,7 @@ export default function App({ state, actions, helpers }: any) {
         <div className="space-y-4">
             {ordersList?.map((o: any) => (
                 <div key={o.id} className="bg-white p-5 border-4 border-purple-900 rounded-[2rem] relative overflow-hidden shadow-[6px_6px_0_#d8b4fe]">
-                    
+
                     {/* Header: Order ID & Status */}
                     <div className="flex justify-between items-start mb-4">
                          <span className="text-xs text-purple-400 font-black uppercase tracking-widest flex items-center gap-1 font-bold">
@@ -389,22 +495,22 @@ export default function App({ state, actions, helpers }: any) {
                             // ✅ LOGIC: คำนวณราคาและส่วนลด
                             const quantity = i.quantity || 1;
                             const finalPriceTotal = i.price * quantity;
-                            
+
                             const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                            
-                            const originalPriceTotal = hasDiscount 
-                                ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+
+                            const originalPriceTotal = hasDiscount
+                                ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                 : finalPriceTotal;
-                                
+
                             const discountAmount = originalPriceTotal - finalPriceTotal;
 
                             return (
                                 <div key={idx} className="flex justify-between items-start text-sm text-purple-700 font-bold mb-2 border-b-2 border-dashed border-purple-200 pb-2 last:border-0 cartoon-font">
-                                    
+
                                     {/* Left: Info */}
                                     <div className="flex flex-col items-start pr-2">
                                         <span className="leading-tight text-base">{quantity}x {i.product_name}</span>
-                                        
+
                                         {/* Variant Badge (Yellow Cartoon Style) */}
                                         {i.variant !== 'normal' && (
                                             <span className={`text-[10px] bg-yellow-300 text-purple-900 px-2 py-0.5 rounded-md border-2 border-purple-900 font-black mt-1 shadow-sm uppercase tracking-wider transform -rotate-1`}>
@@ -454,7 +560,7 @@ export default function App({ state, actions, helpers }: any) {
                     </div>
                 </div>
             ))}
-            
+
             {/* Empty State */}
             {(!ordersList || ordersList.length === 0) && (
                  <div className="text-center py-12 opacity-50">
@@ -505,30 +611,30 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Recipe Card) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-purple-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-                <div className="w-full max-w-md bg-white border-t-4 border-x-4 border-purple-900 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-purple-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-4 border-x-4 border-purple-900 h-auto max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] shadow-2xl rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-in slide-in-from-bottom duration-300 flex flex-col overflow-hidden">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-purple-900 rounded-full border-4 border-purple-900 flex items-center justify-center hover:bg-purple-100 transition-colors shadow-[2px_2px_0_#4c1d95] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
                             <Icon name="x" />
                         </button>
-                        <div className="relative w-full h-72 overflow-hidden border-b-4 border-purple-900 rounded-b-[2rem] bg-purple-100">
+                        <div className="relative w-full h-56 sm:h-64 md:h-52 xl:h-72 shrink-0 overflow-hidden border-b-4 border-purple-900 rounded-b-[2rem] bg-purple-100">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-yellow-400 text-purple-900 font-black text-2xl cartoon-font rounded-xl border-4 border-purple-900 shadow-[4px_4px_0_#4c1d95] transform -rotate-3 flex flex-col items-center leading-none">
-                                    {currentPriceObj.discount > 0 && (
+                                    {basePriceObj.discount > 0 && (
                                         <span className="text-sm line-through text-purple-800 decoration-red-500 decoration-2 mb-1">
-                                            {currentPriceObj.original}
+                                            {(basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal}
                                         </span>
                                     )}
-                                    <span>{currentPriceObj.final}.-</span>
+                                    <span>{finalPriceWithOpts}.-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-8 pt-8 pb-32" style={{backgroundImage: 'radial-gradient(#d8b4fe 20%, transparent 20%)', backgroundSize: '20px 20px', backgroundPosition: '0 0'}}>
+                    <div className="flex-1 overflow-y-auto no-scrollbar px-8 pt-8 pb-6" style={{backgroundImage: 'radial-gradient(#d8b4fe 20%, transparent 20%)', backgroundSize: '20px 20px', backgroundPosition: '0 0'}}>
                         <h2 className="text-3xl font-black text-purple-900 mb-6 leading-tight cartoon-font transform rotate-1">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-5">
                             {/* --- 🏷️ VARIANT SELECTOR (3 PRICES) --- */}
                             <div>
@@ -539,12 +645,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'SPECIAL', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'JUMBO', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-xl border-4 transition-all flex flex-col items-center justify-between h-24 cartoon-font
-                                                ${variant === v.key 
-                                                    ? 'bg-yellow-100 border-purple-700 shadow-[3px_3px_0_#4c1d95] -translate-y-1 text-purple-900' 
+                                                ${variant === v.key
+                                                    ? 'bg-yellow-100 border-purple-700 shadow-[3px_3px_0_#4c1d95] -translate-y-1 text-purple-900'
                                                     : 'bg-white border-purple-200 text-purple-300 hover:border-purple-400 hover:text-purple-500'}`}
                                         >
                                             <span className="text-xs font-black tracking-widest">{v.label}</span>
@@ -568,18 +674,90 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-purple-400 font-bold uppercase tracking-widest mb-1">TOTAL</p>
-                                    <p className="text-4xl font-black text-purple-900 cartoon-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-4xl font-black text-purple-900 cartoon-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
+
+                            {/* ⚙️ PRODUCT OPTIONS */}
+                            {selectedProduct.options && Array.isArray(selectedProduct.options) && selectedProduct.options.map((opt: any, groupIndex: number) => {
+                                const isRequired = !!opt.required;
+                                return (
+                                    <div key={groupIndex} className="space-y-3">
+                                        <div className="flex justify-between items-center ml-1">
+                                            <label className="text-lg font-bold text-purple-900 cartoon-font tracking-wide">
+                                                {opt.name}
+                                            </label>
+                                            {isRequired ? (
+                                                <span className="text-xs bg-pink-500 text-white font-black px-2 py-0.5 rounded-full border-2 border-purple-900 transform rotate-1 shadow-sm uppercase tracking-wider">
+                                                    Required
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs bg-purple-100 text-purple-400 font-bold px-2 py-0.5 rounded-full border border-purple-200 uppercase tracking-wider">
+                                                    Optional
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {opt.choices && Array.isArray(opt.choices) && opt.choices.map((choice: any) => {
+                                                const groupChoices = selectedOptions[groupIndex] || [];
+                                                const isSelected = groupChoices.some((item: any) => String(item.id || item.name) === String(choice.id || choice.name));
+                                                const hasImage = !!(choice.image_url || choice.image_name);
+                                                const imgUrl = choice.image_url || choice.image_name;
+
+                                                return (
+                                                    <button
+                                                        key={choice.id || choice.name}
+                                                        type="button"
+                                                        onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                        className={`p-2 rounded-2xl border-4 transition-all flex items-center gap-3 text-left w-full cartoon-font relative overflow-hidden min-h-[4.5rem]
+                                                            ${isSelected
+                                                                ? 'bg-yellow-100 border-purple-700 shadow-[3px_3px_0_#4c1d95] text-purple-900'
+                                                                : 'bg-white border-purple-200 text-purple-500 hover:border-purple-300 hover:text-purple-600'
+                                                            }`}
+                                                    >
+                                                        {hasImage && (
+                                                            <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-purple-900 shrink-0 bg-purple-50">
+                                                                <img
+                                                                    src={imgUrl}
+                                                                    alt={choice.name}
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e: any) => {
+                                                                        e.target.style.display = 'none';
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center">
+                                                            <span className="font-bold text-sm leading-tight block break-words">
+                                                                {choice.name}
+                                                            </span>
+                                                            {Number(choice.price || 0) > 0 && (
+                                                                <span className={`text-xs font-black mt-0.5 ${isSelected ? 'text-pink-500' : 'text-purple-400'}`}>
+                                                                    +{Number(choice.price)}.-
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {isSelected && (
+                                                            <div className="absolute top-1 right-1 w-5 h-5 bg-pink-500 rounded-full border-2 border-purple-900 flex items-center justify-center text-white text-[10px]">
+                                                                ✓
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
 
                             {/* 📝 Note Input */}
                             <div className="relative">
                                 <label className="block text-sm font-bold text-purple-900 mb-2 cartoon-font ml-1">Message to Chef:</label>
                                 <div className="relative">
-                                    <textarea 
+                                    <textarea
                                         value={note}
                                         onChange={(e) => setNote(e.target.value)}
-                                        placeholder="E.g., No spicy, Extra sauce..." 
+                                        placeholder="E.g., No spicy, Extra sauce..."
                                         className="w-full p-4 pl-12 bg-white border-4 border-purple-200 rounded-2xl font-bold text-purple-900 placeholder:text-purple-300 focus:outline-none focus:border-purple-500 focus:shadow-[0_0_0_4px_#e9d5ff] transition-all cartoon-font resize-none h-24 shadow-inner"
                                     />
                                     <div className="absolute top-4 left-4 text-purple-300">
@@ -588,15 +766,14 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4 mt-8">
-                            <button onClick={() => handleAdd(true)} className="py-4 bg-white border-4 border-purple-900 text-purple-900 font-black text-lg rounded-xl active:scale-95 transition-all shadow-[4px_4px_0_#ccc] cartoon-font">
-                                Add to Pot
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 btn-chowder text-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                                COOK NOW! <Icon name="flame" />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-4 border-purple-200 grid grid-cols-2 gap-4 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-4 bg-white border-4 border-purple-900 text-purple-900 font-black text-lg rounded-xl active:scale-95 transition-all shadow-[4px_4px_0_#ccc] cartoon-font">
+                            Add to Pot
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 btn-chowder text-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                            COOK NOW! <Icon name="flame" />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -604,8 +781,8 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CART SHEET (Tray) --- */}
         {activeTab === 'cart' && (
-             <div className="fixed inset-0 z-[100] flex items-end justify-center bg-purple-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-                 <div className="w-full max-w-md bg-[#fdf4ff] border-t-4 border-purple-900 flex flex-col shadow-[0_-20px_60px_rgba(76,29,149,0.3)] h-[85vh] rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
+             <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-purple-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                 <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#fdf4ff] border-t-4 border-purple-900 flex flex-col shadow-[0_-20px_60px_rgba(76,29,149,0.3)] h-[85vh] md:h-[80vh] xl:h-[85vh] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
                      <div className="w-full py-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                          <div className="w-20 h-2 bg-purple-200 rounded-full mx-auto" />
                      </div>
@@ -668,18 +845,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-24 h-24 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-purple-900">
                         <Icon name="basket" size={48} className="animate-bounce" />
                     </div>
-                    
+
                     {selectedProduct ? (
                         <>
                             <h3 className="text-3xl font-black text-purple-900 mb-2 leading-tight cartoon-font">Tray not empty!</h3>
                             <p className="text-lg text-purple-800 mb-8 font-bold cartoon-font">Order {selectedProduct.name} together with tray items?</p>
                             <div className="flex flex-col gap-3">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-4 bg-purple-600 text-white font-black border-4 border-purple-900 shadow-[4px_4px_0_#2e1065] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all text-lg cartoon-font rounded-xl">YES, ORDER ALL!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-4 bg-white border-4 border-gray-300 text-gray-400 font-black text-sm active:scale-95 transition-transform hover:bg-gray-50 cartoon-font rounded-xl">NO, JUST ADD TO POT</button>

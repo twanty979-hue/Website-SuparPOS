@@ -21,7 +21,7 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-   
+
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       {content}
@@ -38,22 +38,34 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart = [], cartTotal = 0, ordersList = []
-  } = state || {}; 
+  } = state || {};
 
   const { setActiveTab, setSelectedCategoryId, setSelectedProduct, handleAddToCart, updateQuantity, handleCheckout } = actions || {};
   const { calculatePrice, getMenuUrl, getBannerUrl } = helpers || {};
 
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -61,12 +73,12 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
   useEffect(() => {
     if (pendingCookNow) {
         if (cart?.length > prevCartLength.current) {
-             handleCheckout(""); 
+             handleCheckout("");
              setPendingCookNow(false);
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(""); 
+                 handleCheckout("");
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -77,25 +89,104 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#ecfccb] flex items-center justify-center text-[#78350f] font-black text-2xl animate-pulse">Scouting...</div>;
 
-  const currentPriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0 };
+  const currentPriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = currentPriceObj.final + toppingTotal;
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    const productToAdd = { ...selectedProduct, variant, note: finalNote, specialRequest: finalNote, comment: finalNote, remark: finalNote };
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (currentPriceObj.original || currentPriceObj.final + (currentPriceObj.discount || 0)) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
 
     if (addToCartOnly) {
         for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const productToAdd = { ...selectedProduct, variant, note: finalNote, specialRequest: finalNote, comment: finalNote, remark: finalNote };
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (currentPriceObj.original || currentPriceObj.final + (currentPriceObj.discount || 0)) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
     for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
     setPendingCookNow(true);
     setSelectedProduct(null);
@@ -108,8 +199,8 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
 
   return (
     // 🔥 REMOVED 'animate-boing-enter' FROM ROOT to prevent fixed position bugs
-    <div className="w-full max-w-md mx-auto min-h-screen relative overflow-x-hidden border-x-4 border-[#78350f] font-sans text-[#451a03]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen relative overflow-x-hidden border-x-4 border-[#78350f] font-sans text-[#451a03]">
+
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Mali:ital,wght@0,300;0,400;0,600;0,700;1,600&family=Sarabun:wght@300;400;600;700&display=swap');
             :root { --lazlo-orange: #f97316; --scout-green: #65a30d; --wood-brown: #78350f; --bg-camp: #ecfccb; --text-color: #451a03; }
@@ -139,7 +230,7 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
             .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
             .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-            
+
             /* ✨ NEW: Pop Up Animation for Page Transitions */
             @keyframes pop-up-enter {
                 0% { opacity: 0; transform: translateY(50px) scale(0.9); }
@@ -151,7 +242,7 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
         `}} />
 
         {/* --- 🔥 WRAPPER FOR CONTENT ONLY (Animated) --- */}
-        <div className="animate-boing-enter pb-40"> 
+        <div className="animate-boing-enter pb-40">
             {/* Header */}
             <header className="bg-[#65a30d] text-white pt-8 pb-16 px-6 rounded-b-[2rem] relative overflow-hidden shadow-xl z-10 border-b-8 border-[#78350f]">
                  <div className="absolute inset-0 opacity-20" style={{backgroundImage: `repeating-linear-gradient(90deg,transparent,transparent_20px,#3f6212_20px,#3f6212_22px)`}}></div>
@@ -182,11 +273,11 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                             <div className="relative w-full h-56 bg-[#b45309] rounded-xl overflow-hidden shadow-[6px_6px_0_#451a03] mb-8 border-4 border-[#78350f] p-2">
                                  {/* Pin */}
                                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-red-600 rounded-full border-2 border-black z-10 shadow-sm"></div>
-                                 
+
                                  <div className="h-full w-full rounded-lg overflow-hidden bg-[#fefce8] border border-[#78350f] relative">
                                      <img src={getBannerUrl(banners[currentBannerIndex].image_name)} className="w-full h-full object-cover" />
                                  </div>
-                                 
+
                                  <div className="absolute bottom-4 right-4 bg-[#65a30d] text-white px-3 py-1 rounded-lg border-2 border-[#3f6212] transform rotate-2 shadow-md">
                                      <span className="camp-font text-sm">Lumpus Approved!</span>
                                  </div>
@@ -202,8 +293,8 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                                  View Menu <Icon name="search" size={14} />
                              </button>
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 pb-10">
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                             {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                                  const pricing = calculatePrice(p, 'normal');
                                  return (
@@ -282,7 +373,7 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                         <div className="mb-8 flex items-center justify-between bg-[#fefce8] p-6 border-4 border-[#78350f] rounded-lg shadow-[6px_6px_0_#65a30d] relative overflow-hidden transform rotate-1">
                              {/* Badge Pattern */}
                              <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-[#facc15] opacity-30" style={{clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'}}></div>
-                             
+
                              <div className="relative z-10">
                                  <h2 className="text-3xl camp-font text-[#78350f]">Scout Log</h2>
                                  <p className="text-sm text-[#65a30d] font-bold mt-1 camp-font">Tracking your badge...</p>
@@ -362,29 +453,29 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Tent Flap) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#451a03]/80 backdrop-blur-sm animate-fade-in">
-                <div className="w-full max-w-md bg-[#fefce8] border-t-8 border-[#65a30d] h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[2.5rem] relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#451a03]/80 backdrop-blur-sm animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-[#fefce8] border-t-8 border-[#65a30d] h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col overflow-hidden shadow-2xl rounded-t-[2.5rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[2.5rem] relative">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-[#ef4444] text-white rounded-lg border-2 border-[#7f1d1d] flex items-center justify-center hover:bg-[#b91c1c] transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-80 overflow-hidden border-b-4 border-[#78350f] rounded-b-[2rem] bg-[#ecfccb]">
+                        <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-4 border-[#78350f] rounded-b-[2rem] bg-[#ecfccb]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#f97316] text-white font-black text-3xl camp-font rounded-lg border-4 border-white shadow-[4px_4px_0_rgba(0,0,0,0.2)] transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (
-                                        <span className="text-sm line-through text-[#78350f] decoration-white decoration-2 mb-1">{currentPriceObj.original}</span>
+                                        <span className="text-sm line-through text-[#78350f] decoration-white decoration-2 mb-1">{(currentPriceObj.original || 0) + toppingTotal}</span>
                                     )}
-                                    <span>{currentPriceObj.final}.-</span>
+                                    <span>{finalPriceWithOpts}.-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-8 pt-8 pb-32 relative">
+                    <div className="px-8 pt-8 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl camp-font text-[#78350f] mb-6 leading-tight drop-shadow-sm">{selectedProduct.name}</h2>
                         <div className="space-y-5">
-                            
+
                             {/* PRICES VARIANT SELECTOR */}
                             <div>
                                 <label className="block text-xl font-bold text-[#451a03] mb-3 camp-font uppercase tracking-wide">CHOOSE SIZE:</label>
@@ -394,8 +485,8 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'SCOUT', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'LUMPUS', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-xl border-4 transition-all flex flex-col items-center justify-between h-28 camp-font ${variant === v.key ? 'bg-[#78350f] border-[#451a03] shadow-[4px_4px_0_#000] -translate-y-1 text-white' : 'bg-white border-[#d6d3d1] text-[#a8a29e] hover:border-[#f97316] hover:text-[#f97316]'}`}
                                         >
@@ -424,6 +515,48 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                                 </label>
                             </div>
 
+                            {/* Product Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="space-y-6">
+                                    {selectedProduct.options.map((opt: any, index: number) => (
+                                        <div key={index} className="bg-[#fefce8] p-4 rounded-xl border-4 border-[#78350f] shadow-sm">
+                                            <div className="flex justify-between items-center mb-3 border-b-2 border-dashed border-[#a8a29e] pb-2">
+                                                <label className="text-xl font-bold text-[#451a03] camp-font tracking-wide">
+                                                    {opt.name}
+                                                </label>
+                                                {opt.required && <span className="text-xs bg-[#ef4444] text-white px-2 py-0.5 rounded border-2 border-[#78350f] font-black uppercase shadow-sm transform -rotate-2">REQUIRED</span>}
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {opt.choices.map((choice: any, cIdx: number) => {
+                                                    const isSelected = selectedOptions[index]?.some((item: any) => String(item.id || item.name) === String(choice.id || choice.name));
+                                                    return (
+                                                        <div key={cIdx} onClick={() => handleOptionToggle(index, choice, opt.type)}
+                                                            className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                                                isSelected
+                                                                ? 'bg-[#ecfccb] border-[#65a30d] shadow-[3px_3px_0_#65a30d] transform -translate-y-[1px]'
+                                                                : 'bg-white border-[#d6d3d1] hover:border-[#f97316]'
+                                                            }`}>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-6 h-6 rounded flex items-center justify-center border-2 ${isSelected ? 'bg-[#f97316] border-[#78350f]' : 'bg-white border-[#d6d3d1]'}`}>
+                                                                    {isSelected && <Icon name="check" size={16} className="text-white" />}
+                                                                </div>
+                                                                {(choice.image_url || choice.image_name) && (
+                                                                    <img src={choice.image_url || choice.image_name} className="w-10 h-10 object-cover rounded-md border border-[#d6d3d1]" />
+                                                                )}
+                                                                <span className={`font-bold camp-font ${isSelected ? 'text-[#3f6212]' : 'text-[#451a03]'}`}>{choice.name}</span>
+                                                            </div>
+                                                            {Number(choice.price) > 0 && (
+                                                                <span className={`font-black camp-font ${isSelected ? 'text-[#f97316]' : 'text-[#78350f]'}`}>+{choice.price}</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 mt-2">
                                 <div className="flex items-center gap-3 bg-[#fefce8] p-3 rounded-xl border-4 border-[#78350f] shadow-sm">
@@ -433,7 +566,7 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-[#65a30d] font-black uppercase tracking-widest mb-1 camp-font">COST</p>
-                                    <p className="text-4xl font-black text-[#78350f] camp-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-4xl font-black text-[#78350f] camp-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
 
@@ -442,11 +575,10 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                                 <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Dear Scoutmaster..." className="w-full p-6 bg-white border-4 border-[#78350f] rounded-xl focus:border-[#f97316] focus:outline-none h-32 resize-none text-lg font-bold text-[#78350f] placeholder:text-[#a8a29e] transition-colors shadow-inner camp-font" />
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4 mt-8">
-                            <button onClick={() => handleAdd(true)} className="py-4 bg-white border-4 border-[#78350f] text-[#78350f] font-black text-lg rounded-xl active:scale-95 transition-all shadow-[4px_4px_0_#a8a29e] camp-font">Pack It</button>
-                            <button onClick={() => handleAdd(false)} className="py-4 btn-camp text-xl active:scale-95 transition-all flex items-center justify-center gap-2">CAMP OUT! <Icon name="flame" size={24} /></button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-[#fefce8] border-t-4 border-[#78350f] grid grid-cols-2 gap-4 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-4 bg-white border-4 border-[#78350f] text-[#78350f] font-black text-lg rounded-xl active:scale-95 transition-all shadow-[4px_4px_0_#a8a29e] camp-font">Pack It</button>
+                        <button onClick={() => handleAdd(false)} className="py-4 btn-camp text-xl active:scale-95 transition-all flex items-center justify-center gap-2">CAMP OUT! <Icon name="flame" size={24} /></button>
                     </div>
                 </div>
             </div>
@@ -456,28 +588,28 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
         {activeTab === 'cart' && (
             <>
                 {/* Overlay */}
-                <div 
-                    id="orderSummaryOverlay" 
-                    className="fixed inset-0 bg-[#451a03]/80 z-[130] backdrop-blur-sm animate-fade-in block" 
+                <div
+                    id="orderSummaryOverlay"
+                    className="fixed inset-0 bg-[#451a03]/80 z-[130] backdrop-blur-sm animate-fade-in block"
                     onClick={() => setActiveTab('menu')}
                 ></div>
-                
+
                 {/* Modal Sheet */}
-                <div 
-                    id="orderSummary" 
-                    className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#fefce8] border-t-[6px] border-[#78350f] z-[140] flex flex-col shadow-[0_-20px_60px_rgba(120,53,15,0.4)] h-[90vh] rounded-t-[3rem] animate-slide-up"
+                <div
+                    id="orderSummary"
+                    className="fixed bottom-0 md:top-1/2 md:-translate-y-1/2 xl:top-auto xl:translate-y-0 xl:bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#fefce8] border-t-[6px] border-[#78350f] z-[140] flex flex-col shadow-[0_-20px_60px_rgba(120,53,15,0.4)] h-[90vh] md:h-[85vh] xl:h-[90vh] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-slide-up"
                 >
                     <div className="sticky top-0 bg-[#fefce8] z-20 rounded-t-[3rem] border-b-2 border-[#78350f]/20 p-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                         <div className="w-20 h-2 bg-[#78350f] rounded-full mx-auto mt-2 opacity-50"></div>
                     </div>
-                    
+
                     <div className="flex justify-between items-center mb-6 px-8 pt-6">
                         <h2 className="text-4xl camp-font text-[#78350f] transform -rotate-1">Backpack</h2>
                         <div className="w-12 h-12 bg-[#65a30d] text-white border-4 border-[#3f6212] rounded-full flex items-center justify-center font-black text-xl camp-font shadow-md">
                             <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
                         </div>
                     </div>
-                    
+
                     <div className="flex-1 overflow-y-auto space-y-4 px-6 pb-6 no-scrollbar">
                         {cart.map((item: any, idx: any) => (
                             <div key={idx} className="flex items-center gap-4 bg-white p-4 border-2 border-[#d6d3d1] rounded-xl relative overflow-hidden shadow-sm">
@@ -530,7 +662,7 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                     <div className="w-24 h-24 bg-[#65a30d] text-white rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#3f6212] shadow-lg relative z-10">
                         <Icon name="home" size={48} className="animate-log" />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-3xl camp-font text-[#78350f] mb-2 leading-tight relative z-10">Attention Scout!</h3>

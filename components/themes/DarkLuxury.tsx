@@ -47,18 +47,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="1.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -72,7 +72,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -84,17 +84,30 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -104,12 +117,12 @@ export default function App({ state, actions, helpers }: any) {
   useEffect(() => {
     if (pendingCookNow) {
         if (cart?.length > prevCartLength.current) {
-             handleCheckout(""); 
+             handleCheckout("");
              setPendingCookNow(false);
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(""); 
+                 handleCheckout("");
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -121,25 +134,70 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-[#e2e8f0]">ACCESSING...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const currentPriceObj = selectedProduct
+    ? {
+        final: finalPriceWithOpts,
+        original: (basePriceObj.original_value || basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        discount: basePriceObj.discount
+      }
+    : { final: 0, original: 0, discount: 0 };
 
   // --- 📝 Robust Data Passing ---
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    const pricing = calculatePrice(selectedProduct, variant);
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
-        specialRequest: finalNote, 
+        specialRequest: finalNote,
         comment: finalNote,
         remark: finalNote,
-        price: pricing.final,
-        original_price: pricing.original_value || pricing.final + pricing.discount 
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original_value || basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings
     };
 
     if (addToCartOnly) {
@@ -148,31 +206,64 @@ export default function App({ state, actions, helpers }: any) {
         }
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const pricing = calculatePrice(selectedProduct, variant);
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+    if (!selectedProduct) return;
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
         specialRequest: finalNote,
         comment: finalNote,
         remark: finalNote,
-        price: pricing.final,
-        original_price: pricing.original_value || pricing.final + pricing.discount 
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original_value || basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings
     };
-    
+
     for(let i=0; i<qty; i++) {
         handleAddToCart(productToAdd, variant, finalNote);
     }
     setPendingCookNow(true);
     setSelectedProduct(null);
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
   };
 
   const onCheckoutClick = () => {
@@ -187,12 +278,12 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Midnight Gold (Fixed Modal Bug)
-    <div className="w-full max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden bg-[#0f172a] font-sans text-white">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden bg-[#0f172a] font-sans text-white">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Kanit:wght@300;400;500;600&display=swap');
-            
+
             :root {
                 --bg-dark: #0f172a;
                 --bg-card: #1e293b;
@@ -260,7 +351,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-6 pb-28 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-slide pt-6">
@@ -282,7 +373,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-8">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-x-4 gap-y-8">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -319,10 +410,10 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar pb-2">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`shrink-0 px-5 py-2 rounded-sm text-xs uppercase tracking-widest transition-all border
-                                    ${selectedCategoryId === c.id 
-                                        ? 'border-[#fbbf24] text-[#fbbf24] bg-[#fbbf24]/10' 
+                                    ${selectedCategoryId === c.id
+                                        ? 'border-[#fbbf24] text-[#fbbf24] bg-[#fbbf24]/10'
                                         : 'border-white/10 text-[#94a3b8] hover:border-white/30'}`}>
                                 {c.name}
                             </button>
@@ -363,7 +454,7 @@ export default function App({ state, actions, helpers }: any) {
                         {ordersList?.map((o: any) => (
                             <div key={o.id} className="relative pl-6 border-l border-white/10">
                                 <div className={`absolute -left-1.5 top-0 w-3 h-3 rounded-full border-2 border-[#0f172a] ${o.status === 'pending' ? 'bg-[#fbbf24]' : 'bg-[#10b981]'}`}></div>
-                                
+
                                 <div className="flex justify-between items-start mb-4">
                                      <div>
                                          <span className="text-[10px] text-[#fbbf24] uppercase tracking-widest block mb-1">Ticket #{o.id.slice(-4)}</span>
@@ -441,23 +532,23 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- 💎 ITEM DETAIL MODAL (Fixed Click-Through) --- */}
         {selectedProduct && (
-            <div 
-                className="fixed inset-0 z-[100] flex items-end sm:items-center sm:justify-center bg-black/80 backdrop-blur-sm animate-slide"
+            <div
+                className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-black/80 backdrop-blur-sm animate-slide"
                 onClick={() => setSelectedProduct(null)} // ✅ Click backdrop to close
             >
                 {/* ❌ Removed inner absolute div to avoid conflict */}
-                
-                <div 
-                    className="w-full sm:max-w-md bg-[#0f172a] shadow-2xl max-h-[90vh] flex flex-col border border-white/10 rounded-t-xl sm:rounded-xl overflow-hidden"
+
+                <div
+                    className="w-full max-w-md md:max-w-xl xl:max-w-md bg-[#0f172a] shadow-2xl max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] flex flex-col border border-white/10 rounded-t-xl md:rounded-2xl xl:rounded-none xl:rounded-t-xl overflow-hidden"
                     onClick={stopProp} // ✅ STOP PROPAGATION HERE: Clicking inside modal won't close it
                 >
-                    <div className="relative h-72 shrink-0">
+                    <div className="relative h-56 sm:h-64 md:h-52 xl:h-72 shrink-0">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent"></div>
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 w-10 h-10 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:text-[#fbbf24] transition-colors border border-white/10">
                             <Icon name="x" size={20} />
                         </button>
-                        
+
                         <div className="absolute bottom-0 left-0 w-full p-8">
                             <h2 className="text-3xl font-light text-white mb-2 font-lux tracking-wide">{selectedProduct.name}</h2>
                             <div className="flex items-baseline gap-3">
@@ -469,7 +560,7 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="p-8 pb-32 overflow-y-auto bg-[#0f172a] flex-1">
+                    <div className="p-8 pb-6 overflow-y-auto bg-[#0f172a] flex-1 no-scrollbar">
                         <div className="space-y-8">
                             {/* Variant Selector */}
                             <div>
@@ -480,12 +571,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'Large', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'Jumbo', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`w-full py-4 px-6 flex justify-between items-center border transition-all rounded-sm group
-                                                ${variant === v.key 
-                                                    ? 'border-[#fbbf24] bg-[#fbbf24]/5 text-[#fbbf24]' 
+                                                ${variant === v.key
+                                                    ? 'border-[#fbbf24] bg-[#fbbf24]/5 text-[#fbbf24]'
                                                     : 'border-white/10 text-[#cbd5e1] hover:border-white/30'}`}
                                         >
                                             <span className="text-sm uppercase tracking-wide">{v.label}</span>
@@ -494,6 +585,59 @@ export default function App({ state, actions, helpers }: any) {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div>
+                                    {selectedProduct.options.map((opt: any, index: number) => (
+                                        <div key={index} className="mb-6 last:mb-0">
+                                            <div className="flex justify-between items-end mb-4">
+                                                <label className="block text-[10px] text-[#94a3b8] uppercase tracking-[0.2em]">{opt.name}</label>
+                                                {opt.required && <span className="text-[10px] text-[#fbbf24] uppercase tracking-widest">Required</span>}
+                                            </div>
+                                            <div className="flex flex-col gap-3">
+                                                {opt.choices?.map((choice: any, cIdx: number) => {
+                                                    const isSelected = (selectedOptions[index] || []).some((item: any) => String(item.id || item.name) === String(choice.id || choice.name));
+                                                    const hasImage = choice.image_url || choice.image_name;
+                                                    return (
+                                                        <button
+                                                            key={cIdx}
+                                                            onClick={() => handleOptionToggle(index, choice, opt.type)}
+                                                            className={`w-full p-4 flex items-center gap-4 border transition-all rounded-sm group
+                                                                ${isSelected
+                                                                    ? 'border-[#fbbf24] bg-[#fbbf24]/5 text-[#fbbf24]'
+                                                                    : 'border-white/10 text-[#cbd5e1] hover:border-white/30'}`}
+                                                        >
+                                                            {hasImage && (
+                                                                <div className="w-12 h-12 bg-[#1e293b] rounded-sm overflow-hidden shrink-0">
+                                                                    <img src={choice.image_url || getMenuUrl(choice.image_name)} className="w-full h-full object-cover" />
+                                                                </div>
+                                                            )}
+                                                            <div className="flex-1 text-left">
+                                                                <div className="text-sm tracking-wide">{choice.name}</div>
+                                                                {Number(choice.price) > 0 && (
+                                                                    <div className="text-xs text-[#94a3b8] font-lux mt-1">+{Number(choice.price)}.-</div>
+                                                                )}
+                                                            </div>
+                                                            <div className="shrink-0 flex items-center justify-center">
+                                                                {opt.type === 'single' ? (
+                                                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#fbbf24]' : 'border-white/30'}`}>
+                                                                        {isSelected && <div className="w-2 h-2 rounded-full bg-[#fbbf24]"></div>}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${isSelected ? 'border-[#fbbf24] bg-[#fbbf24]' : 'border-white/30'}`}>
+                                                                        {isSelected && <Icon name="check" size={12} className="text-[#0f172a]" />}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Qty & Note */}
                             <div>
@@ -505,11 +649,11 @@ export default function App({ state, actions, helpers }: any) {
                                         <button onClick={() => setQty(qty+1)} className="w-12 h-full flex items-center justify-center hover:bg-white/5 text-white transition-colors"><Icon name="plus" size={14}/></button>
                                     </div>
                                     <div className="flex-1">
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             value={note}
                                             onChange={(e) => setNote(e.target.value)}
-                                            placeholder="Add notes..." 
+                                            placeholder="Add notes..."
                                             className="w-full h-12 px-4 border border-white/10 bg-transparent rounded-sm focus:border-[#fbbf24] outline-none text-sm text-white placeholder:text-[#475569] transition-colors font-light"
                                         />
                                     </div>
@@ -517,15 +661,16 @@ export default function App({ state, actions, helpers }: any) {
                             </div>
                         </div>
 
-                        {/* Actions */}
-                        <div className="grid grid-cols-2 gap-4 mt-12">
-                            <button onClick={() => handleAdd(true)} className="py-4 border border-white/20 text-white text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-colors rounded-sm">
-                                Add to Cart
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 btn-gold text-xs uppercase tracking-[0.2em] rounded-sm shadow-[0_0_20px_rgba(251,191,36,0.3)]">
-                                Order Now
-                            </button>
-                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="shrink-0 w-full p-6 bg-[#0f172a] border-t border-white/10 grid grid-cols-2 gap-4 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-4 border border-white/20 text-white text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-colors rounded-sm">
+                            Add to Cart
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 btn-gold text-xs uppercase tracking-[0.2em] rounded-sm shadow-[0_0_20px_rgba(251,191,36,0.3)]">
+                            Order Now
+                        </button>
                     </div>
                 </div>
             </div>
@@ -533,12 +678,12 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CART DRAWER (Fixed Click-Through) --- */}
         {activeTab === 'cart' && (
-             <div 
+             <div
                 className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm animate-slide"
                 onClick={() => setActiveTab('menu')} // ✅ Click backdrop to close
              >
-                 <div 
-                    className="w-full max-w-md bg-[#0f172a] border-t border-white/10 h-[90vh] flex flex-col relative shadow-2xl rounded-t-xl"
+                 <div
+                    className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#0f172a] border-t border-white/10 h-[90vh] flex flex-col relative shadow-2xl rounded-t-xl md:rounded-2xl xl:rounded-none xl:rounded-t-xl"
                     onClick={stopProp} // ✅ STOP PROPAGATION
                  >
                      <div className="px-8 pt-8 pb-4 border-b border-white/5 flex justify-between items-center bg-[#0f172a] z-10 rounded-t-xl">
@@ -571,7 +716,7 @@ export default function App({ state, actions, helpers }: any) {
                                              <div className="font-lux text-[#fbbf24] text-lg">{finalPriceTotal}</div>
                                          </div>
                                      </div>
-                                     
+
                                      <div className="flex items-center justify-between mt-3">
                                          <div className="flex items-center border border-white/10 h-7 w-20 rounded-sm">
                                             <button onClick={() => updateQuantity(idx, -1)} className="w-7 h-full flex items-center justify-center hover:bg-white/5 text-[#94a3b8] hover:text-white transition-colors"><Icon name="minus" size={10}/></button>
@@ -605,18 +750,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CONFIRMATION MODAL (Fixed Click-Through) --- */}
         {showConfirm && (
-            <div 
+            <div
                 className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-md p-6 animate-slide"
                 onClick={() => setShowConfirm(false)} // ✅ Click backdrop to close
             >
-                <div 
+                <div
                     className="w-full max-w-sm bg-[#0f172a] p-10 text-center shadow-2xl border border-white/10 rounded-sm"
                     onClick={stopProp} // ✅ STOP PROPAGATION
                 >
                     <div className="mb-8 flex justify-center text-[#fbbf24]">
                         <Icon name="check" size={40} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                              <h3 className="text-lg font-light text-white mb-2 font-lux tracking-wide">Direct Order</h3>

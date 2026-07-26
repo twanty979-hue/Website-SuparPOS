@@ -4,16 +4,16 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Mouse Hole
-    home: <path d="M12 3a9 9 0 0 0-9 9v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7a9 9 0 0 0-9-9z M12 21a4 4 0 0 1-4-4h8a4 4 0 0 1-4 4z" />, 
+    home: <path d="M12 3a9 9 0 0 0-9 9v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7a9 9 0 0 0-9-9z M12 21a4 4 0 0 1-4-4h8a4 4 0 0 1-4 4z" />,
     // Menu -> Cheese Block
-    menu: <path d="M3 6h18M3 12h18M3 18h18" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M3 6h18M3 12h18M3 18h18" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Mousetrap
     basket: <path d="M2 12h20v8H2z M12 12V6a4 4 0 0 0-8 0v6" />,
     // Clock -> Dynamite Timer
     clock: <circle cx="12" cy="12" r="10" />,
     // Chef -> Chef Hat
-    chef: <path d="M12 2C9 2 7 4 7 7c0 1.5 1 3 2.5 3.5C8 11.5 6 13 6 16v4h12v-4c0-3-2-4.5-3.5-5.5C16 10 17 8.5 17 7c0-3-2-5-5-5z" />, 
+    chef: <path d="M12 2C9 2 7 4 7 7c0 1.5 1 3 2.5 3.5C8 11.5 6 13 6 16v4h12v-4c0-3-2-4.5-3.5-5.5C16 10 17 8.5 17 7c0-3-2-5-5-5z" />,
     // Star -> Cheese Wedge
     star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />,
     plus: <path d="M5 12h14M12 5v14" />,
@@ -22,25 +22,25 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Explosion / Wham!
-    flame: <path d="M12 2l2 5h5l-4 4 2 6-5-3-5 3 2-6-4-4h5z" />, 
+    flame: <path d="M12 2l2 5h5l-4 4 2 6-5-3-5 3 2-6-4-4h5z" />,
     pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
     // Hammer (Mallet)
     hammer: <path d="M21 10h-3V3h-4v7H3v6h11v5h4v-5h3z" />
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -58,7 +58,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -70,9 +70,10 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
 
@@ -81,6 +82,14 @@ export default function App({ state, actions, helpers }: any) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const io: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, i: number) => {
+          if (opt.type === 'single' && opt.required && opt.choices.length > 0) io[i] = [opt.choices[0]];
+          else io[i] = [];
+        });
+      }
+      setSelectedOptions(io);
     }
   }, [selectedProduct]);
 
@@ -95,7 +104,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -107,42 +116,55 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#FFF8E1]" />;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const selectedToppings = selectedProduct?.options ? selectedProduct.options.flatMap((opt: any, index: number) => (selectedOptions[index] || []).map((choice: any) => ({ group_id: opt.id, group_name: opt.name, topping_id: choice.id, topping_name: choice.name, image_name: choice.image_name || null, image_url: choice.image_url || choice.image_name || null, price: Number(choice.price || 0) }))) : [];
+  const toppingTotal = selectedToppings.reduce((s: number, i: any) => s + Number(i.price || 0), 0);
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+  const currentPriceObj = selectedProduct ? { ...basePriceObj, final: finalPriceWithOpts, original: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal } : { final: 0, original: 0, discount: 0 };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let t: string[] = [];
+    selectedProduct.options.forEach((opt: any, i: number) => { const sc = selectedOptions[i]; if (sc && sc.length > 0) t.push(`${opt.name}: ${sc.map((c: any) => c.name).join(', ')}`); });
+    return (t.length > 0 ? `[${t.join(' | ')}] ` : "") + note;
+  };
+
+  const handleOptionToggle = (gi: number, choice: any, type: string) => {
+    setSelectedOptions((prev: any) => {
+      const cur = prev[gi] || []; const ck = String(choice.id || choice.name);
+      const req = !!selectedProduct?.options?.[gi]?.required;
+      const sel = cur.some((i: any) => String(i.id || i.name) === ck);
+      if (type === 'single') { if (sel && !req) return { ...prev, [gi]: [] }; return { ...prev, [gi]: [choice] }; }
+      else { if (sel) return { ...prev, [gi]: cur.filter((i: any) => String(i.id || i.name) !== ck) }; return { ...prev, [gi]: [...cur, choice] }; }
+    });
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-
-    if (addToCartOnly) {
-        for(let i=0; i<qty; i++) {
-            handleAddToCart(selectedProduct, variant, note);
-        }
-        setSelectedProduct(null);
-    } else {
-        if (cart && cart.length > 0) {
-            setShowConfirm(true); 
-        } else {
-            performCookNow();
-        }
-    }
+    if (selectedProduct.options) { for (let i = 0; i < selectedProduct.options.length; i++) { const opt = selectedProduct.options[i]; if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) { alert(`กรุณาเลือก: ${opt.name}`); return; } } }
+    const finalNote = generateOptionNote();
+    const productToAdd = { ...selectedProduct, variant, note: finalNote, specialRequest: finalNote, comment: finalNote, remark: finalNote, price: finalPriceWithOpts, original_price: currentPriceObj.original, toppings_snapshot: selectedToppings };
+    if (addToCartOnly) { for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote); setSelectedProduct(null); }
+    else { if (cart && cart.length > 0) setShowConfirm(true); else performCookNow(); }
   };
 
   const performCookNow = () => {
-    for(let i=0; i<qty; i++) {
-        handleAddToCart(selectedProduct, variant, note);
-    }
+    if (!selectedProduct) return;
+    if (selectedProduct.options) { for (let i = 0; i < selectedProduct.options.length; i++) { const opt = selectedProduct.options[i]; if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) { alert(`กรุณาเลือก: ${opt.name}`); return; } } }
+    const finalNote = generateOptionNote();
+    const productToAdd = { ...selectedProduct, variant, note: finalNote, specialRequest: finalNote, comment: finalNote, remark: finalNote, price: finalPriceWithOpts, original_price: currentPriceObj.original, toppings_snapshot: selectedToppings };
+    for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
 
   return (
     // Theme: Tom & Jerry (Kitchen Chase)
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#1E3A8A]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#1E3A8A]">
+
         <style jsx global>{`
             @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap');
-            
+
             :root {
                 --primary: #3B82F6; /* Tom Blue */
                 --primary-dark: #1E40AF;
@@ -156,7 +178,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Comic Neue', cursive;
                 background-color: #E0F2FE; /* Kitchen Tile Blue */
                 /* --- 🏁 KITCHEN TILE PATTERN --- */
-                background-image: 
+                background-image:
                     conic-gradient(#BFDBFE 90deg, #E0F2FE 90deg 180deg, #BFDBFE 180deg 270deg, #E0F2FE 270deg);
                 background-size: 40px 40px;
                 background-attachment: fixed;
@@ -237,7 +259,7 @@ export default function App({ state, actions, helpers }: any) {
         <header className="bg-[#3B82F6] text-white pt-8 pb-16 px-6 rounded-b-[3rem] relative overflow-hidden shadow-xl z-10 border-b-4 border-[#111827]">
              <div className="absolute top-[-20px] left-[-20px] w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
              <div className="absolute bottom-[-10px] right-[-10px] w-32 h-32 bg-[#FFD700]/20 rounded-full blur-xl"></div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-[#111827] w-fit px-4 py-1.5 rounded-full border-2 border-white shadow-sm transform -rotate-2">
@@ -259,7 +281,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-enter">
@@ -285,7 +307,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -335,7 +357,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-6 py-3 text-lg font-bold rounded-xl flex items-center gap-2 ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -388,7 +410,7 @@ export default function App({ state, actions, helpers }: any) {
         <div className="space-y-4">
             {ordersList?.map((o: any) => (
                 <div key={o.id} className="bg-white p-5 border-4 border-[#111827] rounded-[2rem] relative overflow-hidden shadow-[6px_6px_0_#EF4444]">
-                    
+
                     {/* Header: Plan ID & Status */}
                     <div className="flex justify-between items-start mb-4">
                          <span className="text-sm text-[#1E3A8A] font-bold uppercase tracking-widest flex items-center gap-1 comic-font">
@@ -406,22 +428,22 @@ export default function App({ state, actions, helpers }: any) {
                             // ✅ LOGIC: คำนวณราคาและส่วนลด
                             const quantity = i.quantity || 1;
                             const finalPriceTotal = i.price * quantity;
-                            
+
                             const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                            
-                            const originalPriceTotal = hasDiscount 
-                                ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+
+                            const originalPriceTotal = hasDiscount
+                                ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                 : finalPriceTotal;
-                                
+
                             const discountAmount = originalPriceTotal - finalPriceTotal;
 
                             return (
                                 <div key={idx} className="flex justify-between items-start text-lg text-[#111827] font-bold mb-2 border-b border-dashed border-[#9CA3AF] pb-2 last:border-0 comic-font">
-                                    
+
                                     {/* Left: Info */}
                                     <div className="flex flex-col items-start pr-2">
                                         <span className="leading-tight text-xl">{quantity}x {i.product_name}</span>
-                                        
+
                                         {/* Variant Badge (Explosive Style) */}
                                         {i.variant !== 'normal' && (
                                             <span className={`text-[10px] bg-[#EF4444] text-white px-2 py-0.5 rounded-none border-2 border-black font-sans font-bold mt-1 shadow-[2px_2px_0_black] uppercase tracking-wider transform -rotate-2`}>
@@ -471,7 +493,7 @@ export default function App({ state, actions, helpers }: any) {
                     </div>
                 </div>
             ))}
-            
+
             {/* Empty State */}
             {(!ordersList || ordersList.length === 0) && (
                  <div className="text-center py-12 opacity-50">
@@ -522,13 +544,13 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Cookbook) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#111827]/80 backdrop-blur-sm animate-in fade-in duration-300">
-                <div className="w-full max-w-md bg-white border-t-8 border-x-8 border-[#111827] h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-[0_-10px_0_#EF4444] rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
-                    <div className="relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#111827]/80 backdrop-blur-sm animate-in fade-in duration-300">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-8 border-x-8 border-[#111827] h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col shadow-[0_-10px_0_#EF4444] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
+                    <div className="relative shrink-0">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-[#EF4444] text-white rounded-full border-4 border-[#111827] flex items-center justify-center hover:bg-[#DC2626] transition-colors shadow-[0_4px_0_#991B1B] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-72 overflow-hidden border-b-8 border-[#111827] rounded-b-[2rem] bg-[#3B82F6]">
+                        <div className="relative w-full h-72 md:h-52 xl:h-72 shrink-0 overflow-hidden border-b-8 border-[#111827] rounded-b-[2rem] bg-[#3B82F6]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#FFD700] text-[#111827] font-normal text-3xl comic-font rounded-xl border-4 border-[#111827] shadow-[0_4px_0_#B45309] transform -rotate-3 flex flex-col items-center leading-none">
@@ -543,9 +565,9 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-8 pb-32 relative overflow-hidden bg-[#FFF8E1]">
+                    <div className="px-8 pt-8 pb-6 flex-1 overflow-y-auto no-scrollbar relative bg-[#FFF8E1]">
                         <h2 className="text-4xl comic-font text-[#1E3A8A] mb-6 leading-tight transform rotate-1 drop-shadow-sm">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-5 relative z-10">
                             {/* --- 🏷️ VARIANT SELECTOR (3 PRICES) --- */}
                             <div>
@@ -556,12 +578,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'CAT', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'SPIKE', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-xl border-4 transition-all flex flex-col items-center justify-between h-24 comic-font
-                                                ${variant === v.key 
-                                                    ? 'bg-[#3B82F6] border-[#1E40AF] shadow-[0_4px_0_#111827] -translate-y-1 text-white' 
+                                                ${variant === v.key
+                                                    ? 'bg-[#3B82F6] border-[#1E40AF] shadow-[0_4px_0_#111827] -translate-y-1 text-white'
                                                     : 'bg-white border-[#D1D5DB] text-[#9CA3AF] hover:border-[#3B82F6] hover:text-[#3B82F6]'}`}
                                         >
                                             <span className="text-xs font-bold tracking-widest">{v.label}</span>
@@ -575,6 +597,39 @@ export default function App({ state, actions, helpers }: any) {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                              <div className="space-y-4">
+                                {selectedProduct.options.map((opt: any, index: number) => (
+                                  <div key={index} className="bg-white border-4 border-[#93C5FD] rounded-2xl p-4 shadow-sm">
+                                    <div className="flex justify-between items-center mb-3">
+                                      <label className="text-lg font-bold text-[#1E3A8A]" style={{fontFamily:'Bangers'}}>{opt.name}{opt.required && <span className="text-[#EF4444] ml-2 text-sm">*</span>}</label>
+                                      <span className="text-xs font-bold text-[#3B82F6] bg-blue-50 px-2 py-1 rounded-md border border-blue-200">{opt.type === 'single' ? 'เลือก 1' : 'เลือกได้หลาย'}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {opt.choices.map((choice: any, cIndex: number) => {
+                                        const ck = String(choice.id || choice.name);
+                                        const isSel = (selectedOptions[index] || []).some((i: any) => String(i.id || i.name) === ck);
+                                        return (
+                                          <div key={cIndex} onClick={() => handleOptionToggle(index, choice, opt.type)}
+                                            className={`flex items-center justify-between p-3 rounded-xl border-3 cursor-pointer transition-all ${isSel ? 'bg-[#DBEAFE] border-[#3B82F6] text-[#1E3A8A] shadow-sm -translate-y-0.5' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#93C5FD]'}`}>
+                                            <div className="flex items-center gap-3">
+                                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSel ? 'bg-[#3B82F6] border-[#1E40AF] text-white' : 'bg-gray-50 border-gray-300'}`}>
+                                                {isSel && <Icon name="check" size={14} />}
+                                              </div>
+                                              {(choice.image_url || choice.image_name) && <img src={choice.image_url || getMenuUrl(choice.image_name)} alt={choice.name} className="w-10 h-10 object-cover rounded-lg border-2 border-blue-100" />}
+                                              <span className="font-bold text-base">{choice.name}</span>
+                                            </div>
+                                            {Number(choice.price) > 0 && <span className={`font-black text-base ${isSel ? 'text-[#1E40AF]' : 'text-[#8D6E63]'}`}>+{Number(choice.price)}.-</span>}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
 
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 mt-2 bg-white border-4 border-[#111827] rounded-2xl p-4 shadow-[0_4px_0_#9CA3AF]">
@@ -593,10 +648,10 @@ export default function App({ state, actions, helpers }: any) {
                             <div className="relative">
                                 <label className="block text-lg font-bold text-[#111827] mb-2 comic-font ml-1 tracking-wide">KITCHEN NOTE:</label>
                                 <div className="relative">
-                                    <textarea 
+                                    <textarea
                                         value={note}
                                         onChange={(e) => setNote(e.target.value)}
-                                        placeholder="E.g., Extra cheese, No dynamite..." 
+                                        placeholder="E.g., Extra cheese, No dynamite..."
                                         className="w-full p-4 pl-12 bg-white border-4 border-[#D1D5DB] rounded-2xl font-bold text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#3B82F6] focus:shadow-[0_4px_0_#93C5FD] transition-all resize-none h-28 text-lg font-sans"
                                     />
                                     <div className="absolute top-4 left-4 text-[#8D6E63]">
@@ -606,14 +661,14 @@ export default function App({ state, actions, helpers }: any) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 mt-8 relative z-10">
-                            <button onClick={() => handleAdd(true)} className="py-4 bg-[#FFF] border-4 border-[#111827] text-[#111827] font-bold text-xl rounded-xl active:scale-95 transition-all shadow-[0_4px_0_#9CA3AF] comic-font">
-                                SET TRAP
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 btn-tom text-xl active:scale-95 transition-all flex items-center justify-center gap-2">
-                                WHAM! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-[#FFF8E1] border-t-8 border-[#111827] grid grid-cols-2 gap-4 z-30 rounded-b-none md:rounded-b-2xl xl:rounded-b-none">
+                        <button onClick={() => handleAdd(true)} className="py-4 bg-[#FFF] border-4 border-[#111827] text-[#111827] font-bold text-xl rounded-xl active:scale-95 transition-all shadow-[0_4px_0_#9CA3AF] comic-font">
+                            SET TRAP
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 btn-tom text-xl active:scale-95 transition-all flex items-center justify-center gap-2">
+                            WHAM! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -621,8 +676,8 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CART SHEET (The Trap) --- */}
         {activeTab === 'cart' && (
-             <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#111827]/80 backdrop-blur-sm animate-in fade-in duration-300">
-                 <div className="w-full max-w-md bg-[#FFF] border-t-8 border-[#111827] flex flex-col shadow-[0_-10px_0_#3B82F6] h-[85vh] rounded-t-[3rem] animate-in slide-in-from-bottom duration-300 relative">
+             <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#111827]/80 backdrop-blur-sm animate-in fade-in duration-300">
+                 <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#FFF] border-t-8 border-[#111827] flex flex-col shadow-[0_-10px_0_#3B82F6] h-[85vh] md:h-[80vh] xl:h-[85vh] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-in slide-in-from-bottom duration-300 relative">
                      {/* Decorative Elements */}
                      <div className="absolute -top-16 left-1/2 -translate-x-1/2">
                         <Icon name="basket" size={64} className="text-[#EF4444]" />
@@ -689,18 +744,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-[#EF4444] text-white rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#111827] shadow-[0_4px_0_#991B1B]">
                         <Icon name="flame" size={56} />
                     </div>
-                    
+
                     {selectedProduct ? (
                         <>
                             <h3 className="text-4xl comic-font text-[#111827] mb-2 leading-tight">GOTCHA!</h3>
                             <p className="text-xl text-[#8D6E63] mb-8 font-bold leading-tight">Add "{selectedProduct.name}" to the pile?</p>
                             <div className="flex flex-col gap-3">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-4 bg-[#FFD700] text-[#111827] font-bold border-4 border-[#111827] shadow-[0_4px_0_#B45309] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all text-xl comic-font rounded-xl">YES, GRAB IT!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-4 bg-white border-4 border-[#9CA3AF] text-[#374151] font-bold text-lg active:scale-95 transition-transform hover:bg-[#F3F4F6] rounded-xl">JUST STASH IT</button>

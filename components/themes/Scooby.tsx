@@ -4,16 +4,16 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Haunted House / Van
-    home: <path d="M2 22 12 2l10 20H2zM12 6v4M10 14h4" />, 
+    home: <path d="M2 22 12 2l10 20H2zM12 6v4M10 14h4" />,
     // Menu -> Clue List
-    menu: <path d="M3 6h18M3 12h18M3 18h18" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M3 6h18M3 12h18M3 18h18" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Scooby Snack Box / Dog Bowl
     basket: <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2 M9 14h6" />,
     // Clock -> Pocket Watch / Ghost Hour
     clock: <circle cx="12" cy="12" r="10" />,
     // Chef -> Dog Collar / Paw
-    chef: <path d="M12 2c-4 0-8 4-8 9 0 4.5 3.5 8 8 8s8-3.5 8-8c0-5-4-9-8-9zm0 14c-1.5 0-3-1-3-2.5S10.5 11 12 11s3 1 3 2.5S13.5 16 12 16z" />, 
+    chef: <path d="M12 2c-4 0-8 4-8 9 0 4.5 3.5 8 8 8s8-3.5 8-8c0-5-4-9-8-9zm0 14c-1.5 0-3-1-3-2.5S10.5 11 12 11s3 1 3 2.5S13.5 16 12 16z" />,
     star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />,
     plus: <path d="M5 12h14M12 5v14" />,
     minus: <path d="M5 12h14" />,
@@ -28,18 +28,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -64,7 +64,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -79,6 +79,7 @@ export default function App({ state, actions, helpers }: any) {
   const [variant, setVariant] = useState('normal'); // 'normal', 'special', 'jumbo'
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
 
@@ -87,6 +88,17 @@ export default function App({ state, actions, helpers }: any) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -101,7 +113,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -110,24 +122,94 @@ export default function App({ state, actions, helpers }: any) {
     prevCartLength.current = cart?.length || 0;
   }, [cart, pendingCookNow, handleCheckout]);
 
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#2D1B4E]" />;
-
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
 
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+
     if (addToCartOnly) {
         for(let i=0; i<qty; i++) {
-            handleAddToCart(selectedProduct, variant, note);
+            handleAddToCart(productToAdd, variant, finalNote);
         }
         setSelectedProduct(null);
     } else {
         if (cart && cart.length > 0) {
-            setShowConfirm(true); 
+            setShowConfirm(true);
         } else {
             performCookNow();
         }
@@ -135,8 +217,30 @@ export default function App({ state, actions, helpers }: any) {
   };
 
   const performCookNow = () => {
+    if (!selectedProduct) return;
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
     for(let i=0; i<qty; i++) {
-        handleAddToCart(selectedProduct, variant, note);
+        handleAddToCart(productToAdd, variant, finalNote);
     }
     setPendingCookNow(true);
     setSelectedProduct(null);
@@ -144,11 +248,11 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Scooby Doo (Mystery Machine)
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#2D1B4E]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#2D1B4E]">
+
         <style jsx global>{`
             @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Creepster&family=Mali:wght@400;700&display=swap');
-            
+
             :root {
                 --primary: #36B5B0; /* Mystery Machine Teal */
                 --primary-dark: #008080;
@@ -161,8 +265,8 @@ export default function App({ state, actions, helpers }: any) {
             body {
                 font-family: 'Mali', cursive;
                 background-color: #2D1B4E; /* Night Sky Purple */
-                background-image: 
-                    radial-gradient(circle at 50% 50%, #3a2363 20%, transparent 20%), 
+                background-image:
+                    radial-gradient(circle at 50% 50%, #3a2363 20%, transparent 20%),
                     radial-gradient(circle at 0% 0%, #3a2363 20%, transparent 20%);
                 background-size: 60px 60px;
                 background-attachment: fixed;
@@ -196,7 +300,7 @@ export default function App({ state, actions, helpers }: any) {
             .animate-pop { animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
             .btn-mystery {
-                background: #F28F1C; 
+                background: #F28F1C;
                 color: black;
                 border: 3px solid #000;
                 border-radius: 1rem;
@@ -247,28 +351,28 @@ export default function App({ state, actions, helpers }: any) {
              {/* Decorative Flowers */}
              <MysteryFlower className="absolute top-2 right-4 w-24 h-24 text-[#F28F1C] opacity-80 animate-pulse" />
              <MysteryFlower className="absolute bottom-2 left-[-20px] w-32 h-32 text-[#99CC33] opacity-60" />
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
-                 <div>
-                     <div className="flex items-center gap-2 mb-2 bg-[#7452A3] w-fit px-4 py-1.5 rounded-full border-2 border-black shadow-[3px_3px_0_black] transform -rotate-2">
-                         <span className="w-3 h-3 rounded-full bg-[#99CC33] animate-ping border border-black"></span>
-                         <p className="text-white text-xs font-black tracking-widest comic-font uppercase text-shadow">TABLE {tableLabel}</p>
-                     </div>
-                     <h1 className="text-4xl font-black tracking-wide leading-none mt-2 spooky-font text-[#99CC33] drop-shadow-[3px_3px_0_black] transform rotate-1">
-                         {brand?.name || "MYSTERY EATS"}
-                     </h1>
-                 </div>
-                 {/* Dog Collar Icon */}
-                 <div className="w-20 h-20 bg-[#F28F1C] rounded-full border-4 border-black flex items-center justify-center relative shadow-[4px_4px_0px_black] transform rotate-3">
-                     <div className="bg-[#36B5B0] w-14 h-14 rounded-full flex items-center justify-center border-2 border-black">
-                        <span className="comic-font text-3xl text-black font-black">SD</span>
-                     </div>
-                 </div>
+                  <div>
+                      <div className="flex items-center gap-2 mb-2 bg-[#7452A3] w-fit px-4 py-1.5 rounded-full border-2 border-black shadow-[3px_3px_0_black] transform -rotate-2">
+                          <span className="w-3 h-3 rounded-full bg-[#99CC33] animate-ping border border-black"></span>
+                          <p className="text-white text-xs font-black tracking-widest comic-font uppercase text-shadow">TABLE {tableLabel}</p>
+                      </div>
+                      <h1 className="text-4xl font-black tracking-wide leading-none mt-2 spooky-font text-[#99CC33] drop-shadow-[3px_3px_0_black] transform rotate-1">
+                          {brand?.name || "MYSTERY EATS"}
+                      </h1>
+                  </div>
+                  {/* Dog Collar Icon */}
+                  <div className="w-20 h-20 bg-[#F28F1C] rounded-full border-4 border-black flex items-center justify-center relative shadow-[4px_4px_0px_black] transform rotate-3">
+                      <div className="bg-[#36B5B0] w-14 h-14 rounded-full flex items-center justify-center border-2 border-black">
+                         <span className="comic-font text-3xl text-black font-black">SD</span>
+                      </div>
+                  </div>
              </div>
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-pop">
@@ -294,7 +398,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -344,7 +448,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-6 py-3 text-xl font-bold rounded-xl flex items-center gap-2 ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -379,120 +483,120 @@ export default function App({ state, actions, helpers }: any) {
             )}
 
             {/* --- STATUS PAGE (Scooby-Doo / Mystery Theme) --- */}
-{activeTab === 'status' && (
-    <section className="animate-pop pt-4 pb-24">
-        {/* Header: Clue Log */}
-        <div className="mb-8 flex items-center justify-between bg-[#2D1B4E] p-6 border-4 border-[#99CC33] rounded-[2rem] shadow-[6px_6px_0_#7452A3] relative overflow-hidden">
-             <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-[#7452A3] rounded-full border-4 border-[#99CC33] opacity-50"></div>
-             <div className="relative z-10">
-                 <h2 className="text-4xl spooky-font text-[#99CC33] drop-shadow-[2px_2px_0_black]">Clue Log</h2>
-                 <p className="text-sm text-[#36B5B0] font-bold mt-1 comic-font tracking-wider">Solving the mystery...</p>
-             </div>
-             {/* Search Icon */}
-             <div className="w-16 h-16 bg-[#F28F1C] border-4 border-black rounded-full flex items-center justify-center animate-spin-slow">
-                 <Icon name="search" className="text-black" size={32} />
-             </div>
-        </div>
-
-        <div className="space-y-4">
-            {ordersList?.map((o: any) => (
-                <div key={o.id} className="bg-white p-5 border-4 border-black rounded-[2rem] relative overflow-hidden shadow-[6px_6px_0_#99CC33]">
-                    
-                    {/* Header: Case ID & Status */}
-                    <div className="flex justify-between items-start mb-4">
-                         <span className="text-sm text-[#7452A3] font-black uppercase tracking-widest flex items-center gap-1 comic-font">
-                             Case #{o.id.slice(-4)}
-                         </span>
-                         <span className={`px-3 py-1 text-sm font-black uppercase tracking-wide border-2 border-black flex items-center gap-1.5 comic-font shadow-[2px_2px_0_black] rounded-lg transform -rotate-1
-                             ${o.status === 'pending' ? 'bg-[#F28F1C] text-black' : 'bg-[#99CC33] text-black'}`}>
-                             {o.status === 'pending' ? 'INVESTIGATING...' : 'SOLVED!'}
-                         </span>
+            {activeTab === 'status' && (
+                <section className="animate-pop pt-4 pb-24">
+                    {/* Header: Clue Log */}
+                    <div className="mb-8 flex items-center justify-between bg-[#2D1B4E] p-6 border-4 border-[#99CC33] rounded-[2rem] shadow-[6px_6px_0_#7452A3] relative overflow-hidden">
+                         <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-[#7452A3] rounded-full border-4 border-[#99CC33] opacity-50"></div>
+                         <div className="relative z-10">
+                             <h2 className="text-4xl spooky-font text-[#99CC33] drop-shadow-[2px_2px_0_black]">Clue Log</h2>
+                             <p className="text-sm text-[#36B5B0] font-bold mt-1 comic-font tracking-wider">Solving the mystery...</p>
+                         </div>
+                         {/* Search Icon */}
+                         <div className="w-16 h-16 bg-[#F28F1C] border-4 border-black rounded-full flex items-center justify-center animate-spin-slow">
+                             <Icon name="search" className="text-black" size={32} />
+                         </div>
                     </div>
 
-                    {/* Order Items List */}
-                    <div className="mb-3 space-y-1 bg-[#F1F8E9] p-4 border-2 border-black rounded-xl">
-                        {o.order_items.map((i: any, idx: any) => {
-                            // ✅ LOGIC: คำนวณราคาและส่วนลด
-                            const quantity = i.quantity || 1;
-                            const finalPriceTotal = i.price * quantity;
-                            
-                            const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                            
-                            const originalPriceTotal = hasDiscount 
-                                ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
-                                : finalPriceTotal;
-                                
-                            const discountAmount = originalPriceTotal - finalPriceTotal;
+                    <div className="space-y-4">
+                        {ordersList?.map((o: any) => (
+                            <div key={o.id} className="bg-white p-5 border-4 border-black rounded-[2rem] relative overflow-hidden shadow-[6px_6px_0_#99CC33]">
 
-                            return (
-                                <div key={idx} className="flex justify-between items-start text-lg text-black font-bold mb-2 border-b-2 border-dashed border-gray-300 pb-2 last:border-0 comic-font">
-                                    
-                                    {/* Left: Info */}
-                                    <div className="flex flex-col items-start pr-2">
-                                        <span className="leading-tight text-xl">{quantity}x {i.product_name}</span>
-                                        
-                                        {/* Variant Badge (Mystery Machine Style) */}
-                                        {i.variant !== 'normal' && (
-                                            <span className={`text-[10px] bg-[#36B5B0] text-black px-2 py-0.5 rounded-sm border-2 border-black font-black mt-1 shadow-[2px_2px_0_black] uppercase tracking-wider transform -rotate-1 comic-font`}>
-                                                {i.variant === 'special' ? 'ZOINKS!' : i.variant === 'jumbo' ? 'JINKIES!' : i.variant}
-                                            </span>
-                                        )}
-
-                                        {/* Note */}
-                                        {i.note && <span className="text-xs text-[#7452A3] italic sans-serif mt-0.5">"{i.note}"</span>}
-                                    </div>
-
-                                    {/* Right: Price */}
-                                    <div className="text-right flex flex-col items-end min-w-[80px]">
-                                        {hasDiscount ? (
-                                            <>
-                                                {/* 🔥 ป้าย SAVE (Scooby Snack Style) */}
-                                                <span className="text-[10px] text-black bg-[#99CC33] px-2 py-0.5 rounded-none font-black mb-1 shadow-[1px_1px_0_black] border-2 border-black transform rotate-2 animate-bounce">
-                                                    SAVE -{discountAmount}
-                                                </span>
-
-                                                {/* ราคาเต็ม (ขีดฆ่า) */}
-                                                <span className="text-sm text-gray-500 line-through decoration-[#F28F1C] decoration-4 sans-serif opacity-100 mb-0.5 font-bold">
-                                                    {originalPriceTotal}
-                                                </span>
-
-                                                {/* ราคาจริง */}
-                                                <span className="text-[#7452A3] text-2xl leading-none drop-shadow-sm">
-                                                    {finalPriceTotal}.-
-                                                </span>
-                                            </>
-                                        ) : (
-                                            // ราคาปกติ
-                                            <span className="text-[#F28F1C] text-2xl drop-shadow-[1px_1px_0_black]">{finalPriceTotal}.-</span>
-                                        )}
-                                    </div>
+                                {/* Header: Case ID & Status */}
+                                <div className="flex justify-between items-start mb-4">
+                                     <span className="text-sm text-[#7452A3] font-black uppercase tracking-widest flex items-center gap-1 comic-font">
+                                         Case #{o.id.slice(-4)}
+                                     </span>
+                                     <span className={`px-3 py-1 text-sm font-black uppercase tracking-wide border-2 border-black flex items-center gap-1.5 comic-font shadow-[2px_2px_0_black] rounded-lg transform -rotate-1
+                                         ${o.status === 'pending' ? 'bg-[#F28F1C] text-black' : 'bg-[#99CC33] text-black'}`}>
+                                         {o.status === 'pending' ? 'INVESTIGATING...' : 'SOLVED!'}
+                                     </span>
                                 </div>
-                            );
-                        })}
-                    </div>
 
-                    {/* Footer: Total */}
-                    <div className="flex justify-between items-center pt-2 border-t-4 border-black">
-                         <span className="font-bold text-[#7452A3] text-sm uppercase tracking-widest comic-font">TOTAL CLUES</span>
-                         <span className="font-black text-black text-3xl comic-font">
-                             {o.order_items.reduce((acc: any, i: any) => acc + (i.price * i.quantity), 0)}.-
-                         </span>
+                                {/* Order Items List */}
+                                <div className="mb-3 space-y-1 bg-[#F1F8E9] p-4 border-2 border-black rounded-xl">
+                                    {o.order_items.map((i: any, idx: any) => {
+                                        // ✅ LOGIC: คำนวณราคาและส่วนลด
+                                        const quantity = i.quantity || 1;
+                                        const finalPriceTotal = i.price * quantity;
+
+                                        const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
+
+                                        const originalPriceTotal = hasDiscount
+                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
+                                            : finalPriceTotal;
+
+                                        const discountAmount = originalPriceTotal - finalPriceTotal;
+
+                                        return (
+                                            <div key={idx} className="flex justify-between items-start text-lg text-black font-bold mb-2 border-b-2 border-dashed border-gray-300 pb-2 last:border-0 comic-font">
+
+                                                {/* Left: Info */}
+                                                <div className="flex flex-col items-start pr-2">
+                                                    <span className="leading-tight text-xl">{quantity}x {i.product_name}</span>
+
+                                                    {/* Variant Badge (Mystery Machine Style) */}
+                                                    {i.variant !== 'normal' && (
+                                                        <span className={`text-[10px] bg-[#36B5B0] text-black px-2 py-0.5 rounded-sm border-2 border-black font-black mt-1 shadow-[2px_2px_0_black] uppercase tracking-wider transform -rotate-1 comic-font`}>
+                                                            {i.variant === 'special' ? 'ZOINKS!' : i.variant === 'jumbo' ? 'JINKIES!' : i.variant}
+                                                        </span>
+                                                    )}
+
+                                                    {/* Note */}
+                                                    {i.note && <span className="text-xs text-[#7452A3] italic sans-serif mt-0.5">"{i.note}"</span>}
+                                                </div>
+
+                                                {/* Right: Price */}
+                                                <div className="text-right flex flex-col items-end min-w-[80px]">
+                                                    {hasDiscount ? (
+                                                        <>
+                                                            {/* 🔥 ป้าย SAVE (Scooby Snack Style) */}
+                                                            <span className="text-[10px] text-black bg-[#99CC33] px-2 py-0.5 rounded-none font-black mb-1 shadow-[1px_1px_0_black] border-2 border-black transform rotate-2 animate-bounce">
+                                                                SAVE -{discountAmount}
+                                                            </span>
+
+                                                            {/* ราคาเต็ม (ขีดฆ่า) */}
+                                                            <span className="text-sm text-gray-500 line-through decoration-[#F28F1C] decoration-4 sans-serif opacity-100 mb-0.5 font-bold">
+                                                                {originalPriceTotal}
+                                                            </span>
+
+                                                            {/* ราคาจริง */}
+                                                            <span className="text-[#7452A3] text-2xl leading-none drop-shadow-sm">
+                                                                {finalPriceTotal}.-
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        // ราคาปกติ
+                                                        <span className="text-[#F28F1C] text-2xl drop-shadow-[1px_1px_0_black]">{finalPriceTotal}.-</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Footer: Total */}
+                                <div className="flex justify-between items-center pt-2 border-t-4 border-black">
+                                     <span className="font-bold text-[#7452A3] text-sm uppercase tracking-widest comic-font">TOTAL CLUES</span>
+                                     <span className="font-black text-black text-3xl comic-font">
+                                         {o.order_items.reduce((acc: any, i: any) => acc + (i.price * i.quantity), 0)}.-
+                                     </span>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Empty State */}
+                        {(!ordersList || ordersList.length === 0) && (
+                             <div className="text-center py-12 opacity-50">
+                                <div className="w-20 h-20 bg-[#F1F8E9] rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-black">
+                                    <Icon name="search" size={40} className="text-[#7452A3]" />
+                                </div>
+                                <p className="spooky-font text-2xl text-[#2D1B4E]">Looks like a ghost town...</p>
+                             </div>
+                        )}
                     </div>
-                </div>
-            ))}
-            
-            {/* Empty State */}
-            {(!ordersList || ordersList.length === 0) && (
-                 <div className="text-center py-12 opacity-50">
-                    <div className="w-20 h-20 bg-[#F1F8E9] rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-black">
-                        <Icon name="search" size={40} className="text-[#7452A3]" />
-                    </div>
-                    <p className="spooky-font text-2xl text-[#2D1B4E]">Looks like a ghost town...</p>
-                 </div>
+                </section>
             )}
-        </div>
-    </section>
-)}
 
         </main>
 
@@ -531,32 +635,32 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Trap Card) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#2D1B4E]/80 backdrop-blur-sm animate-in fade-in duration-300">
-                <div className="w-full max-w-md bg-white border-t-4 border-x-4 border-black h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-[0_-10px_0_#99CC33] rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#2D1B4E]/80 backdrop-blur-sm animate-in fade-in duration-300">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-4 border-x-4 border-black max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] shadow-[0_-10px_0_#99CC33] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-in slide-in-from-bottom duration-300 flex flex-col overflow-hidden">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-[#F28F1C] text-black rounded-full border-4 border-black flex items-center justify-center hover:bg-[#ffaa4d] transition-colors shadow-[2px_2px_0_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-72 overflow-hidden border-b-4 border-black rounded-b-[2rem] bg-[#36B5B0]">
+                        <div className="relative w-full h-56 sm:h-64 md:h-52 xl:h-72 overflow-hidden border-b-4 border-black rounded-b-[2rem] bg-[#36B5B0]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#99CC33] text-black font-black text-3xl comic-font rounded-xl border-4 border-black shadow-[4px_4px_0_black] transform -rotate-3 flex flex-col items-center leading-none">
-                                    {currentPriceObj.discount > 0 && (
+                                    {basePriceObj.discount > 0 && (
                                         <span className="text-base line-through text-black decoration-red-600 decoration-4 mb-1">
-                                            {currentPriceObj.original}
+                                            {basePriceObj.original + toppingTotal}
                                         </span>
                                     )}
-                                    <span>{currentPriceObj.final}.-</span>
+                                    <span>{finalPriceWithOpts}.-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-8 pt-8 pb-32 relative overflow-hidden">
+                    <div className="flex-1 overflow-y-auto no-scrollbar px-8 pt-8 pb-6 relative">
                         <MysteryFlower className="absolute top-10 right-[-20px] w-40 h-40 text-[#36B5B0] opacity-20" />
-                        
+
                         <h2 className="text-4xl spooky-font text-[#7452A3] mb-6 leading-tight transform rotate-1 drop-shadow-[1px_1px_0_#99CC33]">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-5 relative z-10">
                             {/* --- 🏷️ VARIANT SELECTOR (3 PRICES) --- */}
                             <div>
@@ -567,12 +671,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'SPECIAL', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'JUMBO', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-xl border-4 transition-all flex flex-col items-center justify-between h-24 comic-font
-                                                ${variant === v.key 
-                                                    ? 'bg-[#F28F1C] border-black shadow-[3px_3px_0_black] -translate-y-1' 
+                                                ${variant === v.key
+                                                    ? 'bg-[#F28F1C] border-black shadow-[3px_3px_0_black] -translate-y-1'
                                                     : 'bg-white border-gray-300 text-gray-400 hover:border-black hover:text-black'}`}
                                         >
                                             <span className="text-xs font-black tracking-widest">{v.label}</span>
@@ -596,18 +700,81 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm text-[#7452A3] font-bold uppercase tracking-widest mb-1 comic-font">TOTAL</p>
-                                    <p className="text-5xl font-black text-black comic-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-5xl font-black text-black comic-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
+
+                            {/* Product Options */}
+                            {selectedProduct.options && Array.isArray(selectedProduct.options) && (
+                                <div className="space-y-6">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => {
+                                        return (
+                                            <div key={opt.id || groupIndex} className="bg-white border-4 border-black rounded-2xl p-4 shadow-[4px_4px_0_#7452A3]">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <label className="text-xl font-black text-black comic-font tracking-wide">
+                                                        {opt.name}
+                                                    </label>
+                                                    <div className="flex gap-2">
+                                                        {opt.required && (
+                                                            <span className="text-xs bg-[#F28F1C] text-black px-2 py-0.5 border-2 border-black rounded font-black tracking-wider uppercase transform -rotate-1 comic-font shadow-[2px_2px_0_black]">
+                                                                REQUIRED
+                                                            </span>
+                                                        )}
+                                                        <span className="text-xs bg-[#36B5B0] text-black px-2 py-0.5 border-2 border-black rounded font-black tracking-wider uppercase transform rotate-1 comic-font shadow-[2px_2px_0_black]">
+                                                            {opt.type === 'single' ? 'SELECT ONE' : 'MULTI-SELECT'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {opt.choices && opt.choices.map((choice: any) => {
+                                                        const isSelected = (selectedOptions[groupIndex] || []).some(
+                                                            (c: any) => String(c.id || c.name) === String(choice.id || choice.name)
+                                                        );
+                                                        const hasImage = !!(choice.image_url || choice.image_name);
+                                                        return (
+                                                            <button
+                                                                key={choice.id || choice.name}
+                                                                type="button"
+                                                                onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                                className={`p-3 rounded-xl border-4 transition-all flex flex-col items-center justify-between text-center relative
+                                                                    ${isSelected
+                                                                        ? 'bg-[#99CC33] border-black shadow-[3px_3px_0_black] -translate-y-1'
+                                                                        : 'bg-white border-gray-300 hover:border-black text-black'}`}
+                                                            >
+                                                                {hasImage && (
+                                                                    <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-black mb-2 bg-[#F1F8E9]">
+                                                                        <img
+                                                                            src={getMenuUrl(choice.image_url || choice.image_name)}
+                                                                            alt={choice.name}
+                                                                            className="w-full h-full object-cover"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <span className="font-bold text-sm text-black leading-tight mb-1 font-sans">
+                                                                    {choice.name}
+                                                                </span>
+                                                                <span className="text-sm font-black text-[#7452A3] comic-font">
+                                                                    {Number(choice.price || 0) > 0 ? `+${choice.price}.-` : 'FREE'}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
                             {/* 📝 Note Input */}
                             <div className="relative">
                                 <label className="block text-lg font-bold text-black mb-2 comic-font ml-1 tracking-wide">SECRET MESSAGE TO CHEF:</label>
                                 <div className="relative">
-                                    <textarea 
+                                    <textarea
                                         value={note}
                                         onChange={(e) => setNote(e.target.value)}
-                                        placeholder="E.g., No ghosts, Extra sauce..." 
+                                        placeholder="E.g., No ghosts, Extra sauce..."
                                         className="w-full p-4 pl-12 bg-[#F1F8E9] border-4 border-black rounded-2xl font-bold text-black placeholder:text-gray-400 focus:outline-none focus:bg-white focus:shadow-[4px_4px_0_#7452A3] transition-all comic-font resize-none h-28 text-lg"
                                     />
                                     <div className="absolute top-4 left-4 text-[#7452A3]">
@@ -616,15 +783,14 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4 mt-8 relative z-10">
-                            <button onClick={() => handleAdd(true)} className="py-4 bg-white border-4 border-black text-black font-black text-xl rounded-xl active:scale-95 transition-all shadow-[4px_4px_0_black] comic-font">
-                                ADD TO VAN
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 btn-mystery text-xl active:scale-95 transition-all flex items-center justify-center gap-2">
-                                EAT IT! <Icon name="bone" size={24} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-4 border-black grid grid-cols-2 gap-4 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-4 bg-white border-4 border-black text-black font-black text-xl rounded-xl active:scale-95 transition-all shadow-[4px_4px_0_black] comic-font">
+                            ADD TO VAN
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 btn-mystery text-xl active:scale-95 transition-all flex items-center justify-center gap-2">
+                            EAT IT! <Icon name="bone" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -633,7 +799,7 @@ export default function App({ state, actions, helpers }: any) {
         {/* --- CART SHEET (The Trap) --- */}
         {activeTab === 'cart' && (
              <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#2D1B4E]/80 backdrop-blur-sm animate-in fade-in duration-300">
-                 <div className="w-full max-w-md bg-[#FFF] border-t-4 border-black flex flex-col shadow-[0_-10px_0_#F28F1C] h-[85vh] rounded-t-[3rem] animate-in slide-in-from-bottom duration-300 relative">
+                 <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#FFF] border-t-4 border-black flex flex-col shadow-[0_-10px_0_#F28F1C] h-[85vh] md:h-[80vh] xl:h-[85vh] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-in slide-in-from-bottom duration-300 relative">
                      {/* Decorative Elements */}
                      <div className="absolute -top-16 left-1/2 -translate-x-1/2">
                         <Icon name="flame" size={64} className="text-[#99CC33] animate-bounce" />
@@ -644,52 +810,52 @@ export default function App({ state, actions, helpers }: any) {
                      </div>
 
                      <div className="flex justify-between items-center mb-6 px-8 pt-2">
-                         <h2 className="text-4xl spooky-font text-[#7452A3] drop-shadow-[2px_2px_0_#99CC33] transform -rotate-2">Captured Snacks</h2>
-                         <div className="w-14 h-14 bg-[#F28F1C] text-black border-4 border-black rounded-xl flex items-center justify-center font-black text-2xl comic-font shadow-[3px_3px_0_black]">
-                             <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
-                         </div>
+                          <h2 className="text-4xl spooky-font text-[#7452A3] drop-shadow-[2px_2px_0_#99CC33] transform -rotate-2">Captured Snacks</h2>
+                          <div className="w-14 h-14 bg-[#F28F1C] text-black border-4 border-black rounded-xl flex items-center justify-center font-black text-2xl comic-font shadow-[3px_3px_0_black]">
+                              <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
+                          </div>
                      </div>
 
                      <div className="flex-1 overflow-y-auto space-y-4 px-6 pb-6 no-scrollbar">
-                         {cart.map((item: any, idx: any) => (
-                             <div key={idx} className="flex items-center gap-4 bg-white p-4 border-4 border-black rounded-2xl relative overflow-hidden shadow-[4px_4px_0_#36B5B0]">
-                                 <div className="w-4 h-full absolute left-0 top-0 bg-[#36B5B0] border-r-4 border-black" />
-                                 <img src={item.image_url} className="w-20 h-20 object-cover border-4 border-black rounded-xl ml-4 bg-gray-100" />
-                                 <div className="flex-1">
-                                     <div className="font-bold text-black text-xl leading-tight comic-font tracking-wide">
-                                         {item.name} <span className="text-[#7452A3]">x{item.quantity}</span>
-                                     </div>
-                                     <div className="text-sm font-bold mt-1">
-                                         {item.variant !== 'normal' && <span className="bg-[#F28F1C] text-black px-2 py-0.5 border-2 border-black rounded text-xs comic-font mr-2">{item.variant}</span>}
-                                         {item.note && <span className="block text-gray-500 italic mt-1 text-xs">"{item.note}"</span>}
-                                     </div>
-                                 </div>
-                                 <div className="font-black text-[#F28F1C] text-2xl comic-font drop-shadow-[1px_1px_0_black]">{item.price * item.quantity}.-</div>
-                                 <button onClick={() => updateQuantity(idx, -1)} className="w-10 h-10 bg-[#ffcccc] hover:bg-red-200 flex items-center justify-center text-red-600 border-2 border-black rounded-xl transition-colors active:scale-90 shadow-[2px_2px_0_black]">
-                                     <Icon name="trash" size={20} />
-                                 </button>
-                             </div>
-                         ))}
-                         {cart.length === 0 && (
-                             <div className="text-center py-10 text-[#7452A3] spooky-font text-2xl animate-pulse">
-                                 Ruh-Roh! No Snacks!
-                             </div>
-                         )}
+                          {cart.map((item: any, idx: any) => (
+                              <div key={idx} className="flex items-center gap-4 bg-white p-4 border-4 border-black rounded-2xl relative overflow-hidden shadow-[4px_4px_0_#36B5B0]">
+                                  <div className="w-4 h-full absolute left-0 top-0 bg-[#36B5B0] border-r-4 border-black" />
+                                  <img src={item.image_url} className="w-20 h-20 object-cover border-4 border-black rounded-xl ml-4 bg-gray-100" />
+                                  <div className="flex-1">
+                                      <div className="font-bold text-black text-xl leading-tight comic-font tracking-wide">
+                                          {item.name} <span className="text-[#7452A3]">x{item.quantity}</span>
+                                      </div>
+                                      <div className="text-sm font-bold mt-1">
+                                          {item.variant !== 'normal' && <span className="bg-[#F28F1C] text-black px-2 py-0.5 border-2 border-black rounded text-xs comic-font mr-2">{item.variant}</span>}
+                                          {item.note && <span className="block text-gray-500 italic mt-1 text-xs">"{item.note}"</span>}
+                                      </div>
+                                  </div>
+                                  <div className="font-black text-[#F28F1C] text-2xl comic-font drop-shadow-[1px_1px_0_black]">{item.price * item.quantity}.-</div>
+                                  <button onClick={() => updateQuantity(idx, -1)} className="w-10 h-10 bg-[#ffcccc] hover:bg-red-200 flex items-center justify-center text-red-600 border-2 border-black rounded-xl transition-colors active:scale-90 shadow-[2px_2px_0_black]">
+                                      <Icon name="trash" size={20} />
+                                  </button>
+                              </div>
+                          ))}
+                          {cart.length === 0 && (
+                              <div className="text-center py-10 text-[#7452A3] spooky-font text-2xl animate-pulse">
+                                  Ruh-Roh! No Snacks!
+                              </div>
+                          )}
                      </div>
 
                      <div className="p-8 bg-[#36B5B0] border-t-4 border-black relative z-30 rounded-t-[2.5rem]">
-                         <div className="flex justify-between items-center mb-6 pb-6 border-b-4 border-dashed border-black">
-                             <div>
-                                 <p className="text-sm text-black font-black uppercase tracking-widest comic-font">TOTAL LOOT</p>
-                                 <p className="text-6xl font-black text-[#F28F1C] comic-font drop-shadow-[3px_3px_0_black]">{cartTotal}.-</p>
-                             </div>
-                             <div className="w-20 h-20 bg-white border-4 border-black rounded-full flex items-center justify-center text-[#7452A3] transform rotate-6 shadow-[4px_4px_0_black]">
-                                 <Icon name="basket" size={40} />
-                             </div>
-                         </div>
-                         <button onClick={() => { setShowConfirm(true); setSelectedProduct(null); }} className="w-full py-5 btn-mystery text-3xl active:scale-95 transition-all flex items-center justify-center gap-3">
-                             <span>SOLVE HUNGER!</span> <Icon name="check" size={32} strokeWidth={4} />
-                         </button>
+                          <div className="flex justify-between items-center mb-6 pb-6 border-b-4 border-dashed border-black">
+                              <div>
+                                  <p className="text-sm text-black font-black uppercase tracking-widest comic-font">TOTAL LOOT</p>
+                                  <p className="text-6xl font-black text-[#F28F1C] comic-font drop-shadow-[3px_3px_0_black]">{cartTotal}.-</p>
+                              </div>
+                              <div className="w-20 h-20 bg-white border-4 border-black rounded-full flex items-center justify-center text-[#7452A3] transform rotate-6 shadow-[4px_4px_0_black]">
+                                  <Icon name="basket" size={40} />
+                              </div>
+                          </div>
+                          <button onClick={() => { setShowConfirm(true); setSelectedProduct(null); }} className="w-full py-5 btn-mystery text-3xl active:scale-95 transition-all flex items-center justify-center gap-3">
+                              <span>SOLVE HUNGER!</span> <Icon name="check" size={32} strokeWidth={4} />
+                          </button>
                      </div>
                  </div>
              </div>
@@ -702,18 +868,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-[#36B5B0] text-black rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-black shadow-[4px_4px_0_black]">
                         <Icon name="flame" size={56} className="animate-pulse" />
                     </div>
-                    
+
                     {selectedProduct ? (
                         <>
                             <h3 className="text-4xl spooky-font text-black mb-2 leading-tight">JINKIES!</h3>
                             <p className="text-xl text-black mb-8 font-bold comic-font leading-tight">Add "{selectedProduct.name}" to your stash?</p>
                             <div className="flex flex-col gap-3">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-4 bg-[#F28F1C] text-black font-black border-4 border-black shadow-[4px_4px_0_black] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all text-xl comic-font rounded-xl">YES, GRAB IT ALL!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-4 bg-white border-4 border-black text-black font-black text-lg active:scale-95 transition-transform hover:bg-gray-100 comic-font rounded-xl">JUST ADD TO VAN</button>

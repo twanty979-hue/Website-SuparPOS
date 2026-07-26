@@ -4,16 +4,16 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Door / Entrance
-    home: <path d="M20 20V8h-2V6h-2v2H8V6H6v2H4v12h16zM6 10h3v8H6v-8zm5 0h3v8h-3v-8zm5 0h3v8h-3v-8z M12 2l-6 4h12l-6-4z" />, 
+    home: <path d="M20 20V8h-2V6h-2v2H8V6H6v2H4v12h16zM6 10h3v8H6v-8zm5 0h3v8h-3v-8zm5 0h3v8h-3v-8z M12 2l-6 4h12l-6-4z" />,
     // Menu -> Utensils
-    menu: <path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v16h2.5V6c0-1.5.5-2 1.25-2 .23 0 .45.05.65.13l.85-2.34C20.65 1.57 19.86 1.5 19 1.5c-2.3 0-4 1.7-4 4.5z" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v16h2.5V6c0-1.5.5-2 1.25-2 .23 0 .45.05.65.13l.85-2.34C20.65 1.57 19.86 1.5 19 1.5c-2.3 0-4 1.7-4 4.5z" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Open Box / Toy Chest
     basket: <path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4zm10 14H4V8h16v10z" />,
     // Clock -> Clipboard / ID Card
     clock: <path d="M16 4h-2a2 2 0 0 0-4 0H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-4 14H9v-2h3v2zm0-5H9v-2h3v2zm4 5h-3v-2h3v2zm0-5h-3v-2h3v2z" />,
     // Chef -> Ghost / Bloo Shape
-    chef: <path d="M12 2C7 2 4 5 4 10v7c0 2.5 2 4 5 4 1 0 2-.5 2.5-1.5.5 1 1.5 1.5 2.5 1.5 3 0 5-1.5 5-4v-7c0-5-3-8-8-8zM9 10a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />, 
+    chef: <path d="M12 2C7 2 4 5 4 10v7c0 2.5 2 4 5 4 1 0 2-.5 2.5-1.5.5 1 1.5 1.5 2.5 1.5 3 0 5-1.5 5-4v-7c0-5-3-8-8-8zM9 10a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />,
     // Star -> Sparkle / Imagination
     star: <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z" />,
     plus: <path d="M5 12h14M12 5v14" />,
@@ -22,7 +22,7 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Heart / Love
-    flame: <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />, 
+    flame: <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />,
     pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
     // Pizza Slice
     pizza: <path d="M12 2C8.43 2 5.23 3.54 3.01 6L12 22l8.99-16C18.78 3.55 15.57 2 12 2zM7 7c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm5 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />,
@@ -33,18 +33,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -60,7 +60,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -72,18 +72,31 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   // Removed orderNote
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -98,7 +111,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -110,22 +123,87 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#fefce8] flex items-center justify-center text-[#3b82f6] font-black text-2xl">LOADING...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
+  const currentPriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
     : { final: 0 };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   // --- 📝 Robust Data Passing ---
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
-        specialRequest: finalNote, 
+        specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
 
     if (addToCartOnly) {
@@ -134,22 +212,35 @@ export default function App({ state, actions, helpers }: any) {
         }
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+    if (selectedProduct?.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
         specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
-    
+
     for(let i=0; i<qty; i++) {
         handleAddToCart(productToAdd, variant, finalNote);
     }
@@ -164,12 +255,12 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Foster's Home for Imaginary Friends
-    <div className="w-full max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-blue-600 bg-white font-sans text-[#1e1b4b]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-blue-600 bg-white font-sans text-[#1e1b4b]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Itim&family=Mali:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --bloo-blue: #3b82f6; /* Bloo */
                 --wilt-red: #ef4444; /* Wilt */
@@ -183,7 +274,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Itim', 'Sarabun', sans-serif;
                 background-color: var(--mansion-cream);
                 /* Mansion Wallpaper Pattern */
-                background-image: 
+                background-image:
                     radial-gradient(var(--bloo-blue) 2px, transparent 2px),
                     radial-gradient(var(--wilt-red) 2px, transparent 2px);
                 background-size: 50px 50px;
@@ -224,7 +315,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 6px 6px 0px var(--eduardo-purple);
                 overflow: hidden;
             }
-            
+
             .item-card:hover, .item-card:active {
                 transform: translate(3px, 3px);
                 box-shadow: 2px 2px 0px var(--eduardo-purple);
@@ -248,7 +339,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 6px 12px rgba(124, 58, 237, 0.3);
                 transition: all 0.2s;
             }
-            
+
             .btn-foster:active {
                 transform: scale(0.95);
                 box-shadow: 0 2px 6px rgba(124, 58, 237, 0.4);
@@ -261,7 +352,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 4px 4px 0px var(--eduardo-purple);
                 transform: rotate(-2deg);
             }
-            
+
             .tab-btn {
                 transition: all 0.3s;
                 background: #fff;
@@ -279,12 +370,12 @@ export default function App({ state, actions, helpers }: any) {
             .page-transition {
                 animation: slideInRight 0.5s;
             }
-            
+
             @keyframes slideInRight {
                 from { transform: translateX(20px); opacity: 0; }
                 to { transform: translateX(0); opacity: 1; }
             }
-            
+
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
             .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         `}} />
@@ -296,7 +387,7 @@ export default function App({ state, actions, helpers }: any) {
              <div className="absolute bottom-4 right-10 text-white/30 text-4xl animate-pulse">
                 <Icon name="home" size={48} />
              </div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-purple-900/40 w-fit px-4 py-1.5 rounded-full border border-white/50 backdrop-blur-sm transform rotate-1">
@@ -318,7 +409,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="page-transition">
@@ -326,9 +417,9 @@ export default function App({ state, actions, helpers }: any) {
                     {banners?.length > 0 && (
                         <div className="relative w-full h-56 bg-white rounded-3xl overflow-hidden shadow-xl mb-10 border-4 border-purple-900 p-2 group animate-fade-in">
                              <div className="h-full w-full rounded-2xl overflow-hidden bg-blue-50 relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover"
                                  />
                              </div>
                              <div className="absolute top-4 right-4 bg-yellow-400 text-blue-900 px-6 py-2 rounded-xl border-4 border-blue-900 shadow-lg transform rotate-6">
@@ -346,8 +437,8 @@ export default function App({ state, actions, helpers }: any) {
                              See More <Icon name="search" size={14} />
                          </button>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -397,7 +488,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2 px-1 animate-fade-in">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-lg font-bold imaginary-font ${selectedCategoryId === c.id ? 'tab-active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -522,30 +613,30 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-indigo-900/60 backdrop-blur-sm animate-fade-in">
-                <div className="w-full max-w-md bg-white border-t-8 border-blue-500 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[3rem] relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-indigo-900/60 backdrop-blur-sm animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-8 border-blue-500 h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col overflow-hidden shadow-2xl rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] relative">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-red-500 rounded-full border-2 border-red-100 flex items-center justify-center hover:bg-red-50 transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-85 overflow-hidden border-b-4 border-blue-50 rounded-b-[3rem] bg-blue-50">
+                        <div className="relative w-full h-72 md:h-52 xl:h-72 shrink-0 overflow-hidden border-b-4 border-blue-50 rounded-b-[3rem] bg-blue-50">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-yellow-400 text-blue-900 font-black text-3xl imaginary-font rounded-2xl border-4 border-white shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
-                                    {currentPriceObj.discount > 0 && (
+                                    {basePriceObj.discount > 0 && (
                                         <span className="text-sm line-through text-blue-700 decoration-white decoration-2 mb-1">
-                                            {currentPriceObj.original}
+                                            {(basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal}
                                         </span>
                                     )}
-                                    <span>{currentPriceObj.final}.-</span>
+                                    <span>{finalPriceWithOpts}.-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl imaginary-font text-blue-600 mb-6 leading-tight drop-shadow-sm">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
                             {/* --- 3 PRICES VARIANT SELECTOR --- */}
                             <div>
@@ -556,12 +647,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'BLOO', icon: 'chef', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'COCO', icon: 'flame', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-2xl border-4 transition-all flex flex-col items-center justify-between h-28 imaginary-font
-                                                ${variant === v.key 
-                                                    ? 'bg-blue-500 border-blue-600 shadow-md -translate-y-1 text-white' 
+                                                ${variant === v.key
+                                                    ? 'bg-blue-500 border-blue-600 shadow-md -translate-y-1 text-white'
                                                     : 'bg-white border-blue-100 text-blue-300 hover:border-blue-400 hover:text-blue-500'}`}
                                         >
                                             <span className="text-sm font-black tracking-widest">{v.label}</span>
@@ -577,7 +668,7 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
-                            
+
 
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 mt-2">
@@ -588,29 +679,78 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-red-400 font-black uppercase tracking-widest mb-1 imaginary-font">Imaginary Coins</p>
-                                    <p className="text-4xl font-black text-blue-600 imaginary-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-4xl font-black text-blue-600 imaginary-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
 
+                            {/* --- OPTIONS --- */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="space-y-6 mt-4">
+                                    {selectedProduct.options.map((opt: any, index: number) => (
+                                        <div key={index} className="bg-white p-5 rounded-[2rem] border-4 border-blue-100 shadow-sm relative">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="text-xl font-bold text-blue-700 imaginary-font uppercase tracking-wider">{opt.name}</h3>
+                                                {opt.required && (
+                                                    <span className="text-[10px] bg-red-100 text-red-600 px-2 py-1 rounded-full font-black border border-red-200 uppercase tracking-widest">Required</span>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col gap-3">
+                                                {opt.choices?.map((choice: any, cIdx: number) => {
+                                                    const choiceKey = String(choice.id || choice.name);
+                                                    const isSelected = (selectedOptions[index] || []).some((item: any) => String(item.id || item.name) === choiceKey);
+                                                    const choicePrice = Number(choice.price || 0);
+
+                                                    return (
+                                                        <div
+                                                            key={cIdx}
+                                                            onClick={() => handleOptionToggle(index, choice, opt.type)}
+                                                            className={`flex items-center gap-4 p-3 rounded-2xl border-4 transition-all cursor-pointer ${isSelected ? 'bg-blue-50 border-blue-400 shadow-md' : 'bg-white border-blue-50 hover:border-blue-200'}`}
+                                                        >
+                                                            <div className={`w-6 h-6 rounded-full border-4 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-blue-200 bg-white'}`}>
+                                                                {isSelected && <Icon name="check" size={12} className="text-white" strokeWidth={4} />}
+                                                            </div>
+
+                                                            {(choice.image_url || choice.image_name) && (
+                                                                <div className="w-12 h-12 rounded-xl bg-blue-100 border-2 border-white shadow-sm overflow-hidden shrink-0">
+                                                                    <img src={choice.image_url || getMenuUrl(choice.image_name)} alt={choice.name} className="w-full h-full object-cover" />
+                                                                </div>
+                                                            )}
+
+                                                            <div className="flex-1">
+                                                                <span className="font-bold text-blue-900 imaginary-font text-lg">{choice.name}</span>
+                                                            </div>
+
+                                                            {choicePrice > 0 && (
+                                                                <span className="text-blue-500 font-black imaginary-font text-xl shrink-0">+{choicePrice}.-</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* 📝 Item Note Input */}
                             <div className="relative">
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="A message for Mac or Frankie..." 
+                                    placeholder="A message for Mac or Frankie..."
                                     className="w-full p-6 bg-blue-50 border-4 border-white rounded-3xl focus:border-blue-300 focus:outline-none h-36 resize-none text-xl font-bold text-blue-800 placeholder:text-blue-200 transition-colors shadow-inner imaginary-font"
                                 />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-blue-50 text-blue-400 font-black text-xl rounded-2xl active:scale-95 transition-all shadow-md imaginary-font">
-                                Pack It Up!
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-foster text-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
-                                ADOPT! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-4 border-blue-50 grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-blue-50 text-blue-400 font-black text-xl rounded-2xl active:scale-95 transition-all shadow-md imaginary-font">
+                            Pack It Up!
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-foster text-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
+                            ADOPT! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -618,18 +758,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ORDER SUMMARY MODAL --- */}
         <div id="orderSummaryOverlay" className={`fixed inset-0 bg-indigo-900/60 z-[130] backdrop-blur-sm animate-fade-in ${activeTab === 'cart' ? 'block' : 'hidden'}`} onClick={() => setActiveTab('menu')}></div>
-        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t-[10px] border-blue-100 z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-[10px] border-blue-100 z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="sticky top-0 bg-white z-20 rounded-t-[4rem] border-b-4 border-blue-50 p-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                 <div className="w-24 h-2 bg-blue-100 rounded-full mx-auto mt-2"></div>
             </div>
-            
+
             <div className="flex justify-between items-center mb-6 px-10 pt-8">
                 <h2 className="text-4xl imaginary-font text-blue-600 transform -rotate-1">Adopt Bag</h2>
                 <div className="w-14 h-14 bg-red-100 text-red-500 border-4 border-white rounded-2xl flex items-center justify-center font-black text-2xl imaginary-font shadow-lg">
                     <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
                 </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto space-y-6 px-8 pb-4 no-scrollbar">
                 {cart.map((item: any, idx: any) => (
                     <div key={idx} className="flex items-center gap-4 bg-white p-4 border-4 border-blue-100 rounded-[2rem] shadow-sm relative overflow-hidden hover:shadow-md hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
@@ -688,18 +828,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-white shadow-lg relative z-10 animate-imaginary">
                         <Icon name="chef" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-4xl imaginary-font text-blue-600 mb-4 leading-tight relative z-10">Hold on, Bloo!</h3>
                             <p className="text-xl text-blue-300 mb-10 font-bold imaginary-font relative z-10">Add "{selectedProduct.name}" to your stash?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-red-400 text-white font-black border-4 border-white shadow-xl active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-2xl imaginary-font rounded-full uppercase">YES! ORDER ALL!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-white border-4 border-blue-50 text-blue-200 font-black text-lg active:scale-95 transition-transform hover:bg-blue-50 imaginary-font rounded-full uppercase">Just Add</button>

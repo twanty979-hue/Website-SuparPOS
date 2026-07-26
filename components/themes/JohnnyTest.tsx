@@ -4,24 +4,24 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Vials
-    home: <path d="M9 3h6v2h-2v12a3 3 0 0 1-6 0V5H5V3h4zm2 14a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />, 
+    home: <path d="M9 3h6v2h-2v12a3 3 0 0 1-6 0V5H5V3h4zm2 14a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />,
     // Menu -> Clipboard
-    menu: <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Radiation
     basket: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z" />,
     // Clock -> Atom / Timer
     clock: <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37z" />,
     // Chef -> Dog (Dukey) / Hair
-    chef: <path d="M12 2l-2 5h4l-2-5zm-5 7l2 4h6l2-4-5 2-5-2z" />, 
+    chef: <path d="M12 2l-2 5h4l-2-5zm-5 7l2 4h6l2-4-5 2-5-2z" />,
     plus: <path d="M5 12h14M12 5v14" />,
     minus: <path d="M5 12h14" />,
     x: <path d="M18 6 6 18M6 6l12 12" />,
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Explosion
-    flame: <path d="M12 2l2 4 4-2-2 5 4 2-5 2 2 4-5-2-2 4-2-5-5-2 4-2-2-5 4 2z" />, 
-    
+    flame: <path d="M12 2l2 4 4-2-2 5 4 2-5 2 2 4-5-2-2 4-2-5-5-2 4-2-2-5 4 2z" />,
+
     // Specifics
     atom: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 16c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" />,
     flask: <path d="M6 22h12a2 2 0 0 0 2-2V8l-6-6H6L0 8v12a2 2 0 0 0 2 2zm6-12a2 2 0 1 1 0 4 2 2 0 0 1 0-4z" />,
@@ -29,18 +29,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -57,7 +57,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -69,17 +69,29 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -94,7 +106,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -106,35 +118,136 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-zinc-900 flex items-center justify-center text-[#facc15] font-black text-2xl animate-kaboom">INITIALIZING LAB...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+
     if (addToCartOnly) {
-        for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+        for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
-        else performCookNow();
+        if (cart && cart.length > 0) setShowConfirm(true);
+        else performCookNow(productToAdd, finalNote);
     }
   };
 
-  const performCookNow = () => {
-    for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+  const performCookNow = (prodObj?: any, finalNoteStr?: string) => {
+    if (!selectedProduct) return;
+
+    let finalProd = prodObj;
+    let n = finalNoteStr;
+
+    if (!finalProd) {
+        if (selectedProduct.options) {
+            for (let i = 0; i < selectedProduct.options.length; i++) {
+                const opt = selectedProduct.options[i];
+                if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                    alert(`กรุณาเลือก: ${opt.name}`);
+                    return;
+                }
+            }
+        }
+        n = generateOptionNote();
+        finalProd = {
+            ...selectedProduct,
+            variant: variant,
+            note: n,
+            specialRequest: n,
+            comment: n,
+            remark: n,
+            price: finalPriceWithOpts,
+            original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+            toppings_snapshot: selectedToppings,
+        };
+    }
+
+    for(let i=0; i<qty; i++) handleAddToCart(finalProd, variant, n);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
 
   return (
     // Theme: Johnny Test - Test Lab System
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans ">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans ">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Chakra+Petch:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --fire-yellow: #facc15;
                 --flame-orange: #f97316;
@@ -148,7 +261,7 @@ export default function App({ state, actions, helpers }: any) {
             body {
                 font-family: 'Chakra Petch', 'Sarabun', sans-serif;
                 background-color: var(--bg-lab);
-                background-image: 
+                background-image:
                     linear-gradient(rgba(34, 197, 94, 0.05) 2px, transparent 2px),
                     linear-gradient(90deg, rgba(34, 197, 94, 0.05) 2px, transparent 2px);
                 background-size: 50px 50px;
@@ -244,7 +357,7 @@ export default function App({ state, actions, helpers }: any) {
              <div className="absolute top-0 right-0 p-4 opacity-20 text-5xl rotate-12">
                 <Icon name="basket" size={48} />
              </div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-green-600/40 w-fit px-3 py-1 border-2 border-green-400/50 backdrop-blur-sm transform -rotate-1">
@@ -268,7 +381,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-fade-in">
@@ -276,9 +389,9 @@ export default function App({ state, actions, helpers }: any) {
                     {banners?.length > 0 && (
                         <div className="relative w-full h-52 bg-slate-900 rounded-none overflow-hidden shadow-[10px_10px_0_#22c55e] mb-10 border-4 border-zinc-700 p-1 group animate-image-pop">
                              <div className="h-full w-full rounded-none overflow-hidden bg-black opacity-80 group-hover:opacity-100 transition-opacity relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover"
                                  />
                                  <div className="absolute inset-0 pointer-events-none" style={{background: 'radial-gradient(circle,transparent 40%,rgba(0,0,0,0.4) 100%)'}}></div>
                              </div>
@@ -298,7 +411,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -348,7 +461,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar py-1 px-1 animate-image-pop">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-6 py-2 text-sm font-bold uppercase tracking-widest comic-font ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -401,13 +514,13 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="space-y-6">
                         {ordersList?.map((o: any) => (
                             <div key={o.id} className="bg-white p-6 border-4 border-zinc-900 shadow-[6px_6px_0_#22c55e] relative overflow-hidden">
-                                
+
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-4 border-b-2 border-dashed border-zinc-300 pb-2">
                                      <span className="text-xs text-zinc-900 font-black uppercase tracking-widest flex items-center gap-1 comic-font">
                                          Test #{o.id.slice(-4)}
                                      </span>
-                                     <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-wide border-2 border-black 
+                                     <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-wide border-2 border-black
                                         ${o.status === 'pending' ? 'bg-[#facc15] text-black' : 'bg-[#22c55e] text-black'}`}>
                                         {o.status === 'pending' ? 'PROCESSING...' : 'SUCCESS!'}
                                      </span>
@@ -420,20 +533,20 @@ export default function App({ state, actions, helpers }: any) {
                                         const quantity = i.quantity || 1;
                                         const finalPriceTotal = i.price * quantity;
                                         const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                                        const originalPriceTotal = hasDiscount 
-                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+                                        const originalPriceTotal = hasDiscount
+                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                             : finalPriceTotal;
                                         const discountAmount = originalPriceTotal - finalPriceTotal;
 
                                         return (
                                             <div key={idx} className="flex justify-between items-start text-sm font-bold border-b border-zinc-100 pb-2 last:border-0 comic-font tracking-wide">
-                                                
+
                                                 {/* Left Info */}
                                                 <div className="flex flex-col items-start pr-2">
                                                     <span className="leading-tight text-base text-zinc-800">
                                                         <span className="text-red-500">{quantity}x</span> {i.product_name}
                                                     </span>
-                                                    
+
                                                     {/* Variant Badge (Lab Style) */}
                                                     {i.variant !== 'normal' && (
                                                         <span className={`text-[10px] bg-zinc-900 text-white px-2 py-0.5 border border-white font-sans font-bold mt-1 uppercase tracking-wider transform -rotate-1`}>
@@ -522,32 +635,32 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Lab Screen - FIXED 3 PRICES) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/90 backdrop-blur-sm animate-fade-in">
-                <div className="w-full max-w-md bg-white border-t-8 border-x-4 border-zinc-900 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl relative animate-image-pop">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-black/90 backdrop-blur-sm animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-8 border-x-4 border-zinc-900 h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] md:rounded-2xl xl:rounded-none xl:rounded-t-2xl shadow-2xl relative animate-image-pop flex flex-col overflow-hidden">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 z-30 w-12 h-12 bg-white text-black border-4 border-black flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors shadow-[4px_4px_0_#000] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-80 overflow-hidden border-b-8 border-zinc-900 bg-slate-100">
+                        <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-8 border-zinc-900 bg-slate-100">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-zinc-900 text-yellow-400 font-black text-3xl comic-font border-4 border-white shadow-[6px_6px_0_#ef4444] transform -rotate-2 flex flex-col items-center leading-none">
-                                    {currentPriceObj.discount > 0 && (
+                                    {basePriceObj.discount > 0 && (
                                         <span className="text-sm line-through text-zinc-500 decoration-red-500 decoration-2 mb-1">
-                                            {currentPriceObj.original}
+                                            {basePriceObj.original + toppingTotal}
                                         </span>
                                     )}
-                                    <span>{currentPriceObj.final}.-</span>
+                                    <span>{finalPriceWithOpts}.-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl comic-font text-zinc-900 mb-6 leading-tight drop-shadow-sm uppercase tracking-widest">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
-                            
+
                             {/* ✅ FIXED: 3 Variants Grid (PROTOTYPE/BETA/FINAL) */}
                             <div>
                                 <label className="block text-lg font-bold text-zinc-800 mb-3 comic-font ml-1 tracking-wide">SELECT STAGE:</label>
@@ -557,12 +670,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'BETA', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'FINAL', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 border-4 transition-all flex flex-col items-center justify-between h-24 comic-font
-                                                ${variant === v.key 
-                                                    ? 'bg-zinc-900 border-zinc-900 text-yellow-400 shadow-[4px_4px_0_#22c55e] -translate-y-1' 
+                                                ${variant === v.key
+                                                    ? 'bg-zinc-900 border-zinc-900 text-yellow-400 shadow-[4px_4px_0_#22c55e] -translate-y-1'
                                                     : 'bg-white border-zinc-200 text-zinc-400 hover:border-zinc-400 hover:text-zinc-600'}`}
                                         >
                                             <span className="text-[12px] font-black tracking-widest uppercase">{v.label}</span>
@@ -586,29 +699,84 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[10px] text-zinc-400 font-black uppercase tracking-[0.2em] mb-1">Energy Cost</p>
-                                    <p className="text-4xl font-black text-slate-900 comic-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-4xl font-black text-slate-900 comic-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
 
+                            {/* Product Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="mt-6 mb-6 space-y-6">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => (
+                                        <div key={groupIndex} className="bg-zinc-50 border-4 border-zinc-900 p-4">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <h3 className="text-xl comic-font text-zinc-900 font-black">
+                                                    {opt.name} {opt.required && <span className="text-red-500">*</span>}
+                                                </h3>
+                                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest bg-zinc-200 px-2 py-1">
+                                                    {opt.type === 'single' ? 'Select 1' : 'Select Multiple'}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {opt.choices.map((choice: any, choiceIndex: number) => {
+                                                    const choiceKey = String(choice.id || choice.name);
+                                                    const isSelected = (selectedOptions[groupIndex] || []).some((item: any) => String(item.id || item.name) === choiceKey);
+                                                    const hasImage = choice.image_url || choice.image_name;
+
+                                                    return (
+                                                        <label
+                                                            key={choiceIndex}
+                                                            className={`flex items-center justify-between p-3 border-2 cursor-pointer transition-all ${
+                                                                isSelected
+                                                                    ? 'bg-yellow-100 border-yellow-500 shadow-[4px_4px_0_#facc15]'
+                                                                    : 'bg-white border-zinc-300 hover:border-zinc-400'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center gap-3 flex-1">
+                                                                <input
+                                                                    type={opt.type === 'single' ? 'radio' : 'checkbox'}
+                                                                    name={`option-${groupIndex}`}
+                                                                    checked={isSelected}
+                                                                    onChange={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                                    className="w-5 h-5 text-yellow-500 focus:ring-yellow-500 border-zinc-400"
+                                                                />
+                                                                {hasImage && (
+                                                                    <div className="w-10 h-10 border-2 border-zinc-900 shrink-0">
+                                                                        <img src={getMenuUrl(choice.image_url || choice.image_name)} alt={choice.name} className="w-full h-full object-cover" />
+                                                                    </div>
+                                                                )}
+                                                                <span className="font-bold text-zinc-800 flex-1">{choice.name}</span>
+                                                            </div>
+                                                            {Number(choice.price) > 0 && (
+                                                                <span className="font-black text-blue-600 comic-font text-lg">+{Number(choice.price)}.-</span>
+                                                            )}
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* 📝 Note Input */}
                             <div className="relative">
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Enter test parameters (Notes)..." 
+                                    placeholder="Enter test parameters (Notes)..."
                                     className="w-full p-6 bg-slate-100 border-4 border-zinc-900 text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-green-500 h-36 resize-none text-xl font-bold transition-colors shadow-inner comic-font"
                                 />
                             </div>
                         </div>
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-zinc-900 text-zinc-600 font-black text-xl active:scale-95 transition-all shadow-[6px_6px_0_#22c55e] comic-font">
-                                STASH SAMPLE
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-experiment text-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
-                                KABOOM! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-8 border-zinc-900 grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-zinc-900 text-zinc-600 font-black text-xl active:scale-95 transition-all shadow-[6px_6px_0_#22c55e] comic-font">
+                            STASH SAMPLE
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-experiment text-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
+                            KABOOM! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -617,7 +785,7 @@ export default function App({ state, actions, helpers }: any) {
         {/* --- CART SHEET (Inventory) --- */}
         {activeTab === 'cart' && (
             <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/95 backdrop-blur-sm animate-fade-in">
-                <div className="w-full max-w-md bg-white border-t-[10px] border-zinc-900 flex flex-col shadow-2xl h-[92vh] animate-image-pop">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto md:rounded-2xl xl:rounded-none xl:rounded-t-2xl bg-white border-t-[10px] border-zinc-900 flex flex-col shadow-2xl h-[92vh] animate-image-pop">
                     <div className="w-full py-4 cursor-pointer hover:bg-zinc-100 border-b-4 border-zinc-100" onClick={() => setActiveTab('menu')}>
                         <div className="w-24 h-2 bg-zinc-300 rounded-full mx-auto" />
                     </div>
@@ -682,18 +850,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-red-600 text-white flex items-center justify-center mx-auto mb-8 border-4 border-zinc-900 shadow-lg relative z-10 animate-kaboom">
                         <Icon name="flame" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-3xl comic-font text-zinc-900 mb-4 leading-tight relative z-10 uppercase tracking-widest">Merge Tests?</h3>
                             <p className="text-lg text-zinc-500 mb-10 font-bold relative z-10">Inject "{selectedProduct.name}" into protocol?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-zinc-900 text-yellow-400 font-black border-4 border-white shadow-xl active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-2xl comic-font uppercase">YES! DO IT!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-white border-4 border-zinc-200 text-zinc-300 font-black text-lg active:scale-95 transition-transform hover:bg-zinc-50 comic-font uppercase">Just Stash</button>

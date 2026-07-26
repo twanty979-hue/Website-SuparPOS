@@ -4,16 +4,16 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Igloo / Cabin
-    home: <path d="M3 10L12 2l9 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10z M12 12c-2 0-3 2-3 4s1 4 3 4 3-2 3-4-1-4-3-4z" />, 
+    home: <path d="M3 10L12 2l9 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10z M12 12c-2 0-3 2-3 4s1 4 3 4 3-2 3-4-1-4-3-4z" />,
     // Menu -> Scroll / List
-    menu: <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="3" strokeLinecap="round" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="3" strokeLinecap="round" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Gift Box
     basket: <path d="M20 12h-2V5h1a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h1v7H10V5h1a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h1v7H4a2 2 0 0 0-2 2v9a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-9a2 2 0 0 0-2-2zm-9-8h4v1h-4V4zm-8 1h4v1H3V5zm2 16v-7h4v7H5zm6 0v-7h4v7h-4zm6 0v-7h4v7h-4z" />,
     // Clock -> Wreath / Timer
     clock: <circle cx="12" cy="12" r="10" />,
     // Chef -> Reindeer / Santa Hat
-    chef: <path d="M12 2C7 2 2 7 2 12s5 10 10 10 10-5 10-10S17 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />, 
+    chef: <path d="M12 2C7 2 2 7 2 12s5 10 10 10 10-5 10-10S17 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />,
     // Star -> North Star
     star: <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z" />,
     plus: <path d="M5 12h14M12 5v14" />,
@@ -22,7 +22,7 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Sparkle / Magic
-    flame: <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" />, 
+    flame: <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" />,
     pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
     snowflake: <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14" strokeWidth="2" />,
     deer: <path d="M12 2l2 4h4l-3 3 1 5-4-2-4 2 1-5-3-3h4z" />,
@@ -32,18 +32,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -61,7 +61,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -73,17 +73,30 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -98,7 +111,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -110,35 +123,108 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#f0f9ff] flex items-center justify-center text-[#dc2626] font-black text-2xl animate-pulse">LOADING...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const currentPriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = currentPriceObj.final + toppingTotal;
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (currentPriceObj.original || currentPriceObj.final + (currentPriceObj.discount || 0)) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+
     if (addToCartOnly) {
-        for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+        for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
-        else performCookNow();
+        if (cart && cart.length > 0) setShowConfirm(true);
+        else performCookNow(productToAdd, finalNote);
     }
   };
 
-  const performCookNow = () => {
-    for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+  const performCookNow = (productToAdd?: any, finalNote?: string) => {
+    const p = productToAdd || selectedProduct;
+    const n = finalNote || note;
+    for(let i=0; i<qty; i++) handleAddToCart(p, variant, n);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
 
   return (
     // Theme: Christmas - Joyful Feast System
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#1e3a8a]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#1e3a8a]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Itim&family=Mali:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --xmas-red: #dc2626;
                 --xmas-green: #166534;
@@ -152,7 +238,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Itim', 'Sarabun', sans-serif;
                 background-color: var(--sky-blue);
                 /* Snowflake & Polka Dot Pattern */
-                background-image: 
+                background-image:
                     radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.8) 5%, transparent 6%),
                     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M40 0 L42 38 L80 40 L42 42 L40 80 L38 42 L0 40 L38 38 Z' fill='%23ffffff' fill-opacity='0.5'/%3E%3C/svg%3E");
                 background-attachment: fixed;
@@ -245,7 +331,7 @@ export default function App({ state, actions, helpers }: any) {
              <div className="absolute top-4 left-10 text-white/30 text-5xl animate-pulse">
                 <Icon name="snowflake" size={48} />
              </div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-green-600/50 w-fit px-4 py-1.5 rounded-full border border-white transform -rotate-1">
@@ -267,7 +353,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-fade-in">
@@ -275,9 +361,9 @@ export default function App({ state, actions, helpers }: any) {
                     {banners?.length > 0 && (
                         <div className="relative w-full h-56 bg-white rounded-[3rem] overflow-hidden shadow-2xl mb-10 border-4 border-green-100 p-2 group animate-image-pop">
                              <div className="h-full w-full rounded-[2.5rem] overflow-hidden bg-sky-50 relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                                  />
                              </div>
                              <div className="absolute bottom-4 left-6 bg-red-600 text-white px-5 py-2 rounded-full border-2 border-white shadow-lg transform rotate-[-2deg]">
@@ -296,7 +382,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -347,7 +433,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2 px-1 animate-image-pop">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-lg font-bold ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -401,7 +487,7 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="space-y-6">
                         {ordersList?.map((o: any) => (
                             <div key={o.id} className="bg-white p-6 border-2 border-green-100 rounded-[2.5rem] shadow-sm relative overflow-hidden">
-                                
+
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-4">
                                      <span className="text-xs text-red-600 font-bold uppercase tracking-widest flex items-center gap-1">
@@ -420,18 +506,18 @@ export default function App({ state, actions, helpers }: any) {
                                         const quantity = i.quantity || 1;
                                         const finalPriceTotal = i.price * quantity;
                                         const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                                        const originalPriceTotal = hasDiscount 
-                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+                                        const originalPriceTotal = hasDiscount
+                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                             : finalPriceTotal;
                                         const discountAmount = originalPriceTotal - finalPriceTotal;
 
                                         return (
                                             <div key={idx} className="flex justify-between items-start text-sm text-[#166534] font-bold border-b border-dashed border-[#bbf7d0] pb-2 last:border-0 festive-title">
-                                                
+
                                                 {/* Left Info */}
                                                 <div className="flex flex-col items-start pr-2">
                                                     <span className="leading-tight text-base">{quantity}x {i.product_name}</span>
-                                                    
+
                                                     {/* Variant Badge (Christmas Style) */}
                                                     {i.variant !== 'normal' && (
                                                         <span className={`text-[10px] bg-[#dc2626] text-white px-2 py-0.5 rounded-sm border border-[#1e3a8a] font-sans font-bold mt-1 shadow-sm uppercase tracking-wider transform -rotate-1`}>
@@ -520,13 +606,13 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Holly Panel - FIXED 3 PRICES) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-sky-900/60 backdrop-blur-md animate-fade-in">
-                <div className="w-full max-w-md bg-white border-t-8 border-red-500 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[4rem] relative animate-image-pop">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-sky-900/60 backdrop-blur-md animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-8 border-red-500 h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col overflow-hidden shadow-2xl rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem] relative animate-image-pop">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-red-500 rounded-full border-2 border-red-100 flex items-center justify-center hover:bg-red-50 transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-85 overflow-hidden border-b-4 border-green-100 rounded-b-[3.5rem] bg-white">
+                        <div className="relative w-full h-85 shrink-0 md:h-52 xl:h-85 overflow-hidden border-b-4 border-green-100 rounded-b-[3.5rem] bg-white">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-green-600 text-white font-black text-3xl festive-title rounded-full border-4 border-white shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
@@ -535,17 +621,17 @@ export default function App({ state, actions, helpers }: any) {
                                             {currentPriceObj.original}
                                         </span>
                                     )}
-                                    <span>{currentPriceObj.final}.-</span>
+                                    <span>{finalPriceWithOpts}.-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl festive-title text-red-700 mb-6 leading-tight drop-shadow-sm uppercase tracking-wider">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
-                            
+
                             {/* ✅ FIXED: 3 Variants Grid (ELF/SANTA/SLEIGH) */}
                             <div>
                                 <label className="block text-lg font-bold text-green-800 mb-3 festive-title ml-1 tracking-wide">CHOOSE SIZE:</label>
@@ -555,12 +641,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'SANTA', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'SLEIGH', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-2xl border-4 transition-all flex flex-col items-center justify-between h-24 festive-title
-                                                ${variant === v.key 
-                                                    ? 'bg-red-50 border-red-500 shadow-[3px_3px_0_#991b1b] -translate-y-1 text-red-700' 
+                                                ${variant === v.key
+                                                    ? 'bg-red-50 border-red-500 shadow-[3px_3px_0_#991b1b] -translate-y-1 text-red-700'
                                                     : 'bg-white border-green-100 text-green-300 hover:border-green-300 hover:text-green-500'}`}
                                         >
                                             <span className="text-[10px] font-black tracking-widest uppercase">{v.label}</span>
@@ -575,6 +661,64 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
+                            {/* Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="mt-6 space-y-6">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => (
+                                        <div key={groupIndex} className="bg-white p-5 rounded-[2rem] border-4 border-green-100 shadow-sm relative">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <div>
+                                                    <h3 className="text-xl font-black text-red-700 festive-title leading-tight">{opt.name}</h3>
+                                                    <span className="text-xs text-green-600 font-bold uppercase tracking-widest">{opt.type === 'single' ? 'Select 1' : 'Multiple Choice'}</span>
+                                                </div>
+                                                {opt.required && (
+                                                    <span className="bg-red-50 text-red-600 border border-red-200 text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wider">
+                                                        Required
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-3">
+                                                {opt.choices.map((choice: any, choiceIdx: number) => {
+                                                    const choiceKey = String(choice.id || choice.name);
+                                                    const isSelected = (selectedOptions[groupIndex] || []).some((item: any) => String(item.id || item.name) === choiceKey);
+                                                    const hasImage = choice.image_url || choice.image_name;
+                                                    return (
+                                                        <div
+                                                            key={choiceIdx}
+                                                            onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                            className={`flex items-center justify-between p-3 rounded-2xl border-2 transition-all cursor-pointer ${
+                                                                isSelected
+                                                                    ? 'bg-red-50 border-red-500 shadow-sm'
+                                                                    : 'bg-white border-green-50 hover:border-green-200'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                {hasImage && (
+                                                                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-green-50 border border-green-100 shrink-0">
+                                                                        <img src={choice.image_url || getMenuUrl(choice.image_name)} className="w-full h-full object-cover" />
+                                                                    </div>
+                                                                )}
+                                                                <span className={`text-base font-bold festive-title ${isSelected ? 'text-red-700' : 'text-blue-900'}`}>
+                                                                    {choice.name}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-sm font-black text-green-700 festive-title">
+                                                                    +{Number(choice.price || 0)}.-
+                                                                </span>
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'bg-red-500 border-red-500 text-white' : 'bg-white border-green-200 text-transparent'}`}>
+                                                                    <Icon name="check" size={14} strokeWidth={4} />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 mt-2">
                                 <div className="flex items-center gap-4 bg-white p-3 rounded-full border-4 border-green-100 shadow-md">
@@ -584,29 +728,30 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-green-600 font-black uppercase tracking-widest mb-1">Joy Points</p>
-                                    <p className="text-4xl font-black text-red-700 festive-title">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-4xl font-black text-red-700 festive-title">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
 
                             {/* 📝 Note Input */}
                             <div className="relative">
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="A message for Santa's elves..." 
+                                    placeholder="A message for Santa's elves..."
                                     className="w-full p-6 bg-sky-50 border-4 border-white rounded-[2.5rem] focus:border-red-300 focus:outline-none h-36 resize-none text-xl font-bold text-blue-900 placeholder:text-blue-200 transition-colors shadow-inner festive-title"
                                 />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-green-100 text-green-700 font-black text-xl rounded-full active:scale-95 transition-all shadow-md festive-title">
-                                Pack Gift
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-festive text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 festive-title">
-                                SEND JOY! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    </div>
+
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-4 border-green-100 grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-green-100 text-green-700 font-black text-xl rounded-full active:scale-95 transition-all shadow-md festive-title">
+                            Pack Gift
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-festive text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 festive-title">
+                            SEND JOY! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -614,18 +759,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ORDER SUMMARY MODAL --- */}
         <div id="orderSummaryOverlay" className={`fixed inset-0 bg-sky-950/60 z-[130] backdrop-blur-sm animate-fade-in ${activeTab === 'cart' ? 'block' : 'hidden'}`} onClick={() => setActiveTab('menu')}></div>
-        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t-[10px] border-green-600 z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-[10px] border-green-600 z-[140] flex flex-col shadow-2xl h-[92vh] md:h-[85vh] xl:h-[92vh] rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="sticky top-0 bg-white z-20 rounded-t-[4rem] border-b-4 border-sky-50 p-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                 <div className="w-24 h-1.5 bg-green-100 rounded-full mx-auto mt-2 opacity-50"></div>
             </div>
-            
+
             <div className="flex justify-between items-center mb-6 px-10 pt-8">
                 <h2 className="text-4xl festive-title text-red-700 transform -rotate-1 tracking-widest italic">Sleigh Bag</h2>
                 <div className="w-14 h-14 bg-red-100 text-red-600 border-4 border-white rounded-2xl flex items-center justify-center font-black text-2xl shadow-sm">
                     <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
                 </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto space-y-6 px-8 pb-10 no-scrollbar">
                 {cart.map((item: any, idx: any) => (
                     <div key={idx} className="flex items-center gap-4 bg-white p-4 border-3 border-green-100 rounded-[2rem] shadow-sm relative overflow-hidden hover:shadow-md transition-shadow">
@@ -679,18 +824,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8 border border-red-100 shadow-lg relative z-10 animate-sleigh">
                         <Icon name="flame" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-3xl festive-title text-red-700 mb-4 leading-tight relative z-10 uppercase tracking-widest">Added to Sleigh?</h3>
                             <p className="text-lg text-green-700 mb-10 font-bold festive-title relative z-10">Add "{selectedProduct.name}" and fly?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-green-600 text-white font-black border border-white shadow-xl active:scale-95 transition-all text-xl festive-title uppercase tracking-widest rounded-2xl">YES! LET IT FLY!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-white border-4 border-green-100 text-green-700 font-black text-lg active:scale-95 transition-transform hover:bg-green-50 festive-title rounded-full uppercase">Just Add</button>

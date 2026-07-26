@@ -5,10 +5,10 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     home: <path d="M2 20h20 M12 3l10 17H2L12 3z" />, // Tent/Hut style
     menu: <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />, // Hamburger/List
-    search: <circle cx="11" cy="11" r="8" />, 
+    search: <circle cx="11" cy="11" r="8" />,
     basket: <path d="M16 11V7a4 4 0 0 0-8 0v4M5 9h14l1 12H4L5 9z" />, // Bag/Basket
     clock: <circle cx="12" cy="12" r="10" />,
-    chef: <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6v-7.13z" />, 
+    chef: <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6v-7.13z" />,
     plus: <path d="M12 5v14M5 12h14" />,
     minus: <path d="M5 12h14" />,
     x: <path d="M18 6 6 18M6 6l12 12" />,
@@ -23,18 +23,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -50,7 +50,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -62,9 +62,10 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
 
@@ -73,6 +74,17 @@ export default function App({ state, actions, helpers }: any) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+          if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+            initialOptions[index] = [opt.choices[0]];
+          } else {
+            initialOptions[index] = [];
+          }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -87,7 +99,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -105,35 +117,132 @@ export default function App({ state, actions, helpers }: any) {
     </div>
   );
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const basePriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const currentPriceObj = selectedProduct
+    ? {
+        ...basePriceObj,
+        final: finalPriceWithOpts,
+        original: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal
+      }
+    : { final: 0, original: 0, discount: 0 };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+      const selectedChoices = selectedOptions[index];
+      if (selectedChoices && selectedChoices.length > 0) {
+        optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+      }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+    setSelectedOptions((prev: any) => {
+      const currentSelected = prev[groupIndex] || [];
+      const choiceKey = String(choice.id || choice.name);
+      const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+      const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+      if (type === 'single') {
+        if (isAlreadySelected && !isRequired) return { ...prev, [groupIndex]: [] };
+        return { ...prev, [groupIndex]: [choice] };
+      } else {
+        if (isAlreadySelected) return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+        return { ...prev, [groupIndex]: [...currentSelected, choice] };
+      }
+    });
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
+    if (selectedProduct.options) {
+      for (let i = 0; i < selectedProduct.options.length; i++) {
+        const opt = selectedProduct.options[i];
+        if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+          alert(`กรุณาเลือก: ${opt.name}`);
+          return;
+        }
+      }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+      ...selectedProduct,
+      variant,
+      note: finalNote,
+      specialRequest: finalNote,
+      comment: finalNote,
+      remark: finalNote,
+      price: finalPriceWithOpts,
+      original_price: currentPriceObj.original,
+      toppings_snapshot: selectedToppings,
+    };
     if (addToCartOnly) {
-        for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
-        setSelectedProduct(null);
+      for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote);
+      setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
-        else performCookNow();
+      if (cart && cart.length > 0) setShowConfirm(true);
+      else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+    if (!selectedProduct) return;
+    if (selectedProduct.options) {
+      for (let i = 0; i < selectedProduct.options.length; i++) {
+        const opt = selectedProduct.options[i];
+        if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+          alert(`กรุณาเลือก: ${opt.name}`);
+          return;
+        }
+      }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+      ...selectedProduct,
+      variant,
+      note: finalNote,
+      specialRequest: finalNote,
+      comment: finalNote,
+      remark: finalNote,
+      price: finalPriceWithOpts,
+      original_price: currentPriceObj.original,
+      toppings_snapshot: selectedToppings,
+    };
+    for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
 
   return (
     // Theme: Lion King / Pride Lands (No Grayscale!)
-    <div className="w-full max-w-md md:max-w-3xl lg:max-w-5xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#451a03] bg-[#fffbeb] border-x border-amber-200">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#451a03] bg-[#fffbeb] border-x border-amber-200">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Itim&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 /* Lion King Palette */
                 --lion-orange: #f97316; /* Sunset */
@@ -148,7 +257,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Itim', 'Sarabun', sans-serif;
                 background-color: var(--bg-savanna);
                 /* Savanna Pattern */
-                background-image: 
+                background-image:
                     radial-gradient(circle at 10% 20%, rgba(249, 115, 22, 0.05) 15%, transparent 16%),
                     radial-gradient(circle at 80% 80%, rgba(251, 191, 36, 0.05) 10%, transparent 11%),
                     linear-gradient(rgba(120, 53, 15, 0.02) 1px, transparent 1px),
@@ -187,7 +296,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 10px 20px -5px rgba(120, 53, 15, 0.1);
                 overflow: hidden;
             }
-            
+
             .item-card:hover, .item-card:active {
                 transform: translateY(-5px) rotate(1deg);
                 border-color: var(--lion-orange);
@@ -203,7 +312,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
                 transition: all 0.2s;
             }
-            
+
             .btn-lion:active {
                 transform: scale(0.95);
                 box-shadow: 0 2px 5px rgba(249, 115, 22, 0.6);
@@ -216,7 +325,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
                 transform: translateY(-2px);
             }
-            
+
             .tab-btn {
                 transition: all 0.3s;
                 background: white;
@@ -235,7 +344,7 @@ export default function App({ state, actions, helpers }: any) {
              {/* Savanna Silhouette Overlay */}
              <div className="absolute bottom-0 left-0 w-full h-20 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]"></div>
              <div className="absolute top-[-20px] left-[-20px] w-40 h-40 bg-orange-600/20 rounded-full blur-3xl"></div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-orange-600/40 w-fit px-4 py-1.5 rounded-full border border-orange-400/50 backdrop-blur-sm transform rotate-1">
@@ -246,7 +355,7 @@ export default function App({ state, actions, helpers }: any) {
                          {brand?.name || "Pride Lands Grill"}
                      </h1>
                  </div>
-                 
+
                  {/* Lion Badge Icon */}
                  <div className="w-18 h-18 bg-white/10 rounded-full border-2 border-yellow-500 flex items-center justify-center relative shadow-glow animate-sunset">
                      <div className="text-yellow-400"><Icon name="sun" size={40} /></div>
@@ -258,7 +367,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-fade-in">
@@ -267,16 +376,16 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="relative w-full h-52 bg-amber-900 rounded-3xl overflow-hidden shadow-2xl mb-10 border-2 border-orange-500/50 p-1 group">
                              <div className="h-full w-full rounded-2xl overflow-hidden relative">
                                  {/* 🔴 Full Color Images (No Grayscale) */}
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                                  />
                              </div>
-                             
+
                              {/* Natural Borders */}
                              <div className="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-yellow-400 opacity-50"></div>
                              <div className="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-yellow-400 opacity-50"></div>
-                             
+
                              <div className="absolute bottom-4 left-4 bg-orange-600/90 text-white px-5 py-2 rounded-full border border-white shadow-lg">
                                  <span className="savanna-font text-xs font-bold uppercase tracking-widest">HAKUNA MATATA!</span>
                              </div>
@@ -293,7 +402,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -344,7 +453,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar py-1 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-sm font-bold uppercase tracking-widest ${selectedCategoryId === c.id ? 'tab-active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -398,7 +507,7 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="space-y-6">
                         {ordersList?.map((o: any, idx: any) => (
                             <div key={o.id} className="bg-white p-6 border-l-4 border-amber-500 rounded-r-xl shadow-md relative overflow-hidden" style={{animationDelay: `${idx * 0.1}s`}}>
-                                
+
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-4 border-b border-orange-100 pb-3">
                                      <span className="text-sm text-amber-900 font-bold savanna-font flex items-center gap-1">
@@ -452,7 +561,7 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- FLOATING NAV (Tribal Art Style) --- */}
         <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-[360px] h-[75px] bg-[#451a03]/95 backdrop-blur-md shadow-2xl flex justify-around items-center px-4 z-[100] rounded-full border border-white/10">
-             
+
              <button onClick={() => setActiveTab('home')} className={`group transition-all duration-300 w-16 flex flex-col items-center gap-1 ${activeTab === 'home' ? 'transform -translate-y-2' : ''}`}>
                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${activeTab === 'home' ? 'bg-orange-500/20 text-orange-400 drop-shadow-[0_0_5px_#f97316]' : 'text-amber-200/50'}`}>
                      <Icon name="home" size={20} />
@@ -488,14 +597,14 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[#451a03]/80 backdrop-blur-sm animate-fade-in p-0 md:items-center">
-                <div className="w-full max-w-md md:max-w-lg bg-white h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl border-t-8 border-orange-500 rounded-t-[3rem] relative">
-                    <div className="relative">
+            <div className="fixed inset-0 z-[110] flex items-end md:items-center xl:items-end justify-center bg-[#451a03]/80 backdrop-blur-sm animate-fade-in p-0">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col shadow-2xl border-t-8 border-orange-500 rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] relative overflow-hidden">
+                    <div className="relative shrink-0">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-orange-600 rounded-full border-2 border-orange-100 flex items-center justify-center hover:bg-orange-50 transition-colors shadow-md active:scale-90">
                             <Icon name="x" size={24} />
                         </button>
                         {/* 🔴 Full Color Images */}
-                        <div className="relative w-full h-85 overflow-hidden border-b-4 border-orange-100 rounded-b-[2.5rem] bg-orange-50">
+                        <div className="relative w-full h-[300px] sm:h-80 md:h-52 xl:h-80 overflow-hidden border-b-4 border-orange-100 rounded-b-[2.5rem] bg-orange-50">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-orange-600 text-white font-black text-2xl savanna-font rounded-xl border-4 border-white shadow-xl transform -rotate-1">
@@ -508,11 +617,11 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32">
+                    <div className="px-8 pt-10 pb-6 flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-3xl savanna-font text-orange-950 mb-6 leading-tight drop-shadow-sm uppercase tracking-widest">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
-                            
+
                             {/* Variants - Hakuna Matata Style */}
                             <div>
                                 <label className="block text-sm font-bold text-orange-900 mb-3 ml-1 tracking-wide uppercase">Select Portion</label>
@@ -522,12 +631,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'Special', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'Jumbo', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-3 border-2 transition-all flex flex-col items-center justify-center gap-1 rounded-xl active:scale-95
-                                                ${variant === v.key 
-                                                    ? 'bg-orange-50 border-orange-500 text-orange-700 shadow-md' 
+                                                ${variant === v.key
+                                                    ? 'bg-orange-50 border-orange-500 text-orange-700 shadow-md'
                                                     : 'bg-white border-orange-100 text-amber-900 hover:border-orange-300'}`}
                                         >
                                             <span className="text-xs font-bold uppercase tracking-wider">{v.label}</span>
@@ -536,6 +645,62 @@ export default function App({ state, actions, helpers }: any) {
                                     ))}
                                 </div>
                             </div>
+                            {/* Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                              <div className="space-y-4">
+                                {selectedProduct.options.map((opt: any, index: number) => (
+                                  <div key={index} className="rounded-2xl border-2 p-4" style={{background: 'rgba(255,255,255,0.15)', borderColor: 'rgba(0,0,0,0.15)'}}>
+                                    <div className="flex justify-between items-center mb-3">
+                                      <label className="text-lg font-bold">
+                                        {opt.name}
+                                        {opt.required && <span className="text-red-500 ml-2 text-sm">*</span>}
+                                      </label>
+                                      <span className="text-xs font-bold opacity-60 px-2 py-1 rounded-md" style={{background: 'rgba(0,0,0,0.08)'}}>
+                                        {opt.type === 'single' ? 'เลือก 1' : 'เลือกได้หลายอย่าง'}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {opt.choices.map((choice: any, cIndex: number) => {
+                                        const choiceKey = String(choice.id || choice.name);
+                                        const isSelected = (selectedOptions[index] || []).some((item: any) => String(item.id || item.name) === choiceKey);
+                                        return (
+                                          <div
+                                            key={cIndex}
+                                            onClick={() => handleOptionToggle(index, choice, opt.type)}
+                                            className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                              isSelected
+                                                ? 'shadow-sm -translate-y-0.5'
+                                                : 'opacity-70 hover:opacity-100'
+                                            }`}
+                                            style={{
+                                              background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                                              borderColor: isSelected ? 'currentColor' : 'rgba(0,0,0,0.1)',
+                                            }}
+                                          >
+                                            <div className="flex items-center gap-3">
+                                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                                isSelected ? 'border-current' : 'border-current opacity-30'
+                                              }`} style={{background: isSelected ? 'currentColor' : 'transparent'}}>
+                                                {isSelected && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                              </div>
+                                              {(choice.image_url || choice.image_name) && (
+                                                <img src={choice.image_url || getMenuUrl(choice.image_name)} alt={choice.name} className="w-10 h-10 object-cover rounded-lg border" style={{borderColor: 'rgba(0,0,0,0.1)'}} />
+                                              )}
+                                              <span className="font-bold text-base">{choice.name}</span>
+                                            </div>
+                                            {Number(choice.price) > 0 && (
+                                              <span className="font-black text-base">
+                                                +{Number(choice.price)}.-
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
 
                             {/* Qty & Total - Tribal Box */}
                             <div className="flex items-center justify-between py-4 mt-2 bg-orange-950 p-4 rounded-2xl shadow-lg border border-white/10">
@@ -557,23 +722,23 @@ export default function App({ state, actions, helpers }: any) {
                             {/* Note - Papyrus Box */}
                             <div>
                                 <label className="block text-sm font-bold text-orange-900 mb-2 ml-1 tracking-wide uppercase">Notes for the Pride</label>
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Extra juicy, no bones..." 
+                                    placeholder="Extra juicy, no bones..."
                                     className="w-full p-4 bg-orange-50 border border-orange-200 text-orange-900 focus:border-orange-500 focus:outline-none h-24 resize-none text-lg font-bold rounded-2xl shadow-inner placeholder:text-orange-300"
                                 />
                             </div>
                         </div>
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-4 mt-8">
-                            <button onClick={() => handleAdd(true)} className="py-4 bg-white border-2 border-orange-200 text-orange-600 font-black text-xl rounded-2xl active:scale-95 transition-all shadow-sm savanna-font uppercase">
-                                Add to Pack
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 btn-lion active:scale-95 transition-all flex items-center justify-center gap-2 text-2xl">
-                                HUNT! <Icon name="paw" size={24} />
-                            </button>
-                        </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t border-orange-200 grid grid-cols-2 gap-4 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-4 bg-white border-2 border-orange-200 text-orange-600 font-black text-xl rounded-2xl active:scale-95 transition-all shadow-sm savanna-font uppercase">
+                            Add to Pack
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 btn-lion active:scale-95 transition-all flex items-center justify-center gap-2 text-2xl">
+                            HUNT! <Icon name="paw" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -582,9 +747,9 @@ export default function App({ state, actions, helpers }: any) {
         {/* --- CART SHEET (Pride Pack) --- */}
         {activeTab === 'cart' && (
             <div className="fixed inset-0 z-[130] flex items-end justify-center bg-amber-950/80 backdrop-blur-sm animate-fade-in md:items-center">
-                <div className="w-full max-w-md md:max-w-lg bg-white border-t-[10px] border-orange-500 flex flex-col shadow-2xl h-[92vh] md:h-auto md:max-h-[90vh] relative rounded-t-[4rem]">
-                    
-                    <button 
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-[10px] border-orange-500 flex flex-col shadow-2xl h-[92vh] md:h-auto md:max-h-[90vh] relative rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem]">
+
+                    <button
                         onClick={() => setActiveTab('menu')}
                         className="absolute top-6 right-6 z-50 w-12 h-12 bg-orange-100 text-orange-500 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors rounded-full shadow-sm"
                     >
@@ -655,22 +820,22 @@ export default function App({ state, actions, helpers }: any) {
         {showConfirm && (
             <div className="fixed inset-0 bg-[#451a03]/95 z-[250] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                 <div className="w-full max-w-sm bg-white border-4 border-orange-500 p-10 text-center shadow-2xl relative overflow-hidden rounded-3xl animate-fade-in">
-                    
+
                     <div className="w-24 h-24 bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-6 border-2 border-orange-500 shadow-glow relative z-10 rounded-full animate-pulse">
                         <Icon name="crown" size={48} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-2xl savanna-font text-orange-950 mb-2 uppercase tracking-wide">Seal the Feast?</h3>
                             <p className="text-amber-700 mb-8 font-bold tracking-wide">Add "{selectedProduct.name}" to the pack?</p>
                             <div className="flex flex-col gap-3">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-4 btn-lion text-xl shadow-lg rounded-xl">YES! HUNT NOW</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-4 bg-transparent border-2 border-orange-200 text-orange-400 font-black hover:bg-orange-50 rounded-xl uppercase">Just Add to Pack</button>

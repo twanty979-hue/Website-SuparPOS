@@ -4,40 +4,40 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Simple House Doodle
-    home: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />, 
+    home: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
     // Menu -> List Lines
-    menu: <path d="M3 12h18M3 6h18M3 18h18" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M3 12h18M3 6h18M3 18h18" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Bag Doodle
     basket: <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0" />,
     // Clock -> Circle with hands
     clock: <circle cx="12" cy="12" r="10" />,
     // Chef -> Hat Doodle
-    chef: <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" />, 
+    chef: <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" />,
     plus: <path d="M5 12h14M12 5v14" />,
     minus: <path d="M5 12h14" />,
     x: <path d="M18 6 6 18M6 6l12 12" />,
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Scribble Fire
-    flame: <path d="M12 2c0 0-3 5-3 9 0 4.418 3 8 8 8s5-3.582 5-8c0-5-7-9-7-9z" />, 
+    flame: <path d="M12 2c0 0-3 5-3 9 0 4.418 3 8 8 8s5-3.582 5-8c0-5-7-9-7-9z" />,
     pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
     star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -53,7 +53,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -65,17 +65,30 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -90,7 +103,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -102,35 +115,128 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#fefcf0] flex items-center justify-center text-[#1a1a1a] font-black text-2xl animate-pulse">DRAWING...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const currentPriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = (currentPriceObj.final || 0) + toppingTotal;
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (currentPriceObj.original || currentPriceObj.final + currentPriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
     if (addToCartOnly) {
-        for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+        for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+    if (!selectedProduct) return;
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (currentPriceObj.original || currentPriceObj.final + currentPriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+    for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
 
   return (
     // Theme: Sketchbook - Full Color Images
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#1a1a1a]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#1a1a1a]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Itim&family=Mali:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --ink-black: #1a1a1a;
                 --pencil-gray: #4b5563;
@@ -143,7 +249,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Itim', 'Sarabun', sans-serif;
                 background-color: var(--paper-texture);
                 /* Paper texture and subtle grid line */
-                background-image: 
+                background-image:
                     linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
                     linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
                 background-size: 25px 25px;
@@ -184,7 +290,7 @@ export default function App({ state, actions, helpers }: any) {
                 overflow: hidden;
                 transform: rotate(-0.5deg);
             }
-            
+
             .item-card:hover, .item-card:active {
                 transform: translate(2px, 2px) rotate(0.5deg);
                 box-shadow: 1px 1px 0px var(--ink-black);
@@ -207,7 +313,7 @@ export default function App({ state, actions, helpers }: any) {
                 text-transform: uppercase;
                 border: 2px solid transparent;
             }
-            
+
             .btn-ink:active {
                 transform: scale(0.98);
                 box-shadow: 0 0 0;
@@ -222,7 +328,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 3px 3px 0 var(--ink-black);
                 transition: all 0.2s;
             }
-            
+
             .btn-outline:active {
                 transform: translate(2px, 2px);
                 box-shadow: 0 0 0;
@@ -234,7 +340,7 @@ export default function App({ state, actions, helpers }: any) {
                 text-decoration: underline;
                 transform: rotate(-1deg);
             }
-            
+
             .tab-btn {
                 transition: all 0.3s;
                 background: white;
@@ -248,7 +354,7 @@ export default function App({ state, actions, helpers }: any) {
             .page-transition {
                 animation: fadeIn 0.5s ease;
             }
-            
+
             .no-scrollbar::-webkit-scrollbar { display: none; }
             .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         `}} />
@@ -256,22 +362,22 @@ export default function App({ state, actions, helpers }: any) {
         {/* --- Header (Sketch Title) --- */}
         <header className="pt-8 pb-4 px-6 relative z-10">
              <div className="flex justify-between items-center">
-                 <div>
-                     <div className="inline-block px-3 py-1 border-2 border-black bg-white transform -rotate-2 mb-2 shadow-[2px_2px_0_black]">
-                         <p className="text-[10px] font-bold tracking-widest uppercase sketch-font">Table: {tableLabel}</p>
-                     </div>
-                     <h1 className="text-4xl sketch-font leading-none mt-1 underline decoration-wavy decoration-2 decoration-gray-400">
-                         {brand?.name || "The Sketchbook"}
-                     </h1>
-                 </div>
-                 <div className="w-16 h-16 border-4 border-black rounded-full flex items-center justify-center bg-white shadow-[4px_4px_0_black] animate-scribble">
-                     <Icon name="chef" size={32} />
-                 </div>
+                  <div>
+                      <div className="inline-block px-3 py-1 border-2 border-black bg-white transform -rotate-2 mb-2 shadow-[2px_2px_0_black]">
+                          <p className="text-[10px] font-bold tracking-widest uppercase sketch-font">Table: {tableLabel}</p>
+                      </div>
+                      <h1 className="text-4xl sketch-font leading-none mt-1 underline decoration-wavy decoration-2 decoration-gray-400">
+                          {brand?.name || "The Sketchbook"}
+                      </h1>
+                  </div>
+                  <div className="w-16 h-16 border-4 border-black rounded-full flex items-center justify-center bg-white shadow-[4px_4px_0_black] animate-scribble">
+                      <Icon name="chef" size={32} />
+                  </div>
              </div>
         </header>
 
         <main className="px-5 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-fade-in">
@@ -279,9 +385,10 @@ export default function App({ state, actions, helpers }: any) {
                     {banners?.length > 0 && (
                         <div className="relative w-full h-56 bg-white border-4 border-black p-3 mb-10 shadow-[6px_6px_0_black] transform rotate-1">
                              <div className="h-full w-full border-2 border-gray-200 overflow-hidden relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover"
+                                    alt="Banner"
                                  />
                              </div>
                              <div className="absolute -bottom-4 -left-2 bg-black text-white px-4 py-1 transform -rotate-3 sketch-font">
@@ -302,13 +409,13 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer">
                                      <div className="w-full h-40 overflow-hidden relative border-b-2 border-black">
-                                         <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover sketch-image" />
+                                         <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover sketch-image" alt={p.name} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 right-2 bg-black text-white text-[10px] font-bold px-2 py-1 sketch-font">
                                                  PROMO
@@ -352,7 +459,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-6 py-2 text-lg sketch-font ${selectedCategoryId === c.id ? 'tab-active' : ''}`}>
                                 {c.name}
                             </button>
@@ -365,7 +472,7 @@ export default function App({ state, actions, helpers }: any) {
                              return (
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer">
                                      <div className="w-full h-40 overflow-hidden relative border-b-2 border-black">
-                                         <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover sketch-image" />
+                                         <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover sketch-image" alt={p.name} />
                                      </div>
                                      <div className="p-3">
                                          <h3 className="font-bold text-sm line-clamp-2 mb-1 leading-tight sketch-font">{p.name}</h3>
@@ -402,13 +509,13 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="space-y-6">
                         {ordersList?.map((o: any) => (
                             <div key={o.id} className="bg-white p-6 border-2 border-black shadow-[4px_4px_0_black] relative">
-                                
+
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-4 border-b-2 border-black pb-2">
                                      <span className="text-xs font-bold uppercase tracking-widest flex items-center gap-1 sketch-font">
                                          Ticket #{o.id.slice(-4)}
                                      </span>
-                                     <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-wide border-2 border-black 
+                                     <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-wide border-2 border-black
                                         ${o.status === 'pending' ? 'bg-white text-black' : 'bg-black text-white'}`}>
                                         {o.status === 'pending' ? 'DRAWING...' : 'DONE!'}
                                      </span>
@@ -421,20 +528,20 @@ export default function App({ state, actions, helpers }: any) {
                                         const quantity = i.quantity || 1;
                                         const finalPriceTotal = i.price * quantity;
                                         const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                                        const originalPriceTotal = hasDiscount 
-                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+                                        const originalPriceTotal = hasDiscount
+                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                             : finalPriceTotal;
                                         const discountAmount = originalPriceTotal - finalPriceTotal;
 
                                         return (
                                             <div key={idx} className="flex justify-between items-start text-sm font-bold border-b border-dashed border-gray-400 pb-2 last:border-0 sketch-font">
-                                                
+
                                                 {/* Left Info */}
                                                 <div className="flex flex-col items-start pr-2">
                                                     <span className="leading-tight text-base">
                                                         <span className="text-lg">{quantity}x</span> {i.product_name}
                                                     </span>
-                                                    
+
                                                     {/* Variant Badge (Sketch Style) */}
                                                     {i.variant !== 'normal' && (
                                                         <span className={`text-[10px] bg-black text-white px-2 py-0.5 border border-black font-sans font-bold mt-1 uppercase tracking-wider transform -rotate-1`}>
@@ -503,9 +610,9 @@ export default function App({ state, actions, helpers }: any) {
                  <button onClick={() => setActiveTab('cart')} className="absolute w-16 h-16 bg-black rounded-full shadow-[2px_2px_0_gray] flex items-center justify-center text-white border-2 border-white active:scale-90 transition-all z-20">
                      <Icon name="basket" size={24} />
                      {cart?.length > 0 && (
-                         <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-black">
-                             {cart.length}
-                         </span>
+                          <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-black">
+                              {cart.length}
+                          </span>
                      )}
                  </button>
              </div>
@@ -517,33 +624,33 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Sketch Pad - FIXED 3 PRICES) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-                <div className="w-full max-w-md bg-white border-t-4 border-x-4 border-black h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-[0_-10px_0_rgba(0,0,0,0.1)] relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-4 border-x-4 md:rounded-2xl xl:rounded-none xl:rounded-t-2xl border-black h-auto max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] flex flex-col overflow-hidden shadow-[0_-10px_0_rgba(0,0,0,0.1)] relative">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 z-30 w-10 h-10 bg-white text-black border-2 border-black flex items-center justify-center hover:bg-gray-100 transition-colors shadow-[2px_2px_0_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-72 overflow-hidden border-b-4 border-black bg-gray-100">
+                        <div className="relative w-full h-72 md:h-52 xl:h-64 shrink-0 overflow-hidden border-b-4 border-black bg-gray-100">
                             {/* 🔥 FULL COLOR IMAGE */}
-                            <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                            <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" alt={selectedProduct.name} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-white text-black font-black text-3xl sketch-font border-4 border-black shadow-[4px_4px_0_black] transform -rotate-2 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (
                                         <span className="text-sm line-through text-gray-400 decoration-black decoration-2 mb-1">
-                                            {currentPriceObj.original}
+                                            {Number(currentPriceObj.original || 0) + toppingTotal}
                                         </span>
                                     )}
-                                    <span>{currentPriceObj.final}.-</span>
+                                    <span>{finalPriceWithOpts}.-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-6 pt-8 pb-32 relative">
+                    <div className="px-6 pt-8 pb-6 flex-1 overflow-y-auto no-scrollbar relative">
                         <h2 className="text-3xl sketch-font text-black mb-6 leading-tight underline decoration-2 decoration-gray-400">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
-                            
+
                             {/* ✅ FIXED: 3 Variants Grid (Black & White Toggle) */}
                             <div>
                                 <label className="block text-lg font-bold text-black mb-3 sketch-font ml-1 tracking-wide">SIZE:</label>
@@ -553,12 +660,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'SPECIAL', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'JUMBO', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 border-2 transition-all flex flex-col items-center justify-between h-24 sketch-font
-                                                ${variant === v.key 
-                                                    ? 'bg-black text-white border-black shadow-[4px_4px_0_gray] -translate-y-1' 
+                                                ${variant === v.key
+                                                    ? 'bg-black text-white border-black shadow-[4px_4px_0_gray] -translate-y-1'
                                                     : 'bg-white text-black border-black hover:bg-gray-100'}`}
                                         >
                                             <span className="text-[10px] font-black tracking-widest uppercase">{v.label}</span>
@@ -582,16 +689,71 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-gray-500 font-black uppercase tracking-widest mb-1">Total Ink</p>
-                                    <p className="text-4xl font-black text-black sketch-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-4xl font-black text-black sketch-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
 
+                            {/* Options List */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="space-y-6 pt-2">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => (
+                                        <div key={groupIndex} className="border-t-2 border-dashed border-gray-300 pt-4 first:border-t-0 first:pt-0">
+                                            <label className="block text-lg font-bold text-black mb-3 sketch-font ml-1 tracking-wide uppercase">
+                                                {opt.name} {opt.required && <span className="text-red-500">*</span>}
+                                                <span className="text-xs text-gray-500 font-normal ml-2">
+                                                    ({opt.type === 'single' ? 'Choose 1' : 'Multiple choices'})
+                                                </span>
+                                            </label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {opt.choices.map((choice: any, choiceIdx: number) => {
+                                                    const isAlreadySelected = (selectedOptions[groupIndex] || []).some(
+                                                        (item: any) => String(item.id || item.name) === String(choice.id || choice.name)
+                                                    );
+                                                    const hasImg = !!(choice.image_url || choice.image_name);
+                                                    return (
+                                                        <button
+                                                            key={choiceIdx}
+                                                            type="button"
+                                                            onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                            className={`border-2 transition-all flex flex-col items-center rounded-none overflow-hidden relative text-left w-full
+                                                                ${isAlreadySelected
+                                                                    ? 'bg-black text-white border-black shadow-[4px_4px_0_gray] -translate-y-1'
+                                                                    : 'bg-white text-black border-black hover:bg-gray-50'}`}
+                                                        >
+                                                            {hasImg && (
+                                                                <div className="w-full h-24 overflow-hidden border-b-2 border-black bg-gray-100 shrink-0">
+                                                                    <img
+                                                                        src={choice.image_url || getMenuUrl(choice.image_name)}
+                                                                        alt={choice.name}
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            <div className="p-3 w-full flex-1 flex flex-col justify-center items-center text-center">
+                                                                <span className="text-sm font-bold leading-tight line-clamp-2 sketch-font">
+                                                                    {choice.name}
+                                                                </span>
+                                                                {Number(choice.price || 0) > 0 && (
+                                                                    <span className="text-xs font-black mt-1">
+                                                                        +{choice.price}.-
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* 📝 Note Input */}
                             <div className="relative">
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Add a sketch note..." 
+                                    placeholder="Add a sketch note..."
                                     className="w-full p-4 bg-white border-2 border-black focus:outline-none focus:shadow-[4px_4px_0_black] transition-shadow h-24 resize-none text-lg font-bold text-black placeholder:text-gray-400 sketch-font"
                                 />
                                 <div className="absolute top-2 right-2 text-gray-400 pointer-events-none">
@@ -599,15 +761,14 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-4 bg-white border-2 border-black text-black font-black text-lg shadow-[4px_4px_0_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all sketch-font">
-                                ADD TO LIST
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 bg-black text-white border-2 border-black font-black text-lg shadow-[4px_4px_0_gray] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all sketch-font flex items-center justify-center gap-2">
-                                DRAW NOW! <Icon name="check" size={20} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-4 border-black grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-4 bg-white border-2 border-black text-black font-black text-lg shadow-[4px_4px_0_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all sketch-font">
+                            ADD TO LIST
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 bg-black text-white border-2 border-black font-black text-lg shadow-[4px_4px_0_gray] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all sketch-font flex items-center justify-center gap-2">
+                            DRAW NOW! <Icon name="check" size={20} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -615,9 +776,9 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CART SHEET (Rough List) --- */}
         {activeTab === 'cart' && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-                <div className="w-full max-w-md bg-[#fefcf0] border-t-4 border-x-4 border-black flex flex-col shadow-[0_-20px_60px_rgba(0,0,0,0.2)] h-[85vh] relative" style={{backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '100% 2rem'}}>
-                    
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#fefcf0] md:rounded-2xl xl:rounded-none xl:rounded-t-2xl border-t-4 border-x-4 border-black flex flex-col shadow-[0_-20px_60px_rgba(0,0,0,0.2)] h-[85vh] relative" style={{backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '100% 2rem'}}>
+
                     {/* Spiral binding visual */}
                     <div className="absolute -top-6 left-0 w-full h-8 flex justify-evenly z-20">
                         {[...Array(10)].map((_, i) => (
@@ -640,7 +801,7 @@ export default function App({ state, actions, helpers }: any) {
                         {cart.map((item: any, idx: any) => (
                             <div key={idx} className="flex items-center gap-4 bg-white p-3 border-2 border-black shadow-[4px_4px_0_black] relative">
                                 {/* 🔥 FULL COLOR IMAGE IN CART */}
-                                <img src={item.image_url} className="w-16 h-16 object-cover border-2 border-black" />
+                                <img src={item.image_url} className="w-16 h-16 object-cover border-2 border-black" alt={item.name} />
                                 <div className="flex-1">
                                     <div className="font-bold text-black text-lg leading-tight sketch-font">
                                         {item.name} <span className="text-gray-500 text-sm">x{item.quantity}</span>
@@ -688,18 +849,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-24 h-24 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-black animate-scribble">
                         <Icon name="chef" size={48} />
                     </div>
-                    
+
                     {selectedProduct ? (
                         <>
                             <h3 className="text-3xl sketch-font text-black mb-4 leading-tight uppercase tracking-widest decoration-wavy underline">Draw this?</h3>
                             <p className="text-lg text-gray-600 mb-10 font-bold sketch-font">Add "{selectedProduct.name}" to the queue?</p>
                             <div className="flex flex-col gap-4">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-4 bg-black text-white font-black border-2 border-black shadow-[4px_4px_0_gray] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-xl sketch-font uppercase">YES! DRAW IT!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-4 bg-white text-black font-black border-2 border-black shadow-[4px_4px_0_black] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-lg sketch-font uppercase">Just List It</button>

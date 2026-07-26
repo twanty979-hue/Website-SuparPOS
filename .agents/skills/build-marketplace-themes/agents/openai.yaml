@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Marketplace Themes"
+  short_description: "สร้างธีม SuparPOS จากแค็ตตาล็อก 100 แบบ"
+  default_prompt: "Use $build-marketplace-themes to create the next approved SuparPOS marketplace theme from the 100-theme catalog."

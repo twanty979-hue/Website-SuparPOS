@@ -4,25 +4,25 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Windmill / Farmhouse
-    home: <path d="M12 2L2 12h3v8h14v-8h3L12 2z M12 5l6 6V18H6v-7l6-6z" strokeWidth="3" strokeLinejoin="round" />, 
+    home: <path d="M12 2L2 12h3v8h14v-8h3L12 2z M12 5l6 6V18H6v-7l6-6z" strokeWidth="3" strokeLinejoin="round" />,
     // Menu -> Slab / Stone Tablet
     menu: <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z" />,
-    search: <circle cx="11" cy="11" r="8" />, 
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Computer / Monitor
     basket: <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12z M12 10h2v2h-2z" />,
     // Clock -> Moon / Pocket Watch
     clock: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />,
     // Chef -> Eustace's Hat / Mask
-    chef: <path d="M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5" />, 
+    chef: <path d="M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5" />,
     // Star -> Muriel's Rolling Pin / Sparkle
-    star: <path d="M12 2l3 9h9l-7 5 3 9-8-6-8 6 3-9-7-5h9z" />, 
+    star: <path d="M12 2l3 9h9l-7 5 3 9-8-6-8 6 3-9-7-5h9z" />,
     plus: <path d="M5 12h14M12 5v14" />,
     minus: <path d="M5 12h14" />,
     x: <path d="M18 6 6 18M6 6l12 12" />,
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Ghost / Spirit
-    flame: <path d="M12 2C8 2 5 6 5 10c0 4 3 6 3 9 0 2-2 3-2 3h12s-2-1-2-3c0-3 3-5 3-9 0-4-3-8-7-8z" />, 
+    flame: <path d="M12 2C8 2 5 6 5 10c0 4 3 6 3 9 0 2-2 3-2 3h12s-2-1-2-3c0-3 3-5 3-9 0-4-3-8-7-8z" />,
     pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
     // Dog Bone
     bone: <path d="M17 4c-1.66 0-3 1.34-3 3 0 .2.02.38.06.56C13.56 7.22 12.82 7 12 7c-.82 0-1.56.22-2.06.56.04-.18.06-.36.06-.56 0-1.66-1.34-3-3-3s-3 1.34-3 3c0 1.28.8 2.37 1.94 2.8C5.28 10.4 5 11.16 5 12c0 1.66 1.34 3 3 3 1.66 0 3-1.34 3-3 0-.2-.02-.38-.06-.56.5-.34 1.24-.56 2.06-.56.82 0 1.56.22 2.06.56-.04.18-.06.36-.06.56 0 1.66 1.34 3 3 3s3-1.34 3-3c0-.84-.28-1.6-.74-2.2C21.2 12.37 22 11.28 22 10c0-1.66-1.34-3-3-3-.84 0-1.6.28-2.2.74C16.6 7.28 15.8 6.4 16 5.5 16.2 4.6 17 4 17 4z" />,
@@ -33,18 +33,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -61,7 +61,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -73,20 +73,66 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   // Removed orderNote
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
 
   // --- 🔥 AUTO-CHECKOUT LOGIC ---
   const prevCartLength = useRef(cart?.length || 0);
@@ -94,12 +140,12 @@ export default function App({ state, actions, helpers }: any) {
   useEffect(() => {
     if (pendingCookNow) {
         if (cart?.length > prevCartLength.current) {
-             handleCheckout(""); 
+             handleCheckout("");
              setPendingCookNow(false);
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(""); 
+                 handleCheckout("");
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -111,22 +157,53 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#1e1b4b] flex items-center justify-center text-[#f472b6] font-black text-2xl">LOADING...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+
+  const currentPriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
+
+  const finalPriceWithOpts = currentPriceObj.final + toppingTotal;
 
   // --- 📝 Robust Data Passing ---
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
-        specialRequest: finalNote, 
+        specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (currentPriceObj.original || currentPriceObj.final + currentPriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
 
     if (addToCartOnly) {
@@ -135,22 +212,37 @@ export default function App({ state, actions, helpers }: any) {
         }
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+    if (!selectedProduct) return;
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
         specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (currentPriceObj.original || currentPriceObj.final + currentPriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
-    
+
     for(let i=0; i<qty; i++) {
         handleAddToCart(productToAdd, variant, finalNote);
     }
@@ -165,18 +257,18 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Courage the Cowardly Dog - The Middle of Nowhere
-    <div className="w-full max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-slate-900 bg-[#1e1b4b] font-sans text-[#fefce8]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-slate-900 bg-[#1e1b4b] font-sans text-[#fefce8]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Mali:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 /* Courage Palette */
-                --courage-pink: #f472b6; 
-                --nowhere-purple: #2e1065; 
-                --muriel-yellow: #facc15; 
-                --eustace-green: #365314; 
+                --courage-pink: #f472b6;
+                --nowhere-purple: #2e1065;
+                --muriel-yellow: #facc15;
+                --eustace-green: #365314;
                 --scary-red: #991b1b;
                 --bg-creepy: #1e1b4b;
                 --text-ghost: #fefce8;
@@ -186,7 +278,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Sarabun', sans-serif;
                 background-color: var(--bg-creepy);
                 /* Windmill/Nowhere Pattern */
-                background-image: 
+                background-image:
                     radial-gradient(circle at 10% 20%, rgba(244, 114, 182, 0.05) 2px, transparent 3px),
                     radial-gradient(circle at 90% 80%, rgba(250, 204, 21, 0.05) 2px, transparent 3px);
                 background-size: 100px 100px;
@@ -230,7 +322,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 10px 20px rgba(0,0,0,0.5);
                 overflow: hidden;
             }
-            
+
             .item-card:hover, .item-card:active {
                 transform: scale(0.98) translateY(2px);
                 border-color: var(--courage-pink);
@@ -254,7 +346,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 4px 15px rgba(244, 114, 182, 0.4);
                 transition: all 0.2s;
             }
-            
+
             .btn-courage:active {
                 transform: scale(0.95);
                 box-shadow: 0 0 5px rgba(244, 114, 182, 0.6);
@@ -267,7 +359,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 0 15px var(--courage-pink);
                 transform: rotate(-2deg) scale(1.05);
             }
-            
+
             .tab-btn {
                 transition: all 0.3s;
                 background: #1e1b4b;
@@ -285,7 +377,7 @@ export default function App({ state, actions, helpers }: any) {
             .page-transition {
                 animation: fadeIn 0.6s ease-in-out;
             }
-            
+
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
             /* Computer/Monitor scanline effect */
@@ -311,7 +403,7 @@ export default function App({ state, actions, helpers }: any) {
              {/* Spooky Eyes */}
              <div className="absolute top-10 right-20 w-4 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
              <div className="absolute top-10 right-14 w-4 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-black/40 w-fit px-4 py-1.5 rounded-full border border-white/20 backdrop-blur-sm">
@@ -333,7 +425,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="page-transition">
@@ -342,9 +434,9 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="relative w-full h-56 bg-black rounded-2xl overflow-hidden shadow-2xl mb-10 border-4 border-slate-700 p-1 group">
                              <div className="scanline"></div>
                              <div className="h-full w-full rounded-xl overflow-hidden bg-slate-900 opacity-60 group-hover:opacity-100 transition-opacity relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover"
                                  />
                              </div>
                              <div className="absolute top-4 right-4 bg-green-900 text-green-400 px-4 py-1 border border-green-500 shadow-md">
@@ -363,7 +455,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -413,7 +505,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-lg font-bold spooky-font uppercase ${selectedCategoryId === c.id ? 'tab-active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -538,13 +630,13 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/90 backdrop-blur-md animate-fade-in">
-                <div className="w-full max-w-md bg-slate-900 border-t-4 border-pink-500 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl relative animate-image-pop">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-black/90 backdrop-blur-md animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md md:rounded-2xl xl:rounded-none xl:rounded-t-2xl bg-slate-900 border-t-4 border-pink-500 h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col overflow-hidden shadow-2xl relative animate-image-pop">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-black/50 text-white rounded-none border border-pink-500 flex items-center justify-center hover:bg-pink-900 transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-80 overflow-hidden border-b-2 border-pink-900/50 bg-black">
+                        <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-2 border-pink-900/50 bg-black">
                             <div className="scanline"></div>
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover opacity-70" />
                             <div className="absolute bottom-6 left-6">
@@ -560,9 +652,9 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl spooky-font text-white mb-6 leading-tight drop-shadow-glow uppercase tracking-widest">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
                             {/* --- 3 PRICES VARIANT SELECTOR --- */}
                             <div>
@@ -573,12 +665,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'BRAVE', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'MONSTER', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 border-2 transition-all flex flex-col items-center justify-between h-24 handwritten-font
-                                                ${variant === v.key 
-                                                    ? 'bg-pink-600 border-white shadow-md -translate-y-1 text-white' 
+                                                ${variant === v.key
+                                                    ? 'bg-pink-600 border-white shadow-md -translate-y-1 text-white'
                                                     : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-pink-500 hover:text-pink-500'}`}
                                         >
                                             <span className="text-xs font-black tracking-widest">{v.label}</span>
@@ -593,6 +685,58 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
+                            {/* --- OPTIONS SYSTEM --- */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="space-y-6 border-t border-slate-800 pt-6 mt-4">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => (
+                                        <div key={groupIndex} className="bg-slate-800 p-4 border-2 border-slate-700">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <label className="text-sm font-bold text-pink-400 handwritten-font uppercase tracking-wider">
+                                                    {opt.name} {opt.required && <span className="text-red-500">*</span>}
+                                                </label>
+                                                <span className="text-xs text-slate-400 uppercase tracking-widest font-black">
+                                                    {opt.type === 'single' ? 'Pick 1' : 'Pick Many'}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {opt.choices?.map((choice: any, choiceIdx: number) => {
+                                                    const choiceKey = String(choice.id || choice.name);
+                                                    const isSelected = (selectedOptions[groupIndex] || []).some((item: any) => String(item.id || item.name) === choiceKey);
+                                                    return (
+                                                        <div
+                                                            key={choiceIdx}
+                                                            onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                            className={`flex items-center justify-between p-3 cursor-pointer transition-all border-2 border-slate-700
+                                                                ${isSelected ? 'bg-pink-900/30 border-pink-500' : 'bg-black hover:border-slate-500'}`}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                {(choice.image_url || choice.image_name) && (
+                                                                    <div className="w-10 h-10 bg-slate-900 border border-slate-700 shrink-0">
+                                                                        <img src={choice.image_url || getMenuUrl(choice.image_name)} className="w-full h-full object-cover" />
+                                                                    </div>
+                                                                )}
+                                                                <span className="text-sm font-bold text-slate-200 handwritten-font">{choice.name}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                {Number(choice.price) > 0 && (
+                                                                    <span className="text-pink-400 font-bold text-sm">+{Number(choice.price)}.-</span>
+                                                                )}
+                                                                <div className={`w-5 h-5 flex items-center justify-center border-2
+                                                                    ${opt.type === 'single' ? 'rounded-full' : 'rounded-sm'}
+                                                                    ${isSelected ? 'border-pink-500 bg-pink-500' : 'border-slate-500 bg-transparent'}`}
+                                                                >
+                                                                    {isSelected && <Icon name="check" size={14} className="text-white" strokeWidth={4} />}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 mt-2 border-t border-b border-slate-800">
                                 <div className="flex items-center gap-4 bg-black p-3 border-2 border-slate-800">
@@ -602,17 +746,17 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-slate-500 font-black uppercase tracking-[0.2em] mb-1 handwritten-font">Energy</p>
-                                    <p className="text-4xl font-black text-white spooky-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-4xl font-black text-white spooky-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
 
                             {/* 📝 Item Note Input */}
                             <div className="relative">
                                 <label className="block text-sm font-bold text-pink-400 mb-2 handwritten-font uppercase tracking-wider">Warning Note:</label>
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Scribble a note for Muriel..." 
+                                    placeholder="Scribble a note for Muriel..."
                                     className="w-full p-6 pl-10 bg-slate-800 border-2 border-slate-700 text-pink-100 placeholder:text-slate-600 focus:border-pink-500 focus:outline-none h-36 resize-none text-xl font-bold transition-colors shadow-inner handwritten-font"
                                 />
                                 <div className="absolute top-10 left-4 text-pink-600 pointer-events-none">
@@ -620,15 +764,15 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-transparent border-2 border-pink-400 text-pink-400 font-black text-xl active:scale-95 transition-all shadow-md handwritten-font uppercase">
-                                Hide Gear
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-courage text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 spooky-font uppercase tracking-wider">
-                                SURVIVE! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-[#1a1a1a] border-t border-slate-800 grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-transparent border-2 border-pink-400 text-pink-400 font-black text-xl active:scale-95 transition-all shadow-md handwritten-font uppercase">
+                            Hide Gear
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-courage text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 spooky-font uppercase tracking-wider">
+                            SURVIVE! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -636,18 +780,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ORDER SUMMARY MODAL --- */}
         <div id="orderSummaryOverlay" className={`fixed inset-0 bg-black/95 z-[130] backdrop-blur-md animate-fade-in ${activeTab === 'cart' ? 'block' : 'hidden'}`} onClick={() => setActiveTab('menu')}></div>
-        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#1a1a1a] border-t-8 border-pink-950 z-[140] flex flex-col shadow-2xl h-[92vh] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto md:rounded-2xl xl:rounded-none xl:rounded-t-2xl bg-[#1a1a1a] border-t-8 border-pink-950 z-[140] flex flex-col shadow-2xl h-[92vh] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="sticky top-0 bg-[#1a1a1a] z-20 border-b border-white/5 p-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                 <div className="w-24 h-1.5 bg-pink-900 rounded-full mx-auto mt-2 opacity-30"></div>
             </div>
-            
+
             <div className="flex justify-between items-center mb-6 px-10 pt-8">
                 <h2 className="text-4xl spooky-font text-white tracking-widest transform -rotate-1">Basement Gear</h2>
                 <div className="w-14 h-14 bg-pink-900/40 text-pink-400 border-2 border-pink-500 rounded-none flex items-center justify-center font-black text-2xl shadow-lg">
                     <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
                 </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto space-y-6 px-8 pb-4 no-scrollbar">
                 {cart.map((item: any, idx: any) => (
                     <div key={idx} className="flex items-center gap-4 bg-black p-4 border border-slate-800 rounded-none shadow-sm relative overflow-hidden hover:border-pink-900 transition-all">
@@ -706,18 +850,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-pink-500/10 text-pink-500 rounded-none flex items-center justify-center mx-auto mb-8 border border-pink-500 shadow-lg relative z-10 animate-shake">
                         <Icon name="flame" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-3xl spooky-font text-white mb-4 leading-tight relative z-10 uppercase tracking-widest">Added to Stash?</h3>
                             <p className="text-lg text-slate-400 mb-10 font-bold handwritten-font relative z-10">Add "{selectedProduct.name}" and hide?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-pink-500 text-white font-black border border-white shadow-lg active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-2xl handwritten-font uppercase">YES! HIDE IT!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-transparent border border-slate-700 text-slate-500 font-black text-lg active:scale-95 transition-transform hover:bg-slate-800 handwritten-font uppercase">Just Stash</button>

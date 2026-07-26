@@ -4,41 +4,41 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Cave Entrance
-    home: <path d="M2 22 12 2l10 20H2zM12 6v4M10 14h4" />, 
+    home: <path d="M2 22 12 2l10 20H2zM12 6v4M10 14h4" />,
     // Menu -> Stone Tablet / Bone List
-    menu: <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Woven Net / Sack
     basket: <path d="M5 8h14l-2 13H7L5 8zm7-6v6" />,
     // Clock -> Sun / Stone Wheel
     clock: <circle cx="12" cy="12" r="10" strokeWidth="4" />,
     // Chef -> Bone / Club
-    chef: <path d="M18.36 2.64l1.42 1.42-2.83 2.83-1.42-1.42zM5.64 15.36L2.81 12.53 4.23 11.11l2.83 2.83zM12 2C7 2 2 7 2 12s5 10 10 10 10-5 10-10S17 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />, 
+    chef: <path d="M18.36 2.64l1.42 1.42-2.83 2.83-1.42-1.42zM5.64 15.36L2.81 12.53 4.23 11.11l2.83 2.83zM12 2C7 2 2 7 2 12s5 10 10 10 10-5 10-10S17 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />,
     plus: <path d="M5 12h14M12 5v14" strokeWidth="4" />,
     minus: <path d="M5 12h14" strokeWidth="4" />,
     x: <path d="M18 6 6 18M6 6l12 12" strokeWidth="4" />,
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" strokeWidth="4" />,
     // Flame -> Fire / Torch
-    flame: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />, 
+    flame: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
     // Specifics
     bone: <path d="M17 2c-1.66 0-3 1.34-3 3 0 .31.06.6.15.88l-6.26 3.76c-.53-.41-1.21-.64-1.89-.64-1.66 0-3 1.34-3 3s1.34 3 3 3c.68 0 1.36-.23 1.89-.64l6.26 3.76c-.09.28-.15.57-.15.88 0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3c-.68 0-1.36.23-1.89.64l-6.26-3.76c.09-.28.15-.57.15-.88 0-1.66 1.34-3 3-3s3 1.34 3 3z" />,
     paw: <path d="M12 2a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3m5.5 3a2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5 2.5 2.5 0 0 1 2.5-2.5m-11 0a2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5 2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1-2.5-2.5" />
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -54,7 +54,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -66,9 +66,10 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
 
@@ -77,6 +78,17 @@ export default function App({ state, actions, helpers }: any) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+          if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+            initialOptions[index] = [opt.choices[0]];
+          } else {
+            initialOptions[index] = [];
+          }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -91,7 +103,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -103,35 +115,132 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#d6d3d1] flex items-center justify-center text-[#78350f] font-black text-2xl animate-rumble">HUNTING...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const basePriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const currentPriceObj = selectedProduct
+    ? {
+        ...basePriceObj,
+        final: finalPriceWithOpts,
+        original: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal
+      }
+    : { final: 0, original: 0, discount: 0 };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+      const selectedChoices = selectedOptions[index];
+      if (selectedChoices && selectedChoices.length > 0) {
+        optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+      }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+    setSelectedOptions((prev: any) => {
+      const currentSelected = prev[groupIndex] || [];
+      const choiceKey = String(choice.id || choice.name);
+      const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+      const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+      if (type === 'single') {
+        if (isAlreadySelected && !isRequired) return { ...prev, [groupIndex]: [] };
+        return { ...prev, [groupIndex]: [choice] };
+      } else {
+        if (isAlreadySelected) return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+        return { ...prev, [groupIndex]: [...currentSelected, choice] };
+      }
+    });
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
+    if (selectedProduct.options) {
+      for (let i = 0; i < selectedProduct.options.length; i++) {
+        const opt = selectedProduct.options[i];
+        if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+          alert(`กรุณาเลือก: ${opt.name}`);
+          return;
+        }
+      }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+      ...selectedProduct,
+      variant,
+      note: finalNote,
+      specialRequest: finalNote,
+      comment: finalNote,
+      remark: finalNote,
+      price: finalPriceWithOpts,
+      original_price: currentPriceObj.original,
+      toppings_snapshot: selectedToppings,
+    };
     if (addToCartOnly) {
-        for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
-        setSelectedProduct(null);
+      for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote);
+      setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
-        else performCookNow();
+      if (cart && cart.length > 0) setShowConfirm(true);
+      else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+    if (!selectedProduct) return;
+    if (selectedProduct.options) {
+      for (let i = 0; i < selectedProduct.options.length; i++) {
+        const opt = selectedProduct.options[i];
+        if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+          alert(`กรุณาเลือก: ${opt.name}`);
+          return;
+        }
+      }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+      ...selectedProduct,
+      variant,
+      note: finalNote,
+      specialRequest: finalNote,
+      comment: finalNote,
+      remark: finalNote,
+      price: finalPriceWithOpts,
+      original_price: currentPriceObj.original,
+      toppings_snapshot: selectedToppings,
+    };
+    for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
 
   return (
     // Theme: The Croods - Stone Age System (Full Color)
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#262626]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#262626]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Itim&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --cave-gray: #4b5563;
                 --cave-brown: #78350f;
@@ -145,7 +254,7 @@ export default function App({ state, actions, helpers }: any) {
             body {
                 font-family: 'Itim', 'Sarabun', sans-serif;
                 background-color: var(--bg-stone);
-                background-image: 
+                background-image:
                     url("https://www.transparenttextures.com/patterns/padded-little-squares.png"),
                     radial-gradient(circle at 10% 20%, rgba(120, 53, 15, 0.05) 10%, transparent 11%),
                     radial-gradient(circle at 80% 80%, rgba(75, 85, 99, 0.05) 15%, transparent 16%);
@@ -234,7 +343,7 @@ export default function App({ state, actions, helpers }: any) {
              <div className="absolute top-4 right-6 text-white/10 text-6xl animate-pulse">
                 <Icon name="paw" size={60} />
              </div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-[#78350f] w-fit px-4 py-1.5 rounded-sm border-2 border-[#a8a29e] transform -rotate-2 shadow-md">
@@ -256,7 +365,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-fade-in">
@@ -265,9 +374,9 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="relative w-full h-56 bg-[#e7e5e4] rounded-[2rem] overflow-hidden shadow-2xl mb-10 border-4 border-[#57534e] p-2 group animate-image-pop">
                              <div className="h-full w-full rounded-[1.5rem] overflow-hidden bg-stone-300 relative">
                                  {/* 🎨 Removed grayscale */}
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover"
                                  />
                              </div>
                              <div className="absolute bottom-4 right-4 bg-[#78350f] text-[#fca5a5] px-6 py-2 rounded-sm border-2 border-[#fca5a5] shadow-lg transform rotate-2">
@@ -286,7 +395,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -337,7 +446,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2 px-1 animate-image-pop">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-xl font-bold cave-font ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -391,7 +500,7 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="space-y-6">
                         {ordersList?.map((o: any) => (
                             <div key={o.id} className="bg-[#e7e5e4] p-6 border-4 border-[#78350f] rounded-xl shadow-[6px_6px_0_#292524] relative overflow-hidden">
-                                
+
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-4 border-b-2 border-[#a8a29e] pb-2">
                                      <span className="text-sm text-[#78350f] font-bold uppercase tracking-widest flex items-center gap-1 cave-font">
@@ -410,20 +519,20 @@ export default function App({ state, actions, helpers }: any) {
                                         const quantity = i.quantity || 1;
                                         const finalPriceTotal = i.price * quantity;
                                         const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                                        const originalPriceTotal = hasDiscount 
-                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+                                        const originalPriceTotal = hasDiscount
+                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                             : finalPriceTotal;
                                         const discountAmount = originalPriceTotal - finalPriceTotal;
 
                                         return (
                                             <div key={idx} className="flex justify-between items-start text-lg text-[#292524] font-bold border-b border-dashed border-[#a8a29e] pb-2 last:border-0 cave-font">
-                                                
+
                                                 {/* Left Info */}
                                                 <div className="flex flex-col items-start pr-2">
                                                     <span className="leading-tight">
                                                         <span className="text-[#ea580c]">{quantity}x</span> {i.product_name}
                                                     </span>
-                                                    
+
                                                     {/* Variant Badge (Cave Style) */}
                                                     {i.variant !== 'normal' && (
                                                         <span className={`text-[10px] bg-[#292524] text-[#fca5a5] px-2 py-0.5 border border-[#78350f] font-sans font-bold mt-1 uppercase tracking-wider transform -rotate-1`}>
@@ -512,13 +621,13 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Stone Slab - FIXED 3 PRICES) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#292524]/80 backdrop-blur-sm animate-fade-in">
-                <div className="w-full max-w-md bg-[#e7e5e4] border-t-8 border-[#78350f] h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-[0_-20px_0_#292524] rounded-t-[3rem] relative animate-image-pop">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#292524]/80 backdrop-blur-sm animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#e7e5e4] border-t-8 border-[#78350f] h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col overflow-hidden shadow-[0_-20px_0_#292524] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] relative animate-image-pop">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-[#78350f] text-[#fca5a5] rounded-sm border-2 border-[#fca5a5] flex items-center justify-center hover:bg-[#57534e] transition-colors shadow-[4px_4px_0_#292524] active:scale-90">
                             <Icon name="x" strokeWidth={4} />
                         </button>
-                        <div className="relative w-full h-85 overflow-hidden border-b-8 border-[#78350f] rounded-b-[2rem] bg-[#a8a29e]">
+                        <div className="relative w-full h-85 md:h-52 xl:h-85 shrink-0 overflow-hidden border-b-8 border-[#78350f] rounded-b-[2rem] bg-[#a8a29e]">
                             {/* 🎨 Removed grayscale */}
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
@@ -534,11 +643,11 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl cave-font text-[#292524] mb-6 leading-tight drop-shadow-[2px_2px_0_#a8a29e] uppercase tracking-wider">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
-                            
+
                             {/* ✅ FIXED: 3 Variants Grid (SMALL/BIG/MAMMOTH) */}
                             <div>
                                 <label className="block text-xl font-bold text-[#78350f] mb-3 cave-font ml-1 tracking-wide">HOW HUNGRY?</label>
@@ -548,12 +657,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'BIG', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'MAMMOTH', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-sm border-4 transition-all flex flex-col items-center justify-between h-24 cave-font
-                                                ${variant === v.key 
-                                                    ? 'bg-[#fca5a5] border-[#78350f] shadow-[4px_4px_0_#292524] -translate-y-1 text-[#78350f]' 
+                                                ${variant === v.key
+                                                    ? 'bg-[#fca5a5] border-[#78350f] shadow-[4px_4px_0_#292524] -translate-y-1 text-[#78350f]'
                                                     : 'bg-[#d6d3d1] border-[#a8a29e] text-[#78716c] hover:border-[#78350f] hover:text-[#78350f]'}`}
                                         >
                                             <span className="text-[12px] font-black tracking-widest uppercase">{v.label}</span>
@@ -567,6 +676,62 @@ export default function App({ state, actions, helpers }: any) {
                                     ))}
                                 </div>
                             </div>
+                            {/* Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                              <div className="space-y-4">
+                                {selectedProduct.options.map((opt: any, index: number) => (
+                                  <div key={index} className="rounded-2xl border-2 p-4" style={{background: 'rgba(255,255,255,0.15)', borderColor: 'rgba(0,0,0,0.15)'}}>
+                                    <div className="flex justify-between items-center mb-3">
+                                      <label className="text-lg font-bold">
+                                        {opt.name}
+                                        {opt.required && <span className="text-red-500 ml-2 text-sm">*</span>}
+                                      </label>
+                                      <span className="text-xs font-bold opacity-60 px-2 py-1 rounded-md" style={{background: 'rgba(0,0,0,0.08)'}}>
+                                        {opt.type === 'single' ? 'เลือก 1' : 'เลือกได้หลายอย่าง'}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {opt.choices.map((choice: any, cIndex: number) => {
+                                        const choiceKey = String(choice.id || choice.name);
+                                        const isSelected = (selectedOptions[index] || []).some((item: any) => String(item.id || item.name) === choiceKey);
+                                        return (
+                                          <div
+                                            key={cIndex}
+                                            onClick={() => handleOptionToggle(index, choice, opt.type)}
+                                            className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                              isSelected
+                                                ? 'shadow-sm -translate-y-0.5'
+                                                : 'opacity-70 hover:opacity-100'
+                                            }`}
+                                            style={{
+                                              background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                                              borderColor: isSelected ? 'currentColor' : 'rgba(0,0,0,0.1)',
+                                            }}
+                                          >
+                                            <div className="flex items-center gap-3">
+                                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                                isSelected ? 'border-current' : 'border-current opacity-30'
+                                              }`} style={{background: isSelected ? 'currentColor' : 'transparent'}}>
+                                                {isSelected && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                              </div>
+                                              {(choice.image_url || choice.image_name) && (
+                                                <img src={choice.image_url || getMenuUrl(choice.image_name)} alt={choice.name} className="w-10 h-10 object-cover rounded-lg border" style={{borderColor: 'rgba(0,0,0,0.1)'}} />
+                                              )}
+                                              <span className="font-bold text-base">{choice.name}</span>
+                                            </div>
+                                            {Number(choice.price) > 0 && (
+                                              <span className="font-black text-base">
+                                                +{Number(choice.price)}.-
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
 
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 mt-2">
@@ -583,23 +748,23 @@ export default function App({ state, actions, helpers }: any) {
 
                             {/* 📝 Note Input */}
                             <div className="relative">
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Carve a message on the wall..." 
+                                    placeholder="Carve a message on the wall..."
                                     className="w-full p-6 bg-[#d6d3d1] border-4 border-[#78350f] rounded-xl focus:border-[#ea580c] focus:outline-none h-36 resize-none text-xl font-bold text-[#292524] placeholder:text-[#78716c] transition-colors shadow-inner cave-font"
                                 />
                             </div>
                         </div>
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-[#d6d3d1] border-4 border-[#78350f] text-[#78350f] font-black text-xl rounded-sm active:scale-95 transition-all shadow-[4px_4px_0_#57534e] cave-font">
-                                Save for Later
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-hunt text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 cave-font tracking-widest">
-                                EAT NOW! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-[#e7e5e4] border-t-8 border-[#78350f] grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-[#d6d3d1] border-4 border-[#78350f] text-[#78350f] font-black text-xl rounded-sm active:scale-95 transition-all shadow-[4px_4px_0_#57534e] cave-font">
+                            Save for Later
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-hunt text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 cave-font tracking-widest">
+                            EAT NOW! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -608,7 +773,7 @@ export default function App({ state, actions, helpers }: any) {
         {/* --- CART SHEET (Gathering Sack) --- */}
         {activeTab === 'cart' && (
             <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#292524]/80 backdrop-blur-sm animate-fade-in">
-                <div className="w-full max-w-md bg-[#e7e5e4] border-t-[8px] border-[#78350f] flex flex-col shadow-[0_-20px_0_rgba(41,37,36,0.5)] h-[85vh] rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#e7e5e4] border-t-[8px] border-[#78350f] flex flex-col shadow-[0_-20px_0_rgba(41,37,36,0.5)] h-[85vh] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] animate-in slide-in-from-bottom duration-300">
                     <div className="w-full py-6 cursor-pointer rounded-t-[3rem] hover:bg-[#d6d3d1]" onClick={() => setActiveTab('menu')}>
                         <div className="w-24 h-2 bg-[#78350f] rounded-full mx-auto" />
                     </div>
@@ -674,18 +839,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-[#292524] text-[#ea580c] rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-[#ea580c] shadow-lg relative z-10 animate-rumble">
                         <Icon name="chef" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-3xl cave-font text-[#78350f] mb-4 leading-tight relative z-10 uppercase tracking-widest">Add to Sack?</h3>
                             <p className="text-lg text-[#57534e] mb-10 font-bold cave-font relative z-10">Throw "{selectedProduct.name}" in?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-[#ea580c] text-white font-black border-2 border-white shadow-[4px_4px_0_#78350f] active:scale-95 transition-all text-2xl cave-font uppercase tracking-widest rounded-sm">YES! EAT IT!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-[#d6d3d1] border-4 border-[#78350f] text-[#292524] font-black text-xl active:scale-95 transition-transform hover:bg-[#a8a29e] cave-font rounded-sm uppercase">Save for Later</button>

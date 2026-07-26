@@ -4,16 +4,16 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Aincrad / Floor 1
-    home: <path d="M12 2L2 22h20L12 2zm0 4l6 12H6l6-12z" />, 
+    home: <path d="M12 2L2 22h20L12 2zm0 4l6 12H6l6-12z" />,
     // Menu -> SAO Menu List
-    menu: <path d="M3 6h18M3 12h18M3 18h18" strokeWidth="2" strokeLinecap="square" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M3 6h18M3 12h18M3 18h18" strokeWidth="2" strokeLinecap="square" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Inventory / Item Sack
     basket: <path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8-2h4v2h-4V4zM4 8h16v12H4V8z" />,
     // Clock -> Timer / HP Bar
     clock: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />,
     // Chef -> Swords / Elucidator
-    chef: <path d="M14.5 13.5L3 22l8.5-8.5L22 3l-8.5 8.5z M20 2l2 2-8.5 8.5-2-2L20 2z" />, 
+    chef: <path d="M14.5 13.5L3 22l8.5-8.5L22 3l-8.5 8.5z M20 2l2 2-8.5 8.5-2-2L20 2z" />,
     // Star -> Crystal / Teleport Crystal
     star: <path d="M12 2L2 12l10 10 10-10L12 2z" />,
     plus: <path d="M5 12h14M12 5v14" />,
@@ -22,7 +22,7 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Burst / Critical
-    flame: <path d="M12 2l2 5h5l-4 4 2 6-5-3-5 3 2-6-4-4h5z" />, 
+    flame: <path d="M12 2l2 5h5l-4 4 2 6-5-3-5 3 2-6-4-4h5z" />,
     pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
     // Sword Icon
     sword: <path d="M6 22l12-12L21 7l-3 3-12 12zM21 3l-3 3 3 3 3-3z" />,
@@ -33,18 +33,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -60,7 +60,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -72,18 +72,31 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   // Removed orderNote
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -98,7 +111,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -107,26 +120,92 @@ export default function App({ state, actions, helpers }: any) {
     prevCartLength.current = cart?.length || 0;
   }, [cart, pendingCookNow, handleCheckout]);
 
-
   if (loading && !isVerified) return <div className="min-h-screen bg-[#1c1c1e] flex items-center justify-center text-[#40c4ff] font-bold text-2xl tracking-widest font-mono">LINK START...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const currentPriceObj = {
+    final: finalPriceWithOpts,
+    original: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+    discount: basePriceObj.discount
+  };
 
   // --- 📝 Robust Data Passing ---
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+
     // Create a rich product object that includes the choices
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
-        specialRequest: finalNote, 
+        specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
 
     if (addToCartOnly) {
@@ -135,22 +214,25 @@ export default function App({ state, actions, helpers }: any) {
         }
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
         specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
-    
+
     for(let i=0; i<qty; i++) {
         handleAddToCart(productToAdd, variant, finalNote);
     }
@@ -165,12 +247,12 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Sword Art Online (Aincrad Interface)
-    <div className="w-full max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x border-[#40c4ff]/30 bg-[#1c1c1e] font-sans text-[#e0e0e0]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x border-[#40c4ff]/30 bg-[#1c1c1e] font-sans text-[#e0e0e0]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;600;700&display=swap');
-            
+
             :root {
                 /* SAO Palette */
                 --sao-bg: #1c1c1e;
@@ -185,7 +267,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Rajdhani', sans-serif;
                 background-color: var(--sao-bg);
                 /* Digital Grid Pattern */
-                background-image: 
+                background-image:
                     linear-gradient(to right, rgba(64, 196, 255, 0.05) 1px, transparent 1px),
                     linear-gradient(to bottom, rgba(64, 196, 255, 0.05) 1px, transparent 1px);
                 background-size: 40px 40px;
@@ -230,7 +312,7 @@ export default function App({ state, actions, helpers }: any) {
                 border-left: 4px solid #999; /* Inactive grey */
                 overflow: hidden;
             }
-            
+
             .item-card:hover, .item-card:active {
                 transform: translateX(4px);
                 border-left-color: var(--sao-orange); /* Active orange */
@@ -247,7 +329,7 @@ export default function App({ state, actions, helpers }: any) {
                 transition: all 0.2s;
                 text-transform: uppercase;
             }
-            
+
             .btn-sao:active {
                 transform: scale(0.95);
                 box-shadow: 0 0 5px rgba(64, 196, 255, 0.8);
@@ -263,7 +345,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-weight: 600;
                 text-transform: uppercase;
             }
-            
+
             .tab-btn.active {
                 background: rgba(64, 196, 255, 0.2) !important;
                 color: #40c4ff !important;
@@ -294,7 +376,7 @@ export default function App({ state, actions, helpers }: any) {
         <header className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white pt-8 pb-12 px-6 rounded-b-3xl relative overflow-hidden shadow-2xl z-10 border-b-2 border-[#40c4ff]/50">
              {/* Grid overlay */}
              <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'linear-gradient(0deg, transparent 24%, #40c4ff 25%, #40c4ff 26%, transparent 27%, transparent 74%, #40c4ff 75%, #40c4ff 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, #40c4ff 25%, #40c4ff 26%, transparent 27%, transparent 74%, #40c4ff 75%, #40c4ff 76%, transparent 77%, transparent)', backgroundSize: '50px 50px'}}></div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-[#40c4ff]/20 w-fit px-3 py-1 rounded border border-[#40c4ff]/50 backdrop-blur-md">
@@ -318,7 +400,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-4 -mt-6 relative z-20 w-full">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-digitize">
@@ -326,9 +408,9 @@ export default function App({ state, actions, helpers }: any) {
                     {banners?.length > 0 && (
                         <div className="relative w-full h-56 bg-gray-900 rounded-xl overflow-hidden shadow-2xl mb-8 border border-[#40c4ff]/30 p-1 group">
                              <div className="h-full w-full rounded-lg overflow-hidden bg-black relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
                                  />
                                  {/* Scanning Line */}
                                  <div className="absolute top-0 left-0 w-full h-1 bg-[#40c4ff]/50 shadow-[0_0_10px_#40c4ff] animate-[scan_3s_linear_infinite] opacity-50 pointer-events-none"></div>
@@ -349,7 +431,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -399,7 +481,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar py-2">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-6 py-2 text-sm ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -418,8 +500,8 @@ export default function App({ state, actions, helpers }: any) {
                                          <h3 className="font-bold text-gray-800 text-sm line-clamp-2 mb-1 leading-tight tracking-tight">{p.name}</h3>
                                          <div className="flex justify-between items-end mt-2">
                                              <div className="flex flex-col">
-                                                {pricing.discount > 0 && <span className="text-[10px] text-gray-400 line-through font-mono">{pricing.original}</span>}
-                                                <span className="text-[#40c4ff] font-bold text-lg sao-font leading-none">{pricing.final}<span className="text-xs ml-0.5">Col</span></span>
+                                                 {pricing.discount > 0 && <span className="text-[10px] text-gray-400 line-through font-mono">{pricing.original}</span>}
+                                                 <span className="text-[#40c4ff] font-bold text-lg sao-font leading-none">{pricing.final}<span className="text-xs ml-0.5">Col</span></span>
                                              </div>
                                              <button className="w-7 h-7 bg-gray-100 text-gray-600 border border-gray-300 flex items-center justify-center rounded-sm hover:bg-[#40c4ff] hover:text-white hover:border-[#40c4ff] transition-all shadow-sm">
                                                  <Icon name="plus" size={12} strokeWidth={3} />
@@ -505,9 +587,9 @@ export default function App({ state, actions, helpers }: any) {
                  <button onClick={() => setActiveTab('cart')} className="w-16 h-16 bg-gradient-to-br from-[#40c4ff] to-[#0091ea] rounded-full shadow-[0_0_20px_rgba(0,145,234,0.5)] flex items-center justify-center text-white border-4 border-[#1c1c1e] active:scale-95 transition-all duration-200 group">
                      <Icon name="basket" size={28} />
                      {cart?.length > 0 && (
-                         <span className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#1c1c1e] animate-bounce">
-                             {cart.length}
-                         </span>
+                          <span className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#1c1c1e] animate-bounce">
+                              {cart.length}
+                          </span>
                      )}
                  </button>
              </div>
@@ -522,8 +604,8 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Popup Window) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-digitize">
-                <div className="w-[90%] max-w-sm bg-white/95 border border-[#999] shadow-[0_0_30px_rgba(255,255,255,0.2)] rounded-sm relative overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-black/80 backdrop-blur-sm animate-digitize">
+                <div className="w-full max-w-sm md:max-w-xl xl:max-w-sm bg-white/95 border border-[#999] shadow-[0_0_30px_rgba(255,255,255,0.2)] rounded-sm md:rounded-2xl xl:rounded-none xl:rounded-t-sm relative overflow-hidden flex flex-col max-h-[85vh] md:max-h-[85vh] xl:max-h-[85vh]">
                     {/* SAO Window Header */}
                     <div className="bg-gray-100 p-2 border-b border-gray-300 flex justify-between items-center">
                         <span className="text-gray-500 text-xs font-bold tracking-widest uppercase ml-2">Item Info</span>
@@ -532,7 +614,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                     </div>
 
-                    <div className="relative w-full h-48 bg-gray-200 shrink-0">
+                    <div className="relative w-full h-44 md:h-40 xl:h-48 bg-gray-200 shrink-0">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4">
                              {/* Added discount logic here */}
@@ -552,9 +634,9 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="p-6 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto no-scrollbar p-6 pb-6">
                         <h2 className="text-2xl font-bold text-gray-800 mb-4 leading-tight">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
                             {/* --- Variant Selector (List) --- */}
                             <div>
@@ -565,12 +647,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'High Quality', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'Legendary', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`flex items-center justify-between p-3 rounded border transition-all
-                                                ${variant === v.key 
-                                                    ? 'bg-[#40c4ff]/10 border-[#40c4ff] text-[#0091ea]' 
+                                                ${variant === v.key
+                                                    ? 'bg-[#40c4ff]/10 border-[#40c4ff] text-[#0091ea]'
                                                     : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
                                         >
                                             <span className="text-sm font-bold tracking-wide uppercase">{v.label}</span>
@@ -584,6 +666,52 @@ export default function App({ state, actions, helpers }: any) {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* --- Product Options (Retrofit) --- */}
+                            {selectedProduct.options && Array.isArray(selectedProduct.options) && selectedProduct.options.map((opt: any, groupIndex: number) => {
+                                const hasImages = opt.choices.some((c: any) => c.image_url || c.image_name);
+                                return (
+                                    <div key={opt.id || groupIndex} className="space-y-2">
+                                        <div className="flex justify-between items-center">
+                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                                {opt.name} {opt.required && <span className="text-red-500">*</span>}
+                                            </label>
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
+                                                {opt.type === 'single' ? 'Single Select' : 'Multi Select'}
+                                            </span>
+                                        </div>
+                                        <div className={hasImages ? "grid grid-cols-2 gap-2" : "flex flex-col gap-2"}>
+                                            {opt.choices.map((choice: any) => {
+                                                const isSel = (selectedOptions[groupIndex] || []).some((item: any) => String(item.id || item.name) === String(choice.id || choice.name));
+                                                const choiceImg = choice.image_url || choice.image_name ? getMenuUrl(choice.image_url || choice.image_name) : null;
+                                                return (
+                                                    <button
+                                                        key={choice.id || choice.name}
+                                                        type="button"
+                                                        onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                        className={`flex ${hasImages ? 'flex-col' : 'items-center justify-between p-3'} rounded border transition-all overflow-hidden text-left
+                                                            ${isSel
+                                                                ? 'bg-[#40c4ff]/10 border-[#40c4ff] text-[#0091ea]'
+                                                                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                                    >
+                                                        {hasImages && choiceImg && (
+                                                            <div className="w-full h-24 bg-gray-100 overflow-hidden shrink-0">
+                                                                <img src={choiceImg} alt={choice.name} className="w-full h-full object-cover" />
+                                                            </div>
+                                                        )}
+                                                        <div className={`p-2 flex flex-col justify-between flex-1 ${hasImages ? '' : 'w-full flex-row items-center'}`}>
+                                                            <span className="text-sm font-bold tracking-wide">{choice.name}</span>
+                                                            {Number(choice.price || 0) > 0 && (
+                                                                <span className="text-xs font-mono font-bold text-orange-500">+{choice.price} Col</span>
+                                                            )}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
 
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-2 border-t border-b border-gray-200">
@@ -600,23 +728,23 @@ export default function App({ state, actions, helpers }: any) {
 
                             {/* Note */}
                             <div>
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Add notes..." 
+                                    placeholder="Add notes..."
                                     className="w-full p-3 bg-gray-50 border border-gray-300 rounded text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#40c4ff] resize-none h-20"
                                 />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mt-6">
-                            <button onClick={() => handleAdd(true)} className="py-3 bg-white border border-gray-300 text-gray-600 font-bold text-sm rounded hover:bg-gray-50 uppercase tracking-wider">
-                                Inventory
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-3 btn-sao text-sm font-bold flex items-center justify-center gap-2">
-                                Equip <Icon name="check" size={16} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-4 md:p-5 bg-white border-t border-gray-200 grid grid-cols-2 gap-3 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-3 bg-white border border-gray-300 text-gray-600 font-bold text-sm rounded hover:bg-gray-50 uppercase tracking-wider">
+                            Inventory
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-3 btn-sao text-sm font-bold flex items-center justify-center gap-2">
+                            Equip <Icon name="check" size={16} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -624,7 +752,7 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CART SHEET (Inventory) --- */}
         <div id="orderSummaryOverlay" className={`fixed inset-0 bg-black/60 z-[130] backdrop-blur-sm animate-digitize ${activeTab === 'cart' ? 'block' : 'hidden'}`} onClick={() => setActiveTab('menu')}></div>
-        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#f5f5f5] border-t-2 border-[#40c4ff] z-[140] flex flex-col shadow-2xl h-[85vh] rounded-t-lg transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#f5f5f5] border-t-2 border-[#40c4ff] z-[140] flex flex-col shadow-2xl h-[85vh] rounded-t-lg transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="bg-white border-b border-gray-300 p-4 flex justify-between items-center sticky top-0 z-10 rounded-t-lg">
                 <div className="flex items-center gap-2">
                     <Icon name="basket" className="text-[#40c4ff]" />
@@ -634,7 +762,7 @@ export default function App({ state, actions, helpers }: any) {
                     {cart.reduce((a: any, b: any) => a + b.quantity, 0)} Items
                 </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
                 {cart.map((item: any, idx: any) => (
                     <div key={idx} className="bg-white border border-gray-300 p-3 rounded flex items-center gap-3 shadow-sm relative overflow-hidden group">
@@ -652,8 +780,8 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="text-right">
                              <div className="text-[#40c4ff] font-bold font-mono">{item.price * item.quantity}</div>
                              <div className="flex items-center justify-end gap-2 mt-1">
-                                 <span className="text-xs text-gray-500">x{item.quantity}</span>
-                                 <button onClick={() => updateQuantity(idx, -1)} className="text-gray-400 hover:text-red-500"><Icon name="trash" size={14} /></button>
+                                  <span className="text-xs text-gray-500">x{item.quantity}</span>
+                                  <button onClick={() => updateQuantity(idx, -1)} className="text-gray-400 hover:text-red-500"><Icon name="trash" size={14} /></button>
                              </div>
                         </div>
                     </div>
@@ -683,19 +811,19 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-16 h-16 bg-[#40c4ff]/10 text-[#40c4ff] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#40c4ff]/30">
                         <Icon name="check" size={32} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-lg font-bold text-gray-800 mb-2 uppercase tracking-wide">Item Acquired</h3>
                             <p className="text-sm text-gray-600 mb-6">Add <span className="font-bold text-[#0091ea]">{selectedProduct.name}</span> to inventory?</p>
                             <div className="flex gap-3">
-                                <button onClick={() => { 
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="flex-1 py-2 bg-white border border-gray-300 text-gray-600 text-xs font-bold uppercase hover:bg-gray-50">Stash</button>
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="flex-1 py-2 bg-[#40c4ff] text-white text-xs font-bold uppercase shadow-sm hover:bg-[#00b0ff]">Equip</button>
                             </div>
                         </>

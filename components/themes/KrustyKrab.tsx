@@ -4,25 +4,25 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Pineapple House
-    home: <path d="M12 2L2 22h20L12 2zm0 6v4M10 14h4" />, 
+    home: <path d="M12 2L2 22h20L12 2zm0 6v4M10 14h4" />,
     // Menu -> Spatula
-    menu: <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="3" strokeLinecap="round" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="3" strokeLinecap="round" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Treasure Chest
     basket: <path d="M5 5h14v2H5z M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9zm4 4h2v2H7v-2zm8 0h2v2h-2v-2z" />,
     // Clock -> Alarm Clock
     clock: <circle cx="12" cy="12" r="10" />,
     // Chef -> Krusty Krab Hat
-    chef: <path d="M4 18h16v2H4z M6 18V8c0-3 3-5 6-5s6 2 6 5v10" />, 
+    chef: <path d="M4 18h16v2H4z M6 18V8c0-3 3-5 6-5s6 2 6 5v10" />,
     // Star -> Patrick Star
-    star: <path d="M12 2l3 9h9l-7 5 3 9-8-6-8 6 3-9-7-5h9z" />, 
+    star: <path d="M12 2l3 9h9l-7 5 3 9-8-6-8 6 3-9-7-5h9z" />,
     plus: <path d="M5 12h14M12 5v14" />,
     minus: <path d="M5 12h14" />,
     x: <path d="M18 6 6 18M6 6l12 12" />,
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Bubble / Fun
-    flame: <circle cx="12" cy="12" r="10" strokeWidth="2" />, 
+    flame: <circle cx="12" cy="12" r="10" strokeWidth="2" />,
     pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
     // Burger
     burger: <path d="M4 15h16v4h-16v-4zM6 9c0-2 3-4 6-4s6 2 6 4v2h-12v-2z" />,
@@ -31,18 +31,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -59,7 +59,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -71,17 +71,30 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -91,12 +104,12 @@ export default function App({ state, actions, helpers }: any) {
   useEffect(() => {
     if (pendingCookNow) {
         if (cart?.length > prevCartLength.current) {
-             handleCheckout(""); 
+             handleCheckout("");
              setPendingCookNow(false);
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(""); 
+                 handleCheckout("");
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -108,22 +121,63 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#06b6d4] flex items-center justify-center text-white font-black text-2xl">LOADING...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+  const originalPriceWithOpts = (basePriceObj.original || (basePriceObj.final + (basePriceObj.discount || 0))) + toppingTotal;
 
   // --- 📝 Robust Data Passing ---
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
-        specialRequest: finalNote, 
+        specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: originalPriceWithOpts,
+        toppings_snapshot: selectedToppings,
     };
 
     if (addToCartOnly) {
@@ -132,27 +186,63 @@ export default function App({ state, actions, helpers }: any) {
         }
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+    if (!selectedProduct) return;
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
         specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: originalPriceWithOpts,
+        toppings_snapshot: selectedToppings,
     };
-    
+
     for(let i=0; i<qty; i++) {
         handleAddToCart(productToAdd, variant, finalNote);
     }
     setPendingCookNow(true);
     setSelectedProduct(null);
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
   };
 
   const onCheckoutClick = () => {
@@ -162,12 +252,12 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Krusty Krab - Bikini Bottom
-    <div className="">
-        
+    <div className="max-w-md md:max-w-xl xl:max-w-md mx-auto">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Itim&family=Mali:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 /* SpongeBob Palette */
                 --spongebob-yellow: #fbbf24; /* SpongeBob Body */
@@ -182,7 +272,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Itim', 'Sarabun', sans-serif;
                 background-color: var(--bikini-blue);
                 /* Sea Flower Sky Pattern (Classic SpongeBob Motif) */
-                background-image: 
+                background-image:
                     radial-gradient(circle at 10% 20%, rgba(255,255,255,0.2) 2%, transparent 3%),
                     radial-gradient(circle at 80% 70%, rgba(255,255,255,0.2) 4%, transparent 5%),
                     /* Sea Flowers */
@@ -221,7 +311,7 @@ export default function App({ state, actions, helpers }: any) {
             .page-transition {
                 animation: bubble-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
-            
+
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
             /* Item Card - Porous Sponge Look */
@@ -234,7 +324,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 10px 0 var(--krusty-wood);
                 overflow: hidden;
             }
-            
+
             .item-card:hover, .item-card:active {
                 transform: translateY(5px);
                 box-shadow: 0 2px 0 var(--krusty-wood);
@@ -258,7 +348,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 6px 0 #991b1b;
                 transition: all 0.1s;
             }
-            
+
             .btn-krusty:active {
                 transform: translateY(6px);
                 box-shadow: 0 0 0 #991b1b;
@@ -271,7 +361,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 6px 0 var(--krusty-wood);
                 transform: translateY(-2px);
             }
-            
+
             .tab-btn {
                 transition: all 0.3s;
                 background: white;
@@ -292,7 +382,7 @@ export default function App({ state, actions, helpers }: any) {
              {/* Wood texture overlay */}
              <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]"></div>
              <div className="absolute -top-10 -right-10 w-40 h-40 bg-yellow-400 rounded-full blur-3xl opacity-20"></div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-yellow-400 w-fit px-4 py-1.5 rounded-sm border-2 border-white shadow-md transform -rotate-1">
@@ -314,7 +404,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20 w-full">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="page-transition">
@@ -323,9 +413,9 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="relative w-full h-56 bg-orange-400 rounded-[3rem] overflow-hidden shadow-xl mb-10 border-4 border-white p-2 group">
                              <div className="h-full w-full rounded-[2.5rem] overflow-hidden bg-sky-300 relative">
                                  {/* Shows Real Colors! */}
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover opacity-100 group-hover:opacity-100 transition-opacity" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover opacity-100 group-hover:opacity-100 transition-opacity"
                                  />
                              </div>
                              <div className="absolute top-4 right-4 bg-yellow-400 text-red-700 px-5 py-2 rounded-full border-4 border-white transform rotate-3 shadow-lg">
@@ -344,7 +434,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -394,7 +484,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-lg font-bold spongebob-font ${selectedCategoryId === c.id ? 'tab-active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -519,30 +609,30 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-blue-900/60 backdrop-blur-md animate-pop-up">
-                <div className="w-full max-w-md bg-white border-t-8 border-yellow-500 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[4rem] relative">
-                    <div className="relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-blue-900/60 backdrop-blur-md animate-pop-up">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-8 border-yellow-500 h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col overflow-hidden shadow-2xl rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem] relative">
+                    <div className="relative shrink-0">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-red-500 rounded-full border-2 border-yellow-100 flex items-center justify-center hover:bg-red-50 transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-85 overflow-hidden border-b-4 border-yellow-100 rounded-b-[3.5rem] bg-yellow-50">
+                        <div className="relative w-full h-85 md:h-52 xl:h-85 overflow-hidden border-b-4 border-yellow-100 rounded-b-[3.5rem] bg-yellow-50">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-yellow-400 text-red-900 font-black text-3xl spongebob-font rounded-full border-4 border-white shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
-                                    {currentPriceObj.discount > 0 && (
+                                    {basePriceObj.discount > 0 && (
                                         <span className="text-sm line-through text-red-700 decoration-white decoration-2 mb-1">
-                                            {currentPriceObj.original}
+                                            {originalPriceWithOpts}.-
                                         </span>
                                     )}
-                                    <span>{currentPriceObj.final}.-</span>
+                                    <span>{finalPriceWithOpts}.-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl spongebob-font text-red-600 mb-6 leading-tight drop-shadow-sm">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
                             {/* --- 3 PRICES VARIANT SELECTOR --- */}
                             <div>
@@ -553,17 +643,17 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'DOUBLE', icon: 'burger', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'TRIPLE', icon: 'burger', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-2xl border-4 transition-all flex flex-col items-center justify-between h-28 spongebob-font
-                                                ${variant === v.key 
-                                                    ? 'bg-yellow-400 border-red-500 shadow-md -translate-y-1 text-red-900' 
+                                                ${variant === v.key
+                                                    ? 'bg-yellow-400 border-red-500 shadow-md -translate-y-1 text-red-900'
                                                     : 'bg-white border-yellow-200 text-yellow-600 hover:border-yellow-400 hover:text-yellow-700'}`}
                                         >
                                             <span className="text-sm font-black tracking-widest">{v.label}</span>
                                             <Icon name={v.icon || "star"} size={24} className={variant === v.key ? "text-red-900" : "text-yellow-300"} />
-                                            
+
                                             <div className="flex flex-col items-center leading-none mt-1">
                                                 {v.discount > 0 && (
                                                     <span className="text-[10px] line-through decoration-white decoration-2">{v.original}</span>
@@ -575,6 +665,62 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
+                            {/* Options List */}
+                            {selectedProduct.options && Array.isArray(selectedProduct.options) && selectedProduct.options.length > 0 && (
+                                <div className="space-y-6">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => {
+                                        const selectedChoices = selectedOptions[groupIndex] || [];
+                                        return (
+                                            <div key={groupIndex} className="bg-yellow-50/50 p-4 rounded-3xl border-4 border-dashed border-yellow-200">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <label className="text-xl font-bold text-red-700 spongebob-font uppercase tracking-wider">
+                                                        {opt.name} {opt.required && <span className="text-red-500 font-sans">*</span>}
+                                                    </label>
+                                                    <span className="text-xs text-yellow-600 bg-white border border-yellow-200 px-2 py-0.5 rounded-full font-bold uppercase spongebob-font">
+                                                        {opt.type === 'single' ? 'Single' : 'Multi'}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {opt.choices.map((choice: any, choiceIdx: number) => {
+                                                        const isSelected = selectedChoices.some((item: any) => String(item.id || item.name) === String(choice.id || choice.name));
+                                                        const hasImage = !!(choice.image_url || choice.image_name);
+                                                        return (
+                                                            <button
+                                                                key={choiceIdx}
+                                                                type="button"
+                                                                onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                                className={`p-3 rounded-2xl border-4 transition-all flex flex-col items-center justify-between text-center spongebob-font min-h-[5.5rem]
+                                                                    ${isSelected
+                                                                        ? 'bg-yellow-400 border-red-500 shadow-md -translate-y-0.5 text-red-900'
+                                                                        : 'bg-white border-yellow-200 text-yellow-600 hover:border-yellow-300 hover:text-yellow-700'}`}
+                                                            >
+                                                                {hasImage && (
+                                                                    <div className="w-16 h-16 rounded-xl overflow-hidden mb-2 border-2 border-yellow-100 bg-sky-50 shrink-0">
+                                                                        <img
+                                                                            src={choice.image_url || choice.image_name}
+                                                                            alt={choice.name}
+                                                                            className="w-full h-full object-cover"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 flex flex-col justify-center">
+                                                                    <span className="text-sm font-black tracking-wide leading-tight">{choice.name}</span>
+                                                                    {Number(choice.price || 0) > 0 && (
+                                                                        <span className="text-xs font-bold mt-1 bg-yellow-100/50 px-2 py-0.5 rounded-full border border-yellow-200/50">
+                                                                            + {choice.price}.-
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 mt-2">
                                 <div className="flex items-center gap-4 bg-white p-3 rounded-full border-4 border-yellow-200 shadow-md">
@@ -584,17 +730,17 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-yellow-600 font-black uppercase tracking-widest mb-1 spongebob-font">Doubloons</p>
-                                    <p className="text-4xl font-black text-red-600 spongebob-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-4xl font-black text-red-600 spongebob-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
 
                             {/* 📝 Item Note Input */}
                             <div className="relative">
                                 <label className="block text-xl font-bold text-red-700 mb-2 spongebob-font uppercase tracking-wider">Secret Formula Note:</label>
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="E.g., Extra pickles, hold the mayo..." 
+                                    placeholder="E.g., Extra pickles, hold the mayo..."
                                     className="w-full p-6 pl-12 bg-blue-50 border-4 border-white rounded-[2.5rem] focus:border-red-400 focus:outline-none h-36 resize-none text-xl font-bold text-red-800 placeholder:text-blue-200 transition-colors shadow-inner spongebob-font"
                                 />
                                 <div className="absolute top-12 left-4 text-red-400 pointer-events-none">
@@ -603,14 +749,14 @@ export default function App({ state, actions, helpers }: any) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-yellow-400 text-red-700 font-black text-xl rounded-full active:scale-95 transition-all shadow-md spongebob-font">
-                                Stash It!
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-krusty text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 spongebob-font">
-                                EAT NOW! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-2 border-yellow-200 grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-yellow-400 text-red-700 font-black text-xl rounded-full active:scale-95 transition-all shadow-md spongebob-font">
+                            Stash It!
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-krusty text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 spongebob-font">
+                            EAT NOW! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -618,18 +764,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ORDER SUMMARY MODAL --- */}
         <div id="orderSummaryOverlay" className={`fixed inset-0 bg-blue-900/60 z-[130] backdrop-blur-sm animate-fade-in ${activeTab === 'cart' ? 'block' : 'hidden'}`} onClick={() => setActiveTab('menu')}></div>
-        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t-[10px] border-yellow-400 z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-[10px] border-yellow-400 z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="sticky top-0 bg-white z-20 rounded-t-[4rem] border-b-4 border-yellow-50 p-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                 <div className="w-24 h-2 bg-yellow-200 rounded-full mx-auto mt-2"></div>
             </div>
-            
+
             <div className="flex justify-between items-center mb-6 px-10 pt-8">
                 <h2 className="text-4xl spongebob-font text-red-600 transform -rotate-1">Krusty Bag</h2>
                 <div className="w-14 h-14 bg-yellow-100 text-yellow-600 border-4 border-white rounded-2xl flex items-center justify-center font-black text-2xl spongebob-font shadow-lg">
                     <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
                 </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto space-y-6 px-8 pb-4 no-scrollbar">
                 {cart.map((item: any, idx: any) => (
                     <div key={idx} className="flex items-center gap-4 bg-white p-4 border-4 border-yellow-100 rounded-[2rem] shadow-sm relative overflow-hidden hover:shadow-md hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
@@ -688,18 +834,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-white shadow-lg relative z-10 animate-underwater">
                         <Icon name="flame" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-4xl spongebob-font text-red-600 mb-4 leading-tight relative z-10">Ready to Eat?</h3>
                             <p className="text-xl text-sky-500 mb-10 font-bold spongebob-font relative z-10">Add "{selectedProduct.name}" to your order?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-red-500 text-white font-black border-4 border-white shadow-xl active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-2xl spongebob-font rounded-full uppercase">YAY! SERVE ALL!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-white border-4 border-yellow-100 text-yellow-400 font-black text-lg active:scale-95 transition-transform hover:bg-yellow-50 spongebob-font rounded-full uppercase">Wait a sec!</button>

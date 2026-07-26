@@ -4,16 +4,16 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Stadium / Home Ground
-    home: <path d="M2 22 L12 2 L22 22 L18 22 L18 14 L6 14 L6 22 Z M10 14 L10 10 L14 10 L14 14" />, 
+    home: <path d="M2 22 L12 2 L22 22 L18 22 L18 14 L6 14 L6 22 Z M10 14 L10 10 L14 10 L14 14" />,
     // Menu -> Tactic Board
     menu: <path d="M3 6h18M3 12h18M3 18h18" />,
-    search: <circle cx="11" cy="11" r="8" />, 
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Kit Bag / Shopping Cart
     basket: <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />,
     // Clock -> Stopwatch / Match Time
     clock: <path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10zm0-18C7.59 4 4 7.59 4 12s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm1 4h-2v5l4.25 2.5.75-1.23-3-1.77V8z" />,
     // Chef -> Whistle / Referee
-    chef: <path d="M6 2h7c1.7 0 3 1.3 3 3v2c0 1.7-1.3 3-3 3H6C4.3 10 3 8.7 3 7V5c0-1.7 1.3-3 3-3zm9 3c0-.6-.4-1-1-1H6c-.6 0-1 .4-1 1v2c0 .6.4 1 1 1h8c.6 0 1-.4 1-1V5zM8 12h2v4H8v-4zm6 6c0 1.1-.9 2-2 2h-4c-1.1 0-2-.9-2-2v-4h8v4z" />, 
+    chef: <path d="M6 2h7c1.7 0 3 1.3 3 3v2c0 1.7-1.3 3-3 3H6C4.3 10 3 8.7 3 7V5c0-1.7 1.3-3 3-3zm9 3c0-.6-.4-1-1-1H6c-.6 0-1 .4-1 1v2c0 .6.4 1 1 1h8c.6 0 1-.4 1-1V5zM8 12h2v4H8v-4zm6 6c0 1.1-.9 2-2 2h-4c-1.1 0-2-.9-2-2v-4h8v4z" />,
     star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />,
     plus: <path d="M12 5v14M5 12h14" />,
     minus: <path d="M5 12h14" />,
@@ -27,18 +27,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -55,7 +55,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -66,17 +66,30 @@ export default function App({ state, actions, helpers }: any) {
     calculatePrice, getMenuUrl, getBannerUrl
   } = helpers || {};
 
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -91,7 +104,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -103,21 +116,95 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#f0fdf4]" />;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const basePriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
 
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+
     if (addToCartOnly) {
         for(let i=0; i<qty; i++) {
-            handleAddToCart(selectedProduct, variant, note);
+            handleAddToCart(productToAdd, variant, finalNote);
         }
         setSelectedProduct(null);
     } else {
         if (cart && cart.length > 0) {
-            setShowConfirm(true); 
+            setShowConfirm(true);
         } else {
             performCookNow();
         }
@@ -125,8 +212,33 @@ export default function App({ state, actions, helpers }: any) {
   };
 
   const performCookNow = () => {
+    if (!selectedProduct) return;
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+
     for(let i=0; i<qty; i++) {
-        handleAddToCart(selectedProduct, variant, note);
+        handleAddToCart(productToAdd, variant, finalNote);
     }
     setPendingCookNow(true);
     setSelectedProduct(null);
@@ -134,11 +246,11 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Stadium Eats (Soccer)
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-slate-900 border-x-2 border-slate-200 bg-white">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-slate-900 border-x-2 border-slate-200 bg-white">
+
         <style jsx global>{`
             @import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,600;0,800;1,600&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --primary: #15803d; /* Green 700 */
                 --primary-light: #22c55e;
@@ -204,7 +316,7 @@ export default function App({ state, actions, helpers }: any) {
 
             .no-scrollbar::-webkit-scrollbar { display: none; }
             .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-            
+
             /* Jersey Pattern */
             .jersey-pattern {
                 background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px);
@@ -216,7 +328,7 @@ export default function App({ state, actions, helpers }: any) {
              {/* Decorative Pitch Lines */}
              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-full border-[3px] border-white/20 rounded-[50%] -mt-32 pointer-events-none"></div>
              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-[3px] border-white/10 rounded-full pointer-events-none"></div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-green-800/50 w-fit px-3 py-1 rounded-full border border-green-500/30 backdrop-blur-sm">
@@ -233,7 +345,7 @@ export default function App({ state, actions, helpers }: any) {
              </div>
         </header>
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-kick-in">
@@ -261,7 +373,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -311,7 +423,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-6 py-2 rounded-lg border text-sm font-black uppercase tracking-wide flex items-center gap-2 ${selectedCategoryId === c.id ? 'tab-active' : 'bg-white border-slate-200 text-slate-500'}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -444,24 +556,24 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Locker Room) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/80 backdrop-blur-sm animate-kick-in">
-                <div className="w-full max-w-md bg-slate-50 rounded-t-[2rem] h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl border-t-8 border-green-600">
-                    <div className="relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-slate-900/80 backdrop-blur-sm animate-kick-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-slate-50 rounded-t-[2rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[2rem] max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] shadow-2xl border-t-8 border-green-600 flex flex-col overflow-hidden">
+                    <div className="relative shrink-0">
                         <div className="absolute top-4 left-1/2 -translate-x-1/2 w-16 h-1.5 bg-slate-300 rounded-full z-30 opacity-50"></div>
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 z-30 w-10 h-10 bg-black/30 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/50 transition-colors">
                             <Icon name="x" size={20} />
                         </button>
-                        <div className="relative w-full h-72 rounded-b-[2rem] overflow-hidden shadow-md bg-slate-200">
+                        <div className="relative w-full h-56 sm:h-64 md:h-48 xl:h-72 shrink-0 rounded-b-[2rem] overflow-hidden shadow-md bg-slate-200">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-slate-900/90 to-transparent flex items-end p-8">
-                                <span className="text-yellow-400 font-black text-4xl italic drop-shadow-md sport-font">{currentPriceObj.final}.-</span>
+                                <span className="text-yellow-400 font-black text-4xl italic drop-shadow-md sport-font">{finalPriceWithOpts}.-</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-6 pt-6 pb-24">
+                    <div className="flex-1 overflow-y-auto no-scrollbar px-6 pt-6 pb-6">
                         <h2 className="text-3xl font-black text-slate-900 mb-6 leading-tight italic sport-font uppercase">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-4">
                             {/* --- 🏷️ VARIANT SELECTOR --- */}
                             <div className="flex items-center justify-between p-5 bg-white rounded-xl border border-slate-200 shadow-sm jersey-pattern">
@@ -482,12 +594,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'PRO', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'LEGEND', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded border-b-4 transition-all flex flex-col items-center justify-between h-20 sport-font
-                                                ${variant === v.key 
-                                                    ? `bg-green-600 border-green-800 text-white transform translate-y-[1px] border-b-0` 
+                                                ${variant === v.key
+                                                    ? `bg-green-600 border-green-800 text-white transform translate-y-[1px] border-b-0`
                                                     : 'bg-white border-slate-200 text-slate-400 hover:border-green-300'}`}
                                         >
                                             <span className="text-[10px] font-black tracking-widest">{v.label}</span>
@@ -497,16 +609,62 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
+                            {/* --- 🍔 PRODUCT OPTIONS --- */}
+                            {selectedProduct.options && Array.isArray(selectedProduct.options) && selectedProduct.options.map((opt: any, groupIndex: number) => (
+                                <div key={opt.id || groupIndex} className="space-y-2">
+                                    <label className="block text-sm font-black text-slate-900 sport-font uppercase tracking-wider">
+                                        {opt.name}
+                                        {opt.required ? (
+                                            <span className="text-red-600 ml-1 font-bold text-xs">*(REQUIRED)</span>
+                                        ) : (
+                                            <span className="text-slate-400 ml-1 font-bold text-xs">(OPTIONAL)</span>
+                                        )}
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {opt.choices && Array.isArray(opt.choices) && opt.choices.map((choice: any) => {
+                                            const selectedChoices = selectedOptions[groupIndex] || [];
+                                            const isSelected = selectedChoices.some((item: any) => String(item.id || item.name) === String(choice.id || choice.name));
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={choice.id || choice.name}
+                                                    onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                    className={`p-2 rounded border-b-4 transition-all flex items-center justify-between text-left min-h-[52px] sport-font
+                                                        ${isSelected
+                                                            ? 'bg-green-600 border-green-800 text-white transform translate-y-[1px] border-b-0'
+                                                            : 'bg-white border-slate-200 text-slate-700 hover:border-green-300'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2 overflow-hidden">
+                                                        {(choice.image_url || choice.image_name) && (
+                                                            <img
+                                                                src={choice.image_url || choice.image_name}
+                                                                alt={choice.name}
+                                                                className="w-10 h-10 object-cover rounded shrink-0 border border-slate-100"
+                                                            />
+                                                        )}
+                                                        <span className="text-xs font-black tracking-wide truncate">{choice.name}</span>
+                                                    </div>
+                                                    {Number(choice.price || 0) > 0 && (
+                                                        <span className="text-xs font-black ml-1 shrink-0">+{Number(choice.price)}.-</span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+
                             {/* Note Input */}
                             <div className="relative">
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Tactical notes (e.g., No spicy)..." 
+                                    placeholder="Tactical notes (e.g., No spicy)..."
                                     className="w-full pl-4 pr-5 py-4 bg-white rounded-xl border-2 border-slate-100 focus:border-green-500 focus:ring-0 h-24 resize-none text-sm font-medium placeholder:text-slate-300 transition-colors font-kanit"
                                 />
                             </div>
-                            
+
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 border-t border-dashed border-slate-300 mt-4">
                                 <div className="flex items-center gap-2 bg-slate-200 p-1.5 rounded-full">
@@ -516,19 +674,19 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1">Total Score</p>
-                                    <p className="text-3xl font-black text-green-700 italic sport-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-3xl font-black text-green-700 italic sport-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                            <button onClick={() => handleAdd(true)} className="py-4 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-sm uppercase tracking-wide active:scale-95 transition-all shadow-sm sport-font">
-                                Add to Bench
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 rounded-xl btn-pitch text-white font-black text-sm uppercase tracking-wide shadow-lg shadow-green-200 active:scale-95 transition-all sport-font flex items-center justify-center gap-2">
-                                Shoot & Order <Icon name="flame" size={16} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-4 md:p-5 bg-slate-50 border-t border-slate-200 grid grid-cols-2 gap-4 z-30 sport-font">
+                        <button onClick={() => handleAdd(true)} className="py-4 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-sm uppercase tracking-wide active:scale-95 transition-all shadow-sm sport-font">
+                            Add to Bench
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 rounded-xl btn-pitch text-white font-black text-sm uppercase tracking-wide shadow-lg shadow-green-200 active:scale-95 transition-all sport-font flex items-center justify-center gap-2">
+                            Shoot & Order <Icon name="flame" size={16} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -537,7 +695,7 @@ export default function App({ state, actions, helpers }: any) {
         {/* --- CART SHEET (Locker Room) --- */}
         {activeTab === 'cart' && (
              <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/80 backdrop-blur-sm animate-kick-in">
-                 <div className="w-full max-w-md bg-slate-50 rounded-t-[2rem] border-t-4 border-yellow-400 flex flex-col shadow-[0_-20px_60px_rgba(0,0,0,0.5)] h-[85vh]">
+                 <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-slate-50 rounded-t-[2rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[2rem] border-t-4 border-yellow-400 flex flex-col shadow-[0_-20px_60px_rgba(0,0,0,0.5)] h-[85vh] md:h-[80vh] xl:h-[85vh]">
                      <div className="w-full py-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                          <div className="w-14 h-1.5 bg-slate-300 rounded-full mx-auto" />
                      </div>
@@ -598,18 +756,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-20 h-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-white">
                         <Icon name="chef" size={40} className="transform -rotate-12" />
                     </div>
-                    
+
                     {selectedProduct ? (
                         <>
                             <h3 className="text-2xl font-black text-slate-900 mb-2 leading-tight italic sport-font uppercase">Substitution?</h3>
                             <p className="text-sm text-slate-500 mb-8 leading-relaxed font-bold sport-font">Add {selectedProduct.name} to the match squad?</p>
                             <div className="flex flex-col gap-3">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-4 bg-green-600 text-white rounded-xl font-black shadow-lg active:scale-95 transition-all uppercase tracking-wider text-sm sport-font border-b-4 border-green-800 hover:border-b-0 hover:translate-y-1">YES, SUB IN!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-4 bg-white border-2 border-slate-200 text-slate-400 rounded-xl font-black text-xs active:scale-95 transition-transform uppercase tracking-wider hover:bg-slate-50 sport-font">WARM UP ONLY</button>

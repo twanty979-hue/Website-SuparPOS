@@ -6,14 +6,14 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
     // Home -> Thousand Sunny / Ship
     home: <path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z M12 4.5l6 6V18h-2v-6H8v6H6v-7.5l6-6z" />, // Using house base, styled as ship in CSS
     // Menu -> Wanted Poster / Map
-    menu: <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="3" strokeLinecap="round" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="3" strokeLinecap="round" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Treasure Chest
     basket: <path d="M5 5h14v2H5z M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9zm4 4h2v2H7v-2zm8 0h2v2h-2v-2z" />,
     // Clock -> Log Pose
     clock: <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z M12 6v6l4 2" />,
     // Chef -> Sanji's Eyebrow / Chef Hat
-    chef: <path d="M12 2C9 2 7 4 7 7c0 1.5 1 3 2.5 3.5C8 11.5 6 13 6 16v4h12v-4c0-3-2-4.5-3.5-5.5C16 10 17 8.5 17 7c0-3-2-5-5-5z" />, 
+    chef: <path d="M12 2C9 2 7 4 7 7c0 1.5 1 3 2.5 3.5C8 11.5 6 13 6 16v4h12v-4c0-3-2-4.5-3.5-5.5C16 10 17 8.5 17 7c0-3-2-5-5-5z" />,
     // Star -> Devil Fruit Pattern
     star: <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z" />,
     plus: <path d="M5 12h14M12 5v14" />,
@@ -22,25 +22,25 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Mera Mera no Mi / Haki
-    flame: <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" />, 
+    flame: <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" />,
     pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
     // Skull / Jolly Roger
     skull: <path d="M12 2c-4.42 0-8 3.58-8 8 0 2.88 1.54 5.39 3.82 6.84L7 19h2l.5-2h5l.5 2h2l-.82-2.16C18.46 15.39 20 12.88 20 10c0-4.42-3.58-8-8-8zm-3 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -57,7 +57,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -69,19 +69,66 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   // --- 🔥 AUTO-CHECKOUT LOGIC ---
   const prevCartLength = useRef(cart?.length || 0);
@@ -94,7 +141,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -106,21 +153,64 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#E3F2FD]" />;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const currentPriceObj = selectedProduct
+    ? {
+        final: finalPriceWithOpts,
+        original: (basePriceObj.original || (basePriceObj.final + (basePriceObj.discount || 0))) + toppingTotal,
+        discount: basePriceObj.discount || 0
+      }
+    : { final: 0, original: 0, discount: 0 };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
 
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
     if (addToCartOnly) {
+        const finalNote = generateOptionNote();
+        const productToAdd = {
+            ...selectedProduct,
+            variant: variant,
+            note: finalNote,
+            specialRequest: finalNote,
+            comment: finalNote,
+            remark: finalNote,
+            price: finalPriceWithOpts,
+            original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+            toppings_snapshot: selectedToppings,
+        };
         for(let i=0; i<qty; i++) {
-            handleAddToCart(selectedProduct, variant, note);
+            handleAddToCart(productToAdd, variant, finalNote);
         }
         setSelectedProduct(null);
     } else {
         if (cart && cart.length > 0) {
-            setShowConfirm(true); 
+            setShowConfirm(true);
         } else {
             performCookNow();
         }
@@ -128,8 +218,30 @@ export default function App({ state, actions, helpers }: any) {
   };
 
   const performCookNow = () => {
+    if (!selectedProduct) return;
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
     for(let i=0; i<qty; i++) {
-        handleAddToCart(selectedProduct, variant, note);
+        handleAddToCart(productToAdd, variant, finalNote);
     }
     setPendingCookNow(true);
     setSelectedProduct(null);
@@ -137,11 +249,11 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: One Piece (Baratie)
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#0D47A1]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#0D47A1]">
+
         <style jsx global>{`
             @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Mali:wght@400;700&display=swap');
-            
+
             :root {
                 --primary: #D32F2F; /* Luffy Red */
                 --primary-dark: #B71C1C;
@@ -155,7 +267,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Mali', cursive;
                 background-color: var(--bg);
                 /* --- 🌊 SEA MAP PATTERN --- */
-                background-image: 
+                background-image:
                     repeating-linear-gradient(45deg, #B2EBF2 25%, transparent 25%, transparent 75%, #B2EBF2 75%, #B2EBF2),
                     repeating-linear-gradient(45deg, #B2EBF2 25%, #E0F7FA 25%, #E0F7FA 75%, #B2EBF2 75%, #B2EBF2);
                 background-position: 0 0, 20px 20px;
@@ -169,7 +281,7 @@ export default function App({ state, actions, helpers }: any) {
             }
 
             /* --- ANIMATIONS --- */
-            
+
             /* DookDik (Wiggle) Animation - Original/Gentle */
             @keyframes dookdik {
                 0%, 100% { transform: rotate(-3deg); }
@@ -256,12 +368,12 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- Header (Baratie / Pirate Ship) --- */}
         <header className="bg-[#0288D1] text-white pt-8 pb-16 px-6 rounded-b-[3rem] relative overflow-hidden shadow-xl z-10 border-b-8 border-white">
-             <div className="absolute inset-0 opacity-20 pointer-events-none" 
+             <div className="absolute inset-0 opacity-20 pointer-events-none"
                   style={{
-                      backgroundImage: `repeating-linear-gradient(45deg, #01579B 25%, transparent 25%, transparent 75%, #01579B 75%, #01579B), 
+                      backgroundImage: `repeating-linear-gradient(45deg, #01579B 25%, transparent 25%, transparent 75%, #01579B 75%, #01579B),
                                         repeating-linear-gradient(45deg, #01579B 25%, #fff 25%, #fff 75%, #01579B 75%, #01579B)`,
                       backgroundSize: '40px 40px'
-                  }} 
+                  }}
              />
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
@@ -285,7 +397,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-slide-up">
@@ -294,10 +406,10 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="relative w-full h-56 bg-[#5D4037] rounded-[2rem] overflow-hidden shadow-[6px_6px_0_#3E2723] mb-8 border-4 border-[#3E2723] p-2">
                              <div className="h-full w-full rounded-[1.5rem] overflow-hidden border-2 border-[#8D6E63] relative group">
                                  {/* Banner Image Animation */}
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover animate-image-pop" 
-                                    key={currentBannerIndex} 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover animate-image-pop"
+                                    key={currentBannerIndex}
                                  />
                              </div>
                              <div className="absolute top-[-5px] left-1/2 -translate-x-1/2 bg-[#D32F2F] px-6 py-2 rounded-b-xl border-x-4 border-b-4 border-[#B71C1C] shadow-lg animate-gentle-wiggle">
@@ -316,7 +428,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -367,7 +479,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-6 py-3 text-lg font-bold rounded-2xl flex items-center gap-2 ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -438,24 +550,24 @@ export default function App({ state, actions, helpers }: any) {
                                         // 1. คำนวณราคา
                                         const quantity = i.quantity || 1;
                                         const finalPriceTotal = i.price * quantity;
-                                        
+
                                         // 2. ตรวจสอบส่วนลด
                                         const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                                        
+
                                         // หาราคาเต็ม
-                                        const originalPriceTotal = hasDiscount 
-                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+                                        const originalPriceTotal = hasDiscount
+                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                             : finalPriceTotal;
-                                            
+
                                         const discountAmount = originalPriceTotal - finalPriceTotal;
 
                                         return (
                                             <div key={idx} className="flex justify-between items-start text-lg text-white font-bold mb-2 border-b border-dashed border-[#3F3F46] pb-2 last:border-0 garfield-font">
-                                                
+
                                                 {/* Left: Info */}
                                                 <div className="flex flex-col items-start pr-2">
                                                     <span className="leading-tight text-xl">{quantity}x {i.product_name}</span>
-                                                    
+
                                                     {/* Variant Badge (Yellow Cheese Style) */}
                                                     {i.variant !== 'normal' && (
                                                         <span className={`text-[10px] bg-[#FBBF24] text-black px-2 py-0.5 rounded-md border-2 border-black font-sans font-bold mt-1 shadow-sm uppercase tracking-wider transform -rotate-2`}>
@@ -505,7 +617,7 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
                         ))}
-                        
+
                         {/* Empty State */}
                         {(!ordersList || ordersList.length === 0) && (
                              <div className="text-center py-12 opacity-50">
@@ -557,13 +669,13 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Pop-up Animation) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#1A237E]/60 backdrop-blur-sm animate-slide-up">
-                <div className="w-full max-w-md bg-[#FFF8E1] border-t-8 border-x-8 border-[#5D4037] h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-lg rounded-t-[3rem] relative">
-                    <div className="relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#1A237E]/60 backdrop-blur-sm animate-slide-up">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-[#FFF8E1] border-t-8 border-x-8 border-[#5D4037] h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col shadow-lg rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] relative">
+                    <div className="relative shrink-0">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-[#FFD700] text-[#3E2723] rounded-full border-4 border-white flex items-center justify-center hover:bg-[#FFCA28] transition-colors shadow-sm active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-72 overflow-hidden border-b-8 border-[#5D4037] rounded-b-[2rem] bg-[#0288D1]">
+                        <div className="relative w-full h-72 md:h-52 xl:h-72 shrink-0 overflow-hidden border-b-8 border-[#5D4037] rounded-b-[2rem] bg-[#0288D1]">
                             {/* Product Image Animation in Modal */}
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover animate-image-pop" />
                             <div className="absolute bottom-4 left-4">
@@ -579,9 +691,9 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-8 pb-32 relative overflow-hidden bg-[#FFF3E0]">
+                    <div className="px-8 pt-8 pb-6 relative overflow-y-auto no-scrollbar flex-1 bg-[#FFF3E0]">
                         <h2 className="text-4xl pirate-font text-[#3E2723] mb-6 leading-tight transform rotate-1 drop-shadow-sm">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-5 relative z-10">
                             {/* --- 🏷️ VARIANT SELECTOR (3 PRICES) --- */}
                             <div>
@@ -592,12 +704,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'ZORO', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'FRANKY', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-xl border-4 transition-all flex flex-col items-center justify-between h-24 pirate-font
-                                                ${variant === v.key 
-                                                    ? 'bg-[#FFD700] border-[#FFA000] shadow-sm -translate-y-1 text-[#3E2723]' 
+                                                ${variant === v.key
+                                                    ? 'bg-[#FFD700] border-[#FFA000] shadow-sm -translate-y-1 text-[#3E2723]'
                                                     : 'bg-white border-[#90CAF9] text-[#0288D1] hover:border-[#0277BD] hover:text-[#0277BD]'}`}
                                         >
                                             <span className="text-xs font-bold tracking-widest">{v.label}</span>
@@ -625,14 +737,99 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
+                            {/* --- ⚙️ PRODUCT OPTIONS SELECTOR --- */}
+                            {selectedProduct.options && Array.isArray(selectedProduct.options) && selectedProduct.options.length > 0 && (
+                                <div className="space-y-6">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => {
+                                        const hasImages = opt.choices && opt.choices.some((c: any) => c.image_url || c.image_name);
+                                        return (
+                                            <div key={opt.id || groupIndex} className="bg-[#FFF8E1] p-4 border-4 border-[#8D6E63] rounded-2xl shadow-sm">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-lg font-bold text-[#3E2723] pirate-font ml-1 tracking-wide uppercase">
+                                                        {opt.name} {opt.required && <span className="text-[#D32F2F] font-sans font-bold text-sm ml-1">* จำเป็น</span>}
+                                                    </span>
+                                                    <span className="text-xs text-[#0277BD] font-bold bg-white px-2 py-0.5 rounded-full border border-[#0288D1] pirate-font">
+                                                        {opt.type === 'single' ? 'CHOOSE ONE' : 'CHOOSE MULTIPLE'}
+                                                    </span>
+                                                </div>
+                                                <div className={`grid gap-2 ${hasImages ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                                                    {opt.choices && opt.choices.map((choice: any) => {
+                                                        const isSelected = (selectedOptions[groupIndex] || []).some(
+                                                            (item: any) => String(item.id || item.name) === String(choice.id || choice.name)
+                                                        );
+                                                        const choiceImage = choice.image_url || choice.image_name;
+                                                        const displayImgUrl = choiceImage ? (
+                                                            (choiceImage.startsWith('http://') || choiceImage.startsWith('https://') || choiceImage.startsWith('/'))
+                                                            ? choiceImage
+                                                            : getMenuUrl(choiceImage)
+                                                        ) : null;
+
+                                                        if (displayImgUrl) {
+                                                            return (
+                                                                <button
+                                                                    key={choice.id || choice.name}
+                                                                    type="button"
+                                                                    onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                                    className={`rounded-xl border-4 overflow-hidden transition-all flex flex-col items-stretch h-36 pirate-font relative
+                                                                        ${isSelected
+                                                                            ? 'bg-[#FFD700] border-[#FFA000] shadow-sm -translate-y-0.5 text-[#3E2723]'
+                                                                            : 'bg-white border-[#B3E5FC] text-[#0288D1] hover:border-[#0277BD]'}`}
+                                                                >
+                                                                    <div className="w-full h-20 overflow-hidden bg-white border-b-2 border-dashed border-[#B3E5FC]">
+                                                                        <img src={displayImgUrl} className="w-full h-full object-cover" />
+                                                                    </div>
+                                                                    <div className="p-1.5 flex flex-col justify-between flex-1 leading-none text-center">
+                                                                        <span className="text-xs font-bold line-clamp-1">{choice.name}</span>
+                                                                        <span className="text-sm font-normal text-[#3E2723]">
+                                                                            {Number(choice.price || 0) > 0 ? `+${choice.price}.-` : 'FREE'}
+                                                                        </span>
+                                                                    </div>
+                                                                    {isSelected && (
+                                                                        <div className="absolute top-1 right-1 bg-[#D32F2F] text-white rounded-full p-0.5 border border-white">
+                                                                            <Icon name="check" size={12} strokeWidth={4} />
+                                                                        </div>
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        } else {
+                                                            return (
+                                                                <button
+                                                                    key={choice.id || choice.name}
+                                                                    type="button"
+                                                                    onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                                    className={`p-2 rounded-xl border-4 transition-all flex flex-col items-center justify-center h-16 pirate-font relative
+                                                                        ${isSelected
+                                                                            ? 'bg-[#FFD700] border-[#FFA000] shadow-sm -translate-y-0.5 text-[#3E2723]'
+                                                                            : 'bg-white border-[#B3E5FC] text-[#0288D1] hover:border-[#0277BD]'}`}
+                                                                >
+                                                                    <span className="text-sm font-bold leading-tight line-clamp-1">{choice.name}</span>
+                                                                    <span className="text-xs font-normal mt-0.5 leading-none">
+                                                                        {Number(choice.price || 0) > 0 ? `+${choice.price}.-` : 'FREE'}
+                                                                    </span>
+                                                                    {isSelected && (
+                                                                        <div className="absolute top-1 right-1 bg-[#D32F2F] text-white rounded-full p-0.5 border border-white">
+                                                                            <Icon name="check" size={12} strokeWidth={4} />
+                                                                        </div>
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        }
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             {/* 📝 Note Input */}
                             <div className="relative">
                                 <label className="block text-lg font-bold text-[#3E2723] mb-2 pirate-font ml-1 tracking-wide">ORDER NOTE:</label>
                                 <div className="relative">
-                                    <textarea 
+                                    <textarea
                                         value={note}
                                         onChange={(e) => setNote(e.target.value)}
-                                        placeholder="E.g., More meat for Luffy..." 
+                                        placeholder="E.g., More meat for Luffy..."
                                         className="w-full p-4 pl-12 bg-white border-4 border-[#8D6E63] rounded-2xl font-bold text-[#3E2723] placeholder:text-[#A1887F] focus:outline-none focus:border-[#D32F2F] focus:shadow-sm transition-all resize-none h-28 text-lg pirate-font"
                                     />
                                     <div className="absolute top-4 left-4 text-[#D32F2F]">
@@ -641,15 +838,14 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4 mt-8 relative z-10">
-                            <button onClick={() => handleAdd(true)} className="py-4 bg-[#FFF] border-4 border-[#0288D1] text-[#0288D1] font-bold text-xl rounded-xl active:scale-95 transition-all shadow-sm pirate-font">
-                                ADD TO HOLD
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-4 btn-luffy text-xl active:scale-95 transition-all flex items-center justify-center gap-2">
-                                BANQUET! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-[#FFF3E0] border-t-8 border-[#5D4037] grid grid-cols-2 gap-4 relative z-30">
+                        <button onClick={() => handleAdd(true)} className="py-4 bg-[#FFF] border-4 border-[#0288D1] text-[#0288D1] font-bold text-xl rounded-xl active:scale-95 transition-all shadow-sm pirate-font">
+                            ADD TO HOLD
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-4 btn-luffy text-xl active:scale-95 transition-all flex items-center justify-center gap-2">
+                            BANQUET! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -657,8 +853,8 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CART SHEET (The Trap) --- */}
         {activeTab === 'cart' && (
-             <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#1A237E]/60 backdrop-blur-sm animate-slide-up">
-                 <div className="w-full max-w-md bg-[#FFF] border-t-8 border-[#0288D1] flex flex-col shadow-lg h-[85vh] rounded-t-[3rem] relative">
+             <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#1A237E]/60 backdrop-blur-sm animate-slide-up">
+                 <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#FFF] border-t-8 border-[#0288D1] flex flex-col shadow-lg h-[85vh] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] relative">
                      <div className="w-full py-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                          <div className="w-20 h-2 bg-[#0288D1] rounded-full mx-auto opacity-20" />
                      </div>
@@ -720,18 +916,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-[#0288D1] text-white rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#90CAF9] shadow-sm">
                         <Icon name="flame" size={56} className="animate-dookdik" />
                     </div>
-                    
+
                     {selectedProduct ? (
                         <>
                             <h3 className="text-4xl pirate-font text-[#3E2723] mb-2 leading-tight">YOSH!</h3>
                             <p className="text-xl text-[#0288D1] mb-8 font-bold leading-tight pirate-font">Add "{selectedProduct.name}" to the ship?</p>
                             <div className="flex flex-col gap-3">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-4 bg-[#FFD700] text-[#3E2723] font-bold border-4 border-[#FFA000] shadow-sm active:scale-95 transition-all text-xl pirate-font rounded-xl">YES, I'M HUNGRY!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-4 bg-white border-4 border-[#0288D1] text-[#0288D1] font-bold text-lg active:scale-95 transition-transform hover:bg-[#E3F2FD] rounded-xl pirate-font">JUST STOW IT</button>

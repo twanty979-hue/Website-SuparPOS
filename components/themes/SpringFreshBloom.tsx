@@ -4,16 +4,16 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Garden House
-    home: <path d="M3 10L12 2l9 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10z M12 12c-2 0-3 2-3 4s1 4 3 4 3-2 3-4-1-4-3-4z" />, 
+    home: <path d="M3 10L12 2l9 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10z M12 12c-2 0-3 2-3 4s1 4 3 4 3-2 3-4-1-4-3-4z" />,
     // Menu -> List / Menu
-    menu: <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="3" strokeLinecap="round" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="3" strokeLinecap="round" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Woven Basket
     basket: <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2 M9 14h6" />,
     // Clock -> Sun Dial / Time
     clock: <circle cx="12" cy="12" r="10" />,
     // Chef -> Flower
-    chef: <path d="M12 2L14 7H19L15 11L16 16L12 13L8 16L9 11L5 7H10Z" />, 
+    chef: <path d="M12 2L14 7H19L15 11L16 16L12 13L8 16L9 11L5 7H10Z" />,
     // Star -> Sparkle
     star: <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z" />,
     plus: <path d="M5 12h14M12 5v14" />,
@@ -22,7 +22,7 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Sprout / Growth
-    flame: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />, 
+    flame: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
     pencil: <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />,
     leaf: <path d="M2 22s5-2 9-8c0 0-3 1-5 2s-4 4-4 6z M12 8c4-6 10-6 10-6s-1 6-5 10c-3 3-5 5-5 5s-1-4 0-9z" />,
     butterfly: <path d="M12 8c0-3-3-5-5-5-2 0-3 2-2 4 1 2 3 3 3 4 0 1-2 1-3 1-2 0-2 2-2 4 0 3 3 4 5 4 2 0 4-1 4-3v-9zM12 8c0-3 3-5 5-5 2 0 3 2 2 4-1 2-3 3-3 4 0 1 2 1 3 1 2 0 2 2 2 4 0 3-3 4-5 4-2 0-4-1-4-3v-9z" />,
@@ -30,18 +30,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -59,7 +59,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -71,9 +71,10 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
 
@@ -82,6 +83,17 @@ export default function App({ state, actions, helpers }: any) {
       setVariant('normal');
       setQty(1);
       setNote("");
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+          if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+            initialOptions[index] = [opt.choices[0]];
+          } else {
+            initialOptions[index] = [];
+          }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -96,7 +108,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -108,35 +120,132 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#e0f2fe] flex items-center justify-center text-[#84cc16] font-black text-2xl animate-pulse">LOADING...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const basePriceObj = selectedProduct
+    ? calculatePrice(selectedProduct, variant)
+    : { final: 0, original: 0, discount: 0 };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const currentPriceObj = selectedProduct
+    ? {
+        ...basePriceObj,
+        final: finalPriceWithOpts,
+        original: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal
+      }
+    : { final: 0, original: 0, discount: 0 };
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+      const selectedChoices = selectedOptions[index];
+      if (selectedChoices && selectedChoices.length > 0) {
+        optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+      }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+    setSelectedOptions((prev: any) => {
+      const currentSelected = prev[groupIndex] || [];
+      const choiceKey = String(choice.id || choice.name);
+      const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+      const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+      if (type === 'single') {
+        if (isAlreadySelected && !isRequired) return { ...prev, [groupIndex]: [] };
+        return { ...prev, [groupIndex]: [choice] };
+      } else {
+        if (isAlreadySelected) return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+        return { ...prev, [groupIndex]: [...currentSelected, choice] };
+      }
+    });
+  };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
+    if (selectedProduct.options) {
+      for (let i = 0; i < selectedProduct.options.length; i++) {
+        const opt = selectedProduct.options[i];
+        if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+          alert(`กรุณาเลือก: ${opt.name}`);
+          return;
+        }
+      }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+      ...selectedProduct,
+      variant,
+      note: finalNote,
+      specialRequest: finalNote,
+      comment: finalNote,
+      remark: finalNote,
+      price: finalPriceWithOpts,
+      original_price: currentPriceObj.original,
+      toppings_snapshot: selectedToppings,
+    };
     if (addToCartOnly) {
-        for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
-        setSelectedProduct(null);
+      for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote);
+      setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
-        else performCookNow();
+      if (cart && cart.length > 0) setShowConfirm(true);
+      else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+    if (!selectedProduct) return;
+    if (selectedProduct.options) {
+      for (let i = 0; i < selectedProduct.options.length; i++) {
+        const opt = selectedProduct.options[i];
+        if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+          alert(`กรุณาเลือก: ${opt.name}`);
+          return;
+        }
+      }
+    }
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+      ...selectedProduct,
+      variant,
+      note: finalNote,
+      specialRequest: finalNote,
+      comment: finalNote,
+      remark: finalNote,
+      price: finalPriceWithOpts,
+      original_price: currentPriceObj.original,
+      toppings_snapshot: selectedToppings,
+    };
+    for (let i = 0; i < qty; i++) handleAddToCart(productToAdd, variant, finalNote);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
 
   return (
     // Theme: Spring - Fresh Bloom System
-    <div className="w-full max-w-2xl mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#365314]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden font-sans text-[#365314]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Itim&family=Mali:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --spring-green: #84cc16;
                 --spring-pink: #f472b6;
@@ -149,7 +258,7 @@ export default function App({ state, actions, helpers }: any) {
             body {
                 font-family: 'Itim', 'Sarabun', sans-serif;
                 background-color: var(--sky-blue);
-                background-image: 
+                background-image:
                     radial-gradient(circle at 10% 20%, rgba(244, 114, 182, 0.1) 5%, transparent 6%),
                     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 10 Q35 0 40 10 T30 25 T20 10 Q25 0 30 10' fill='%23f472b6' fill-opacity='0.1'/%3E%3C/svg%3E");
                 background-attachment: fixed;
@@ -244,7 +353,7 @@ export default function App({ state, actions, helpers }: any) {
              <div className="absolute top-4 left-10 text-green-200 animate-pulse">
                 <Icon name="sun" size={48} className="animate-sun text-[#facc15]" />
              </div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-green-500/10 w-fit px-4 py-1.5 rounded-full border border-green-200">
@@ -266,7 +375,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-fade-in">
@@ -274,9 +383,9 @@ export default function App({ state, actions, helpers }: any) {
                     {banners?.length > 0 && (
                         <div className="relative w-full h-56 bg-white rounded-[3rem] overflow-hidden shadow-xl mb-10 border-4 border-green-50 p-2 group animate-image-pop">
                              <div className="h-full w-full rounded-[2.5rem] overflow-hidden bg-sky-50 relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                                  />
                              </div>
                              <div className="absolute bottom-4 left-6 bg-green-600 text-white px-5 py-2 rounded-full border-2 border-white shadow-lg transform rotate-[-2deg]">
@@ -295,7 +404,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -346,7 +455,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2 px-1 animate-image-pop">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-lg font-bold ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -400,7 +509,7 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="space-y-6">
                         {ordersList?.map((o: any) => (
                             <div key={o.id} className="bg-white p-6 border-2 border-green-100 rounded-[2.5rem] shadow-sm relative overflow-hidden">
-                                
+
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-4">
                                      <span className="text-xs text-green-600 font-bold uppercase tracking-widest flex items-center gap-1">
@@ -419,18 +528,18 @@ export default function App({ state, actions, helpers }: any) {
                                         const quantity = i.quantity || 1;
                                         const finalPriceTotal = i.price * quantity;
                                         const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                                        const originalPriceTotal = hasDiscount 
-                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+                                        const originalPriceTotal = hasDiscount
+                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                             : finalPriceTotal;
                                         const discountAmount = originalPriceTotal - finalPriceTotal;
 
                                         return (
                                             <div key={idx} className="flex justify-between items-start text-sm text-[#365314] font-bold border-b border-dashed border-[#bbf7d0] pb-2 last:border-0 spring-title">
-                                                
+
                                                 {/* Left Info */}
                                                 <div className="flex flex-col items-start pr-2">
                                                     <span className="leading-tight text-base">{quantity}x {i.product_name}</span>
-                                                    
+
                                                     {/* Variant Badge (Spring Style) */}
                                                     {i.variant !== 'normal' && (
                                                         <span className={`text-[10px] bg-[#84cc16] text-white px-2 py-0.5 rounded-sm border border-[#365314] font-sans font-bold mt-1 shadow-sm uppercase tracking-wider transform -rotate-1`}>
@@ -519,13 +628,13 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Petal Panel - FIXED 3 PRICES) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-green-900/40 backdrop-blur-md animate-fade-in">
-                <div className="w-full max-w-md bg-white border-t-8 border-green-400 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[4rem] relative animate-image-pop">
-                    <div className="relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-green-900/40 backdrop-blur-md animate-fade-in">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-8 border-green-400 flex flex-col overflow-hidden max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] shadow-2xl rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem] relative animate-image-pop">
+                    <div className="relative shrink-0">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-green-500 rounded-full border-2 border-green-100 flex items-center justify-center hover:bg-green-50 transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-85 overflow-hidden border-b-4 border-green-50 rounded-b-[3.5rem] bg-white">
+                        <div className="relative w-full h-64 md:h-52 xl:h-64 overflow-hidden border-b-4 border-green-50 rounded-b-[3.5rem] bg-white">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-green-500 text-white font-black text-3xl spring-title rounded-full border-4 border-white shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
@@ -540,11 +649,11 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl spring-title text-green-800 mb-6 leading-tight drop-shadow-sm uppercase tracking-wider">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
-                            
+
                             {/* ✅ FIXED: 3 Variants Grid (Seed/Bud/Bloom) */}
                             <div>
                                 <label className="block text-lg font-bold text-green-800 mb-3 spring-title ml-1 tracking-wide">GROWTH STAGE:</label>
@@ -554,12 +663,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'BUD', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'BLOOM', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 rounded-2xl border-4 transition-all flex flex-col items-center justify-between h-24 spring-title
-                                                ${variant === v.key 
-                                                    ? 'bg-green-50 border-green-500 shadow-[3px_3px_0_#15803d] -translate-y-1 text-green-700' 
+                                                ${variant === v.key
+                                                    ? 'bg-green-50 border-green-500 shadow-[3px_3px_0_#15803d] -translate-y-1 text-green-700'
                                                     : 'bg-white border-green-100 text-green-300 hover:border-green-300 hover:text-green-500'}`}
                                         >
                                             <span className="text-[10px] font-black tracking-widest uppercase">{v.label}</span>
@@ -573,6 +682,59 @@ export default function App({ state, actions, helpers }: any) {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                              <div className="space-y-4">
+                                {selectedProduct.options.map((opt: any, index: number) => (
+                                  <div key={index} className="bg-white border-4 border-green-100 rounded-2xl p-4 shadow-sm">
+                                    <div className="flex justify-between items-center mb-3">
+                                      <label className="text-lg font-bold text-green-800 spring-title tracking-wide">
+                                        {opt.name}
+                                        {opt.required && <span className="text-pink-500 ml-2 text-sm">* จำเป็น</span>}
+                                      </label>
+                                      <span className="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded-full border border-green-200">
+                                        {opt.type === 'single' ? 'เลือก 1' : 'เลือกได้หลายอย่าง'}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {opt.choices.map((choice: any, cIndex: number) => {
+                                        const choiceKey = String(choice.id || choice.name);
+                                        const isSelected = (selectedOptions[index] || []).some((item: any) => String(item.id || item.name) === choiceKey);
+                                        return (
+                                          <div
+                                            key={cIndex}
+                                            onClick={() => handleOptionToggle(index, choice, opt.type)}
+                                            className={`flex items-center justify-between p-3 rounded-xl border-3 cursor-pointer transition-all ${
+                                              isSelected
+                                                ? 'bg-green-50 border-green-500 text-green-800 shadow-sm -translate-y-0.5'
+                                                : 'bg-white border-green-100 text-green-600 hover:border-green-300'
+                                            }`}
+                                          >
+                                            <div className="flex items-center gap-3">
+                                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                                isSelected ? 'bg-green-500 border-green-600 text-white' : 'bg-green-50 border-green-200'
+                                              }`}>
+                                                {isSelected && <Icon name="check" size={14} />}
+                                              </div>
+                                              {(choice.image_url || choice.image_name) && (
+                                                <img src={choice.image_url || getMenuUrl(choice.image_name)} alt={choice.name} className="w-10 h-10 object-cover rounded-lg border-2 border-green-100" />
+                                              )}
+                                              <span className="font-bold spring-title text-base">{choice.name}</span>
+                                            </div>
+                                            {Number(choice.price) > 0 && (
+                                              <span className={`font-black text-base spring-title ${isSelected ? 'text-green-700' : 'text-pink-400'}`}>
+                                                +{Number(choice.price)}.-
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
 
                             {/* Qty Control */}
                             <div className="flex items-center justify-between py-4 mt-2">
@@ -589,23 +751,23 @@ export default function App({ state, actions, helpers }: any) {
 
                             {/* 📝 Note Input */}
                             <div className="relative">
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="A message for the gardener..." 
+                                    placeholder="A message for the gardener..."
                                     className="w-full p-6 bg-green-50 border-4 border-white rounded-[2.5rem] focus:border-green-300 focus:outline-none h-36 resize-none text-xl font-bold text-green-900 placeholder:text-green-200 transition-colors shadow-inner spring-title"
                                 />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-green-100 text-green-700 font-black text-xl rounded-full active:scale-95 transition-all shadow-md spring-title">
-                                Stash Bloom
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-spring text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 spring-title">
-                                HARVEST! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t border-green-100 grid grid-cols-2 gap-3 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-green-100 text-green-700 font-black text-xl rounded-full active:scale-95 transition-all shadow-md spring-title">
+                            Stash Bloom
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-spring text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 spring-title">
+                            HARVEST! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -613,18 +775,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ORDER SUMMARY MODAL --- */}
         <div id="orderSummaryOverlay" className={`fixed inset-0 bg-green-900/60 z-[130] backdrop-blur-sm animate-fade-in ${activeTab === 'cart' ? 'block' : 'hidden'}`} onClick={() => setActiveTab('menu')}></div>
-        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t-[10px] border-green-500 z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-[10px] border-green-500 z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="sticky top-0 bg-white z-20 rounded-t-[4rem] border-b-4 border-sky-50 p-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                 <div className="w-24 h-1.5 bg-green-100 rounded-full mx-auto mt-2 opacity-50"></div>
             </div>
-            
+
             <div className="flex justify-between items-center mb-6 px-10 pt-8">
                 <h2 className="text-4xl spring-title text-green-900 transform -rotate-1 tracking-widest italic">Harvest Bag</h2>
                 <div className="w-14 h-14 bg-green-100 text-green-600 border-4 border-white rounded-2xl flex items-center justify-center font-black text-2xl shadow-sm">
                     <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
                 </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto space-y-6 px-8 pb-10 no-scrollbar">
                 {cart.map((item: any, idx: any) => (
                     <div key={idx} className="flex items-center gap-4 bg-white p-4 border-3 border-[#d9f99d] rounded-[2rem] shadow-sm relative overflow-hidden hover:shadow-md transition-shadow">
@@ -678,18 +840,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-8 border border-green-100 shadow-lg relative z-10 animate-leaf">
                         <Icon name="flame" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-3xl spring-title text-green-900 mb-4 leading-tight relative z-10 uppercase tracking-widest">Added to Soil?</h3>
                             <p className="text-lg text-green-600 mb-10 font-bold spring-title relative z-10">Add "{selectedProduct.name}" and grow?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-green-600 text-white font-black border border-white shadow-xl active:scale-95 transition-all text-xl spring-title uppercase tracking-widest rounded-2xl">YES! LET IT GROW!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-white border-4 border-green-100 text-green-700 font-black text-lg active:scale-95 transition-transform hover:bg-green-50 spring-title rounded-full uppercase">Just Add</button>

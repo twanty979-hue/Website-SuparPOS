@@ -4,24 +4,24 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Metropolis
-    home: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />, 
+    home: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
     // Menu -> Daily Planet / News
-    menu: <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />, 
-    search: <circle cx="11" cy="11" r="8" />, 
+    menu: <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />,
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Cape / Bag
     basket: <path d="M5 8h14l-2 13H7L5 8zm7-6v6" />,
     // Clock -> Signal Watch
     clock: <circle cx="12" cy="12" r="10" strokeWidth="3" />,
     // Chef -> Cape
-    chef: <path d="M12 2C7 2 2 7 2 12s5 10 10 10 10-5 10-10S17 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />, 
+    chef: <path d="M12 2C7 2 2 7 2 12s5 10 10 10 10-5 10-10S17 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />,
     plus: <path d="M5 12h14M12 5v14" />,
     minus: <path d="M5 12h14" />,
     x: <path d="M18 6 6 18M6 6l12 12" />,
     trash: <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
     check: <polyline points="20 6 9 17 4 12" />,
     // Flame -> Laser Vision
-    flame: <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" />, 
-    
+    flame: <path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" />,
+
     // Specifics
     shield: <path d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3z" />,
     paw: <path d="M12 2a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3 3 3 3 0 0 1 3-3m5.5 3a2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5 2.5 2.5 0 0 1 2.5-2.5m-11 0a2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5 2.5 2.5 0 0 1-2.5-2.5" />,
@@ -29,18 +29,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -57,7 +57,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -69,19 +69,84 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
+
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
 
   // --- 🔥 AUTO-CHECKOUT LOGIC ---
   const prevCartLength = useRef(cart?.length || 0);
@@ -94,7 +159,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -106,23 +171,72 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#f1f5f9] flex items-center justify-center text-[#ef4444] font-black text-2xl animate-hero-fly">POWERING UP...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
+  const currentPriceObj = selectedProduct
+    ? {
+        ...calculatePrice(selectedProduct, variant),
+        final: finalPriceWithOpts,
+        original: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+      }
     : { final: 0 };
 
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
     if (addToCartOnly) {
-        for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+        const finalNote = generateOptionNote();
+        const productToAdd = {
+            ...selectedProduct,
+            variant: variant,
+            note: finalNote,
+            specialRequest: finalNote,
+            comment: finalNote,
+            remark: finalNote,
+            price: finalPriceWithOpts,
+            original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+            toppings_snapshot: selectedToppings,
+        };
+        for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    for(let i=0; i<qty; i++) handleAddToCart(selectedProduct, variant, note);
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
+    };
+    for(let i=0; i<qty; i++) handleAddToCart(productToAdd, variant, finalNote);
     setPendingCookNow(true);
     setSelectedProduct(null);
   };
@@ -130,12 +244,12 @@ export default function App({ state, actions, helpers }: any) {
   return (
     // Theme: Krypto the Superdog - Hero System
     // ✅ FIX: Responsive max-width (md:max-w-2xl lg:max-w-4xl) to support Tablet/Desktop better
-    <div className="">
-        
+    <div className="max-w-md md:max-w-xl xl:max-w-md mx-auto">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;600;800&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --hero-red: #ef4444;
                 --hero-yellow: #facc15;
@@ -149,7 +263,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Chakra Petch', 'Sarabun', sans-serif;
                 background-color: #f1f5f9;
                 /* Subtle Metropolis Grid Pattern */
-                background-image: 
+                background-image:
                     linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
                     linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
                 background-size: 30px 30px;
@@ -238,7 +352,7 @@ export default function App({ state, actions, helpers }: any) {
         <header className="bg-gradient-to-b from-slate-900 to-slate-800 text-white pt-10 pb-16 px-6 md:px-10 rounded-b-[3rem] relative overflow-hidden shadow-2xl z-10 border-b-4 border-red-500">
              {/* Lens Flare Overlay */}
              <div className="absolute -top-10 -right-10 w-48 h-48 bg-sky-500/20 rounded-full blur-3xl"></div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-red-600/30 w-fit px-4 py-1 rounded-sm border border-red-500/50 backdrop-blur-sm transform -rotate-1">
@@ -260,7 +374,7 @@ export default function App({ state, actions, helpers }: any) {
         </header>
 
         <main className="px-5 md:px-8 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="animate-fade-in">
@@ -268,9 +382,9 @@ export default function App({ state, actions, helpers }: any) {
                     {banners?.length > 0 && (
                         <div className="relative w-full h-52 md:h-72 lg:h-80 bg-slate-900 rounded-2xl overflow-hidden shadow-2xl mb-10 border-2 border-white/20 p-1 group animate-image-pop">
                              <div className="h-full w-full rounded-xl overflow-hidden opacity-90 group-hover:opacity-100 transition-opacity relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover"
                                  />
                                  {/* HUD Corner Accents */}
                                  <div className="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-yellow-400"></div>
@@ -293,7 +407,7 @@ export default function App({ state, actions, helpers }: any) {
                     </div>
 
                     {/* ✅ FIX: Responsive Grid (grid-cols-2 md:grid-cols-3 lg:grid-cols-4) */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -344,7 +458,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar py-1 px-1 animate-image-pop">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-xs font-bold uppercase tracking-widest hero-font ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -399,7 +513,7 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="space-y-6">
                         {ordersList?.map((o: any) => (
                             <div key={o.id} className="bg-white p-6 border border-slate-200 rounded-2xl shadow-sm relative overflow-hidden">
-                                
+
                                 {/* Header */}
                                 <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
                                      <span className="text-xs text-slate-900 font-black uppercase tracking-widest flex items-center gap-1 hero-font">
@@ -418,20 +532,20 @@ export default function App({ state, actions, helpers }: any) {
                                         const quantity = i.quantity || 1;
                                         const finalPriceTotal = i.price * quantity;
                                         const hasDiscount = (i.original_price && i.original_price > i.price) || (i.discount > 0);
-                                        const originalPriceTotal = hasDiscount 
-                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity) 
+                                        const originalPriceTotal = hasDiscount
+                                            ? (i.original_price ? i.original_price * i.quantity : (i.price + (i.discount || 0)) * i.quantity)
                                             : finalPriceTotal;
                                         const discountAmount = originalPriceTotal - finalPriceTotal;
 
                                         return (
                                             <div key={idx} className="flex justify-between items-start text-sm font-medium text-slate-700 border-b border-dashed border-slate-200 pb-2 last:border-0 hero-font tracking-wide">
-                                                
+
                                                 {/* Left Info */}
                                                 <div className="flex flex-col items-start pr-2">
                                                     <span className="leading-tight text-base">
                                                         <span className="text-red-500 font-bold">{quantity}x</span> {i.product_name}
                                                     </span>
-                                                    
+
                                                     {/* Variant Badge (Hero Style) */}
                                                     {i.variant !== 'normal' && (
                                                         <span className={`text-[10px] bg-slate-800 text-white px-2 py-0.5 rounded border border-slate-600 font-sans font-bold mt-1 uppercase tracking-wider`}>
@@ -520,14 +634,14 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL (Hero Screen - FIXED 3 PRICES) --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#0f172a]/80 backdrop-blur-md animate-fade-in p-0 md:items-center">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#0f172a]/80 backdrop-blur-md animate-fade-in p-0">
                 {/* ✅ FIX: Modal Responsive Width */}
-                <div className="w-full max-w-md md:max-w-lg bg-white border-t-8 border-red-500 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[3rem] md:rounded-[2rem] relative animate-image-pop">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-8 border-red-500 flex flex-col overflow-hidden h-auto max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] shadow-2xl rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] relative animate-image-pop">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-slate-900 rounded-full border-2 border-slate-100 flex items-center justify-center hover:bg-red-50 transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={3} />
                         </button>
-                        <div className="relative w-full h-85 overflow-hidden border-b-4 border-red-50 rounded-b-[2.5rem] bg-slate-50">
+                        <div className="relative w-full h-85 shrink-0 md:h-52 xl:h-64 overflow-hidden border-b-4 border-red-50 rounded-b-[2.5rem] bg-slate-50">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-[#0f172a] text-yellow-400 font-black text-3xl hero-font rounded-xl border border-yellow-500/50 shadow-xl transform -rotate-1 leading-none">
@@ -542,11 +656,11 @@ export default function App({ state, actions, helpers }: any) {
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-2xl hero-font text-slate-950 mb-6 leading-tight drop-shadow-sm uppercase tracking-widest">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
-                            
+
                             {/* ✅ FIXED: 3 Variants Grid (CIVILIAN/SIDEKICK/HERO) */}
                             <div>
                                 <label className="block text-lg font-bold text-slate-800 mb-3 hero-font ml-1 tracking-wide">CHOOSE POWER:</label>
@@ -556,12 +670,12 @@ export default function App({ state, actions, helpers }: any) {
                                         selectedProduct.price_special && { key: 'special', label: 'SIDEKICK', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'HERO', ...calculatePrice(selectedProduct, 'jumbo') }
                                     ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
+                                        <button
+                                            key={v.key}
                                             onClick={() => setVariant(v.key)}
                                             className={`p-2 border-4 transition-all flex flex-col items-center justify-between h-24 hero-font rounded-xl
-                                                ${variant === v.key 
-                                                    ? 'bg-slate-900 border-slate-900 text-yellow-400 shadow-[4px_4px_0_#ef4444] -translate-y-1' 
+                                                ${variant === v.key
+                                                    ? 'bg-slate-900 border-slate-900 text-yellow-400 shadow-[4px_4px_0_#ef4444] -translate-y-1'
                                                     : 'bg-white border-slate-200 text-slate-400 hover:border-slate-400 hover:text-slate-600'}`}
                                         >
                                             <span className="text-[10px] font-black tracking-widest uppercase">{v.label}</span>
@@ -589,25 +703,72 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
+                            {/* Product Options */}
+                            {selectedProduct.options && selectedProduct.options.length > 0 && (
+                                <div className="mt-4 mb-4 space-y-4">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => (
+                                        <div key={groupIndex} className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200 shadow-sm relative overflow-hidden">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <label className="text-lg font-bold text-slate-800 hero-font tracking-wide">
+                                                    {opt.name} {opt.required && <span className="text-[#ef4444]">*</span>}
+                                                </label>
+                                                <span className="text-xs text-red-500 font-bold uppercase tracking-wider hero-font">
+                                                    {opt.type === 'single' ? 'Select 1' : 'Select Multiple'}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {opt.choices.map((choice: any, cIdx: number) => {
+                                                    const isSelected = (selectedOptions[groupIndex] || []).some((item: any) => String(item.id || item.name) === String(choice.id || choice.name));
+                                                    return (
+                                                        <div
+                                                            key={cIdx}
+                                                            onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                            className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                                                isSelected
+                                                                ? 'border-slate-900 bg-slate-900 text-yellow-400 shadow-[3px_3px_0_#ef4444]'
+                                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isSelected ? 'border-yellow-400 bg-yellow-400 text-slate-900' : 'border-gray-300 bg-white'}`}>
+                                                                    {isSelected && <Icon name="check" size={14} />}
+                                                                </div>
+                                                                {(choice.image_url || choice.image_name) && (
+                                                                    <img src={choice.image_url || getMenuUrl(choice.image_name)} alt={choice.name} className="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-sm" />
+                                                                )}
+                                                                <span className={`font-bold hero-font ${isSelected ? 'text-yellow-400' : 'text-slate-700'}`}>{choice.name}</span>
+                                                            </div>
+                                                            {Number(choice.price) > 0 && (
+                                                                <span className={`font-bold hero-font ${isSelected ? 'text-yellow-400' : 'text-slate-500'}`}>+{Number(choice.price)}.-</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {/* 📝 Note Input */}
                             <div className="relative">
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Mission parameters for Krypto..." 
+                                    placeholder="Mission parameters for Krypto..."
                                     className="w-full p-6 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:border-red-500 focus:outline-none h-36 resize-none text-xl font-bold text-slate-900 placeholder:text-slate-400 transition-colors shadow-inner hero-font"
                                 />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-white border border-slate-200 text-slate-600 font-black text-xl rounded-xl active:scale-95 transition-all shadow-sm hero-font">
-                                Stow Gear
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-hero text-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
-                                FLY! <Icon name="shield" size={24} />
-                            </button>
-                        </div>
+                    </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t border-slate-200 grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-white border border-slate-200 text-slate-600 font-black text-xl rounded-xl active:scale-95 transition-all shadow-sm hero-font">
+                            Stow Gear
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-hero text-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
+                            FLY! <Icon name="shield" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -615,12 +776,12 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- CART SHEET (Super Core) --- */}
         {activeTab === 'cart' && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#0f172a]/80 backdrop-blur-sm animate-fade-in md:items-center">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-[#0f172a]/80 backdrop-blur-sm animate-fade-in">
                 {/* 🔴 FIX: Changed h-[92vh] to h-[90vh] and added relative to container */}
-                <div className="w-full max-w-md md:max-w-lg bg-white border-t-[10px] border-red-500 flex flex-col shadow-2xl h-[90vh] md:h-auto md:max-h-[90vh] animate-image-pop rounded-t-[2rem] md:rounded-[2rem] relative">
-                    
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-[10px] border-red-500 flex flex-col shadow-2xl h-[90vh] md:h-auto md:max-h-[90vh] animate-image-pop rounded-t-[2rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[2rem] relative">
+
                     {/* 🔴 FIX: Added Explicit Close Button Top Right */}
-                    <button 
+                    <button
                         onClick={() => setActiveTab('menu')}
                         className="absolute top-4 right-4 z-50 w-10 h-10 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-colors shadow-sm"
                     >
@@ -691,18 +852,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-red-600 text-white rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-slate-900 shadow-lg relative z-10 animate-hero-fly">
                         <Icon name="shield" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-3xl hero-font text-slate-900 mb-4 leading-tight relative z-10 uppercase tracking-widest">Mission Update?</h3>
                             <p className="text-lg text-slate-500 mb-10 font-bold relative z-10">Add "{selectedProduct.name}" to loadout?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-slate-900 text-yellow-400 font-black border-4 border-white shadow-xl active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-2xl hero-font uppercase rounded-xl">YES! DEPLOY!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-white border-2 border-slate-200 text-slate-400 font-black text-lg active:scale-95 transition-transform hover:bg-slate-50 hero-font rounded-xl uppercase">Just Stash</button>

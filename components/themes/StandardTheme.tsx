@@ -6,7 +6,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -18,13 +18,13 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<any>({});
-  
+
   // Custom Toast State
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
 
@@ -38,12 +38,12 @@ export default function App({ state, actions, helpers }: any) {
       setVariant('normal');
       setQty(1);
       setNote("");
-      
+
       const initialOptions: any = {};
       if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
         selectedProduct.options.forEach((opt: any, index: number) => {
             if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
-                initialOptions[index] = [opt.choices[0].name];
+                initialOptions[index] = [opt.choices[0]];
             } else {
                 initialOptions[index] = [];
             }
@@ -65,7 +65,7 @@ export default function App({ state, actions, helpers }: any) {
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(); 
+                 handleCheckout();
                  setPendingCookNow(false);
                  showToastMsg("Sent! Time for a nap.");
                  setActiveTab('status');
@@ -78,29 +78,30 @@ export default function App({ state, actions, helpers }: any) {
 
   if (loading && !isVerified) return <div className="min-h-screen bg-[#fffbeb]" />;
 
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
   const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
-  
-  const optionsExtraPrice = Object.keys(selectedOptions).reduce((total, groupIndex) => {
-      const selectedNames = selectedOptions[groupIndex] || [];
-      const groupInfo = selectedProduct?.options?.[parseInt(groupIndex)];
-      if (!groupInfo) return total;
-      
-      const groupExtra = selectedNames.reduce((groupTotal: number, name: string) => {
-          const choiceInfo = groupInfo.choices.find((c: any) => c.name === name);
-          return groupTotal + (choiceInfo?.price || 0);
-      }, 0);
-      return total + groupExtra;
-  }, 0);
-
-  const finalPriceWithOpts = basePriceObj.final + optionsExtraPrice;
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
 
   const generateOptionNote = () => {
     if (!selectedProduct?.options) return note;
     let optTexts: string[] = [];
     selectedProduct.options.forEach((opt: any, index: number) => {
-        const selectedNames = selectedOptions[index];
-        if (selectedNames && selectedNames.length > 0) {
-            optTexts.push(`${opt.name}: ${selectedNames.join(', ')}`);
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
         }
     });
     const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
@@ -113,7 +114,7 @@ export default function App({ state, actions, helpers }: any) {
         for (let i = 0; i < selectedProduct.options.length; i++) {
             const opt = selectedProduct.options[i];
             if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
-                showToastMsg(`Please select: ${opt.name}`, "error");
+                showToastMsg(`กรุณาเลือก: ${opt.name}`, "error");
                 return;
             }
         }
@@ -121,9 +122,14 @@ export default function App({ state, actions, helpers }: any) {
     const finalNote = generateOptionNote();
     const productWithOptionsPrice = {
         ...selectedProduct,
+        variant: variant,
+        note: finalNote,
+        specialRequest: finalNote,
+        comment: finalNote,
+        remark: finalNote,
         price: finalPriceWithOpts,
-        price_special: finalPriceWithOpts,
-        price_jumbo: finalPriceWithOpts
+        original_price: (basePriceObj.original || basePriceObj.final + basePriceObj.discount) + toppingTotal,
+        toppings_snapshot: selectedToppings,
     };
 
     if (addToCartOnly) {
@@ -134,7 +140,7 @@ export default function App({ state, actions, helpers }: any) {
         setSelectedProduct(null);
     } else {
         if (cart && cart.length > 0) {
-            setShowConfirm(true); 
+            setShowConfirm(true);
         } else {
             performCookNow(productWithOptionsPrice, finalNote);
         }
@@ -149,14 +155,24 @@ export default function App({ state, actions, helpers }: any) {
     setSelectedProduct(null);
   };
 
-  const handleOptionToggle = (groupIndex: number, choiceName: string, type: string) => {
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
       setSelectedOptions((prev: any) => {
           const currentSelected = prev[groupIndex] || [];
-          if (type === 'single') return { ...prev, [groupIndex]: [choiceName] };
-          if (currentSelected.includes(choiceName)) {
-              return { ...prev, [groupIndex]: currentSelected.filter((n: string) => n !== choiceName) };
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
           }
-          return { ...prev, [groupIndex]: [...currentSelected, choiceName] };
       });
   };
 
@@ -165,7 +181,7 @@ export default function App({ state, actions, helpers }: any) {
         {/* ย้าย Style ออกมาข้างนอกสุด และบังคับ Background ให้ Body ตรงๆ */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Mali:ital,wght@0,300;0,400;0,600;0,700;1,600&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 --primary: #fb923c;
                 --primary-dark: #c2410c;
@@ -214,7 +230,7 @@ export default function App({ state, actions, helpers }: any) {
                 border-radius: 1.5rem;
                 background: white;
             }
-            
+
             .item-card::after {
                 content: '';
                 position: absolute;
@@ -242,7 +258,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Mali', cursive;
                 font-weight: 700;
             }
-            
+
             .btn-cat:active {
                 transform: translate(2px, 2px);
                 box-shadow: 2px 2px 0px #000;
@@ -252,12 +268,12 @@ export default function App({ state, actions, helpers }: any) {
                 transition: all 0.3s;
                 border: 3px solid transparent;
             }
-            
+
             .tab-btn:not(.active):hover {
                 transform: rotate(2deg);
                 background: #fed7aa;
             }
-            
+
             .tab-btn.active {
                 background: #000 !important;
                 color: #fb923c !important;
@@ -272,10 +288,10 @@ export default function App({ state, actions, helpers }: any) {
         `}} />
 
         {/* แก้ไขตรงนี้แหละครับนาย! ลบ bg-[#fff7ed] ออก เพื่อให้มันทะลุไปเห็นลายจุดของ body
-            และคงแค่โครง max-w-md mx-auto เอาไว้ให้คอนเทนต์อยู่ตรงกลาง 
+            และคงแค่โครง max-w-md mx-auto เอาไว้ให้คอนเทนต์อยู่ตรงกลาง
         */}
-        <div className="max-w-md mx-auto shadow-2xl min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-black bg-transparent">
-            
+        <div className="max-w-md md:max-w-xl xl:max-w-md mx-auto shadow-2xl min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-black bg-transparent">
+
             {/* --- Toast System --- */}
             {toast.show && (
                 <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[200] px-6 py-4 rounded-2xl text-black text-sm font-bold shadow-[4px_4px_0px_#000] flex items-center gap-3 bg-white border-4 transform -rotate-1 animate__animated animate__fadeInDown
@@ -293,7 +309,7 @@ export default function App({ state, actions, helpers }: any) {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-600/20 rounded-full blur-2xl"></div>
                 <div className="absolute bottom-0 left-0 w-40 h-40 bg-orange-600/20 rounded-full blur-2xl"></div>
                 <div className="absolute top-4 left-4 text-orange-700/20 text-6xl font-black rotate-[-10deg]">Zzz...</div>
-                
+
                 <div className="flex justify-between items-center relative z-10 mt-2">
                     <div>
                         <div className="flex items-center gap-2 mb-1 bg-black w-fit px-4 py-1.5 rounded-full transform -rotate-2">
@@ -312,7 +328,7 @@ export default function App({ state, actions, helpers }: any) {
 
             {/* --- Content Area --- */}
             <main className="px-5 -mt-8 relative z-20">
-                
+
                 {/* HOME PAGE */}
                 <section id="homePage" className={`page-transition ${activeTab === 'home' ? 'block' : 'hidden'}`}>
                     {banners?.length > 0 && (
@@ -335,8 +351,8 @@ export default function App({ state, actions, helpers }: any) {
                             See All <i className="fi fi-sr-arrow-small-right"></i>
                         </button>
                     </div>
-                    
-                    <div id="foodItemsHome" className="grid grid-cols-2 gap-4 pb-10">
+
+                    <div id="foodItemsHome" className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 4).map((p: any, idx: number) => {
                             const pricing = calculatePrice(p, 'normal');
                             return (
@@ -377,7 +393,7 @@ export default function App({ state, actions, helpers }: any) {
                     {/* Tabs */}
                     <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                 className={`tab-btn shrink-0 px-8 py-3 rounded-2xl bg-white border-4 border-black text-black font-black text-lg shadow-[3px_3px_0_#ccc] cat-font ${selectedCategoryId === c.id ? 'active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -422,7 +438,7 @@ export default function App({ state, actions, helpers }: any) {
                             <i className="fi fi-rr-clock-five text-3xl text-black"></i>
                         </div>
                     </div>
-                    
+
                     <div id="pendingOrders" className="space-y-6 pb-24">
                         {ordersList?.map((o: any, idx: number) => {
                             const isDone = o.status === 'done';
@@ -458,7 +474,7 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             )
                         })}
-                        
+
                         {(!ordersList || ordersList.length === 0) && (
                             <div className="text-center py-24 text-slate-400 font-bold cat-font text-xl opacity-50 bg-white/50 rounded-3xl mx-4">EMPTY BOWL</div>
                         )}
@@ -471,7 +487,7 @@ export default function App({ state, actions, helpers }: any) {
                 <button data-page="home" onClick={() => setActiveTab('home')} className={`nav-btn flex flex-col items-center gap-1 transition-all duration-300 w-16 group ${activeTab === 'home' ? 'active text-orange-400' : ''}`}>
                     <i className="fi fi-sr-home text-2xl transition-colors group-[.active]:text-orange-400"></i>
                 </button>
-                
+
                 <button data-page="menu" onClick={() => setActiveTab('menu')} className={`nav-btn flex flex-col items-center gap-1 transition-all duration-300 w-16 group ${activeTab === 'menu' ? 'active text-orange-400' : ''}`}>
                     <i className="fi fi-sr-utensils text-2xl transition-colors group-[.active]:text-orange-400"></i>
                 </button>
@@ -494,16 +510,16 @@ export default function App({ state, actions, helpers }: any) {
 
             {/* Item Details Modal */}
             {selectedProduct && (
-                <>
-                    <div id="itemOverlay" className="fixed inset-0 bg-black/90 z-[110] backdrop-blur-md animate__animated animate__fadeIn" onClick={() => setSelectedProduct(null)}></div>
-                    <div id="itemModal" className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#fff7ed] rounded-t-[3rem] z-[120] h-auto max-h-[95vh] overflow-y-auto no-scrollbar animate__animated animate__slideInUp shadow-2xl border-t-[6px] border-black">
-                        
+                <div className="fixed inset-0 z-[120] flex items-end md:items-center xl:items-end justify-center bg-black/90 backdrop-blur-md animate__animated animate__fadeIn">
+                    <div className="absolute inset-0" onClick={() => setSelectedProduct(null)}></div>
+                    <div id="itemModal" className="relative w-full max-w-md md:max-w-xl xl:max-w-md bg-[#fff7ed] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] shadow-2xl border-t-[6px] border-black flex flex-col overflow-hidden animate__animated animate__slideInUp">
+
                         <div className="relative">
                             <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:bg-orange-200 transition-colors border-4 border-black shadow-[4px_4px_0_#000] active:shadow-none active:translate-x-[4px] active:translate-y-[4px]">
                                 <i className="fi fi-rr-cross-small text-2xl font-bold"></i>
                             </button>
 
-                            <div className="relative w-full h-80 rounded-b-[3rem] overflow-hidden border-b-4 border-black">
+                            <div className="relative w-full h-64 sm:h-72 md:h-52 xl:h-80 rounded-b-[3rem] overflow-hidden border-b-4 border-black">
                                 <img id="modalImage" src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                                 <div className="absolute bottom-6 left-6 bg-white px-6 py-2 rounded-full border-4 border-black shadow-[4px_4px_0_#fb923c] transform -rotate-2">
                                     <p id="modalPrice" className="text-black font-black text-3xl cat-font">{finalPriceWithOpts}.-</p>
@@ -511,9 +527,9 @@ export default function App({ state, actions, helpers }: any) {
                             </div>
                         </div>
 
-                        <div className="px-8 pt-8 pb-32">
+                        <div className="flex-1 overflow-y-auto no-scrollbar px-8 pt-8 pb-6">
                             <h2 id="modalName" className="text-4xl font-black text-black mb-6 leading-tight cat-font">{selectedProduct.name}</h2>
-                            
+
                             <div className="space-y-6">
                                 {/* Variants Size */}
                                 {(selectedProduct.price_special || selectedProduct.price_jumbo) && (
@@ -551,18 +567,22 @@ export default function App({ state, actions, helpers }: any) {
                                             </div>
                                             <div className="space-y-3">
                                                 {opt.choices.map((choice: any, cIdx: number) => {
-                                                    const isSelected = selectedOptions[index]?.includes(choice.name);
+                                                    const choiceKey = String(choice.id || choice.name);
+                                                    const isSelected = selectedOptions[index]?.some((item: any) => String(item.id || item.name) === choiceKey);
                                                     const inputType = opt.type === 'single' ? 'radio' : 'checkbox';
                                                     return (
                                                         <label key={cIdx} className={`flex items-center justify-between p-3 border-4 rounded-xl cursor-pointer transition-all ${isSelected ? 'border-orange-500 bg-orange-50 transform -translate-y-1' : 'border-black bg-white'}`}>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className={`w-6 h-6 flex items-center justify-center border-[3px] border-black bg-white ${inputType === 'radio' ? 'rounded-full' : 'rounded-md'}`}>
+                                                            <div className="flex items-center gap-3 flex-1">
+                                                                <div className={`shrink-0 w-6 h-6 flex items-center justify-center border-[3px] border-black bg-white ${inputType === 'radio' ? 'rounded-full' : 'rounded-md'}`}>
                                                                     {isSelected && <div className={`bg-orange-500 ${inputType === 'radio' ? 'w-3 h-3 rounded-full' : 'w-3 h-3 rounded-sm'}`} />}
                                                                 </div>
-                                                                <span className="font-bold text-base text-black">{choice.name}</span>
+                                                                {(choice.image_url || choice.image_name) && (
+                                                                    <img src={choice.image_url || choice.image_name} className="w-10 h-10 object-cover rounded-lg border-2 border-black shrink-0" alt={choice.name} />
+                                                                )}
+                                                                <span className="font-bold text-base text-black flex-1">{choice.name}</span>
                                                             </div>
-                                                            <span className="font-black text-orange-600 text-sm">{choice.price > 0 ? `+${choice.price}` : 'Free'}</span>
-                                                            <input type={inputType} className="hidden" checked={isSelected || false} onChange={() => handleOptionToggle(index, choice.name, opt.type)} />
+                                                            <span className="font-black text-orange-600 text-sm shrink-0 pl-2">{choice.price > 0 ? `+${choice.price}` : 'Free'}</span>
+                                                            <input type={inputType} className="hidden" checked={isSelected || false} onChange={() => handleOptionToggle(index, choice, opt.type)} />
                                                         </label>
                                                     )
                                                 })}
@@ -572,10 +592,10 @@ export default function App({ state, actions, helpers }: any) {
                                 })}
 
                                 <div className="relative">
-                                    <textarea id="itemNote" value={note} onChange={(e) => setNote(e.target.value)} placeholder="บอกเชฟหน่อย (เช่น ไม่เอาผัก)..." 
+                                    <textarea id="itemNote" value={note} onChange={(e) => setNote(e.target.value)} placeholder="บอกเชฟหน่อย (เช่น ไม่เอาผัก)..."
                                         className="w-full p-5 bg-white rounded-2xl border-4 border-black focus:border-orange-500 focus:outline-none h-32 resize-none text-lg font-bold placeholder:text-slate-300 transition-colors cat-font shadow-inner"></textarea>
                                 </div>
-                                
+
                                 <div className="flex items-center justify-between py-4 mt-2">
                                     <div className="flex items-center gap-3 bg-black p-2 rounded-full border-4 border-black shadow-lg">
                                         <button id="qtyMinus" onClick={() => setQty(Math.max(1, qty-1))} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:bg-slate-200 transition-colors active:scale-90"><i className="fi fi-rr-minus text-xl font-bold"></i></button>
@@ -589,32 +609,32 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 mt-8">
-                                <button id="addToCartBtn" onClick={() => handleAdd(true)} className="py-4 rounded-xl bg-white border-4 border-black text-black font-black text-lg active:scale-95 transition-all shadow-[4px_4px_0_#ccc] cat-font">
-                                    Grab It
-                                </button>
-                                <button id="orderNowBtn" onClick={() => handleAdd(false)} className="py-4 rounded-xl btn-cat font-black text-lg active:scale-95 transition-all cat-font flex items-center justify-center gap-2">
-                                    EAT NOW <i className="fi fi-sr-utensils"></i>
-                                </button>
-                            </div>
+                        </div>
+                        <div className="shrink-0 w-full p-5 md:p-6 bg-[#fff7ed] border-t-4 border-black grid grid-cols-2 gap-4 z-30">
+                            <button id="addToCartBtn" onClick={() => handleAdd(true)} className="py-4 rounded-xl bg-white border-4 border-black text-black font-black text-lg active:scale-95 transition-all shadow-[4px_4px_0_#ccc] cat-font">
+                                Grab It
+                            </button>
+                            <button id="orderNowBtn" onClick={() => handleAdd(false)} className="py-4 rounded-xl btn-cat font-black text-lg active:scale-95 transition-all cat-font flex items-center justify-center gap-2">
+                                EAT NOW <i className="fi fi-sr-utensils"></i>
+                            </button>
                         </div>
                     </div>
-                </>
+                </div>
             )}
 
             {/* Order Summary Modal (Cart) */}
 {activeTab === 'cart' && (
     <>
         <div id="orderSummaryOverlay" className="fixed inset-0 bg-black/90 z-[130] backdrop-blur-md animate__animated animate__fadeIn" onClick={() => setActiveTab('menu')}></div>
-        <div id="orderSummary" className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#fffbeb] rounded-t-[3rem] z-[140] flex flex-col shadow-[0_-20px_60px_rgba(0,0,0,0.5)] h-[90vh] border-t-[6px] border-black animate__animated animate__slideInUp overflow-hidden">
-            
+        <div id="orderSummary" className="fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-[#fffbeb] rounded-t-[3rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[3rem] z-[140] flex flex-col shadow-[0_-20px_60px_rgba(0,0,0,0.5)] h-[90vh] md:h-[80vh] xl:h-[85vh] border-t-[6px] border-black animate__animated animate__slideInUp overflow-hidden">
+
             {/* พื้นหลังลายจุดภายใน Modal */}
             <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fb923c 15%, transparent 16%)', backgroundSize: '40px 40px' }}></div>
 
             <div className="modal-handle-area sticky top-0 z-20 rounded-t-[3rem] border-b-4 border-black/10 flex justify-center py-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                 <div className="handle-bar w-16 h-2 bg-black/20 rounded-full"></div>
             </div>
-            
+
             <div className="flex justify-between items-center mb-6 px-8 pt-4 relative z-10">
                 <h2 className="text-4xl font-black text-black cat-font transform -rotate-2">My Food</h2>
                 <div className="w-14 h-14 bg-orange-500 text-black rounded-2xl flex items-center justify-center border-4 border-black shadow-[4px_4px_0_#000]">
@@ -623,7 +643,7 @@ export default function App({ state, actions, helpers }: any) {
                     </span>
                 </div>
             </div>
-            
+
             <ul id="summaryList" className="flex-1 overflow-y-auto space-y-4 px-6 pb-6 no-scrollbar relative z-10">
                 {cart.length > 0 ? cart.map((item: any, idx: number) => (
                     <li key={idx} className="flex items-center gap-4 bg-white p-4 rounded-2xl border-4 border-black shadow-[4px_4px_0_#000] relative animate__animated animate__fadeInLeft" style={{ animationDelay: `${idx * 0.05}s` }}>
@@ -662,13 +682,13 @@ export default function App({ state, actions, helpers }: any) {
                         <i className="fi fi-sr-receipt text-3xl"></i>
                     </div>
                 </div>
-                <button 
-                    id="confirmOrderBtn" 
-                    onClick={() => { if(cart.length > 0) setShowConfirm(true); }} 
-                    className={`w-full py-5 rounded-3xl btn-cat text-2xl transition-all flex items-center justify-center gap-3 
+                <button
+                    id="confirmOrderBtn"
+                    onClick={() => { if(cart.length > 0) setShowConfirm(true); }}
+                    className={`w-full py-5 rounded-3xl btn-cat text-2xl transition-all flex items-center justify-center gap-3
                     ${cart.length === 0 ? 'bg-slate-200 text-slate-400 border-slate-300 shadow-none pointer-events-none' : 'active:scale-95'}`}
                 >
-                    <span>CONFIRM (MEOW)</span> 
+                    <span>CONFIRM (MEOW)</span>
                     <i className="fi fi-sr-paw text-2xl"></i>
                 </button>
             </div>
@@ -680,7 +700,7 @@ export default function App({ state, actions, helpers }: any) {
             {showConfirm && (
                 <div id="confirmOverlay" className="fixed inset-0 bg-black/90 z-[250] flex items-center justify-center p-6 backdrop-blur-sm animate__animated animate__fadeIn">
                     <div id="confirmModal" className="w-full max-w-sm bg-white rounded-3xl border-4 border-black p-8 text-center shadow-[8px_8px_0_#fb923c] animate__animated animate__bounceIn relative overflow-hidden">
-                        
+
                         <div className="w-24 h-24 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-black">
                             <i className="fi fi-sr-shopping-bag text-4xl animate-tada"></i>
                         </div>
@@ -689,7 +709,7 @@ export default function App({ state, actions, helpers }: any) {
                             <>
                                 <h3 id="confirmTitle" className="text-3xl font-black text-black mb-2 leading-tight cat-font">More Food?</h3>
                                 <p id="confirmDesc" className="text-base text-slate-600 mb-8 font-bold cat-font">มีของในตะกร้าอยู่แล้ว จะสั่ง {selectedProduct.name} รวมกันเลยไหม?</p>
-                                
+
                                 <div className="flex flex-col gap-3">
                                     <button id="confirmYes" onClick={() => { performCookNow(selectedProduct, generateOptionNote()); setShowConfirm(false); }} className="w-full py-4 bg-orange-500 text-black rounded-xl font-black border-4 border-black shadow-[4px_4px_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-lg cat-font">
                                         YES, FEED ME ALL!
@@ -703,7 +723,7 @@ export default function App({ state, actions, helpers }: any) {
                             <>
                                 <h3 id="confirmTitle" className="text-3xl font-black text-black mb-2 leading-tight cat-font">Ready?</h3>
                                 <p id="confirmDesc" className="text-base text-slate-600 mb-8 font-bold cat-font">พร้อมสั่งอาหารทั้งหมดในตะกร้าเลยไหมครับ?</p>
-                                
+
                                 <div className="flex flex-col gap-3">
                                     <button id="confirmYes" onClick={() => { handleCheckout(); setShowConfirm(false); }} className="w-full py-4 bg-orange-500 text-black rounded-xl font-black border-4 border-black shadow-[4px_4px_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-lg cat-font">
                                         YES, EAT IT ALL!

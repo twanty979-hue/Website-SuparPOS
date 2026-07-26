@@ -4,18 +4,18 @@ import React, { useState, useEffect, useRef } from "react";
 const Icon = ({ name, size = 24, className = "" }: any) => {
   const icons = {
     // Home -> Townsville Skyline
-    home: <path d="M2 22 L12 2 L22 22 H2 Z M12 8 V16 M8 16 H16" strokeWidth="3" strokeLinejoin="round" />, 
+    home: <path d="M2 22 L12 2 L22 22 H2 Z M12 8 V16 M8 16 H16" strokeWidth="3" strokeLinejoin="round" />,
     // Menu -> Flask / Chemical X
     menu: <path d="M9 3h6v4l3 5v9H6v-9l3-5z M9 12h6" strokeWidth="3" strokeLinejoin="round" />,
-    search: <circle cx="11" cy="11" r="8" />, 
+    search: <circle cx="11" cy="11" r="8" />,
     // Basket -> Heart
     basket: <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />,
     // Clock -> Hotline Phone
     clock: <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />,
     // Chef -> Mojo Jojo Hat / Villain
-    chef: <path d="M2 12h20M4 12V6a8 8 0 0 1 16 0v6" />, 
+    chef: <path d="M2 12h20M4 12V6a8 8 0 0 1 16 0v6" />,
     // Star -> Sparkle
-    star: <path d="M12 2l3 9h9l-7 5 3 9-8-6-8 6 3-9-7-5h9z" />, 
+    star: <path d="M12 2l3 9h9l-7 5 3 9-8-6-8 6 3-9-7-5h9z" />,
     plus: <path d="M5 12h14M12 5v14" />,
     minus: <path d="M5 12h14" />,
     x: <path d="M18 6 6 18M6 6l12 12" />,
@@ -30,18 +30,18 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
   };
 
   const content = (icons as any)[name] || icons.home;
-  
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       {content}
@@ -58,7 +58,7 @@ export default function App({ state, actions, helpers }: any) {
     banners, currentBannerIndex, categories, selectedCategoryId,
     products, filteredProducts, selectedProduct,
     cart, cartTotal, ordersList
-  } = state || {}; 
+  } = state || {};
 
   const {
     setActiveTab, setSelectedCategoryId, setSelectedProduct,
@@ -70,17 +70,30 @@ export default function App({ state, actions, helpers }: any) {
   } = helpers || {};
 
   // Local state
-  const [variant, setVariant] = useState('normal'); 
+  const [variant, setVariant] = useState('normal');
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingCookNow, setPendingCookNow] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<any>({});
 
   useEffect(() => {
     if (selectedProduct) {
       setVariant('normal');
       setQty(1);
       setNote("");
+
+      const initialOptions: any = {};
+      if (selectedProduct.options && Array.isArray(selectedProduct.options)) {
+        selectedProduct.options.forEach((opt: any, index: number) => {
+            if (opt.type === 'single' && opt.required && opt.choices.length > 0) {
+                initialOptions[index] = [opt.choices[0]];
+            } else {
+                initialOptions[index] = [];
+            }
+        });
+      }
+      setSelectedOptions(initialOptions);
     }
   }, [selectedProduct]);
 
@@ -90,12 +103,12 @@ export default function App({ state, actions, helpers }: any) {
   useEffect(() => {
     if (pendingCookNow) {
         if (cart?.length > prevCartLength.current) {
-             handleCheckout(""); 
+             handleCheckout("");
              setPendingCookNow(false);
         }
         const timer = setTimeout(() => {
              if(pendingCookNow) {
-                 handleCheckout(""); 
+                 handleCheckout("");
                  setPendingCookNow(false);
              }
         }, 1000);
@@ -104,25 +117,104 @@ export default function App({ state, actions, helpers }: any) {
     prevCartLength.current = cart?.length || 0;
   }, [cart, pendingCookNow, handleCheckout]);
 
-
   if (loading && !isVerified) return <div className="min-h-screen bg-[#fdf2f8] flex items-center justify-center text-[#f472b6] font-black text-2xl">LOADING...</div>;
 
-  const currentPriceObj = selectedProduct 
-    ? calculatePrice(selectedProduct, variant) 
-    : { final: 0 };
+  const generateOptionNote = () => {
+    if (!selectedProduct?.options) return note;
+    let optTexts: string[] = [];
+    selectedProduct.options.forEach((opt: any, index: number) => {
+        const selectedChoices = selectedOptions[index];
+        if (selectedChoices && selectedChoices.length > 0) {
+            optTexts.push(`${opt.name}: ${selectedChoices.map((choice: any) => choice.name).join(', ')}`);
+        }
+    });
+    const optionsString = optTexts.length > 0 ? `[${optTexts.join(' | ')}] ` : "";
+    return (optionsString + note).trim();
+  };
+
+  const selectedToppings = selectedProduct?.options
+    ? selectedProduct.options.flatMap((opt: any, index: number) =>
+        (selectedOptions[index] || []).map((choice: any) => ({
+          group_id: opt.id,
+          group_name: opt.name,
+          topping_id: choice.id,
+          topping_name: choice.name,
+          image_name: choice.image_name || null,
+          image_url: choice.image_url || choice.image_name || null,
+          price: Number(choice.price || 0),
+        }))
+      )
+    : [];
+
+  const toppingTotal = selectedToppings.reduce((sum: number, item: any) => sum + Number(item.price || 0), 0);
+  const basePriceObj = selectedProduct ? calculatePrice(selectedProduct, variant) : { final: 0, original: 0, discount: 0 };
+  const finalPriceWithOpts = basePriceObj.final + toppingTotal;
+
+  const parseOriginalPrice = (orig: any) => {
+    if (!orig) return 0;
+    if (typeof orig === 'number') return orig;
+    const parsed = parseFloat(String(orig).replace(/[^0-9.]/g, ''));
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const originalPriceVal = parseOriginalPrice(basePriceObj.original) || (Number(basePriceObj.final) + Number(basePriceObj.discount || 0));
+  const originalPriceWithOpts = originalPriceVal + toppingTotal;
+
+  const handleOptionToggle = (groupIndex: number, choice: any, type: string) => {
+      setSelectedOptions((prev: any) => {
+          const currentSelected = prev[groupIndex] || [];
+          const choiceKey = String(choice.id || choice.name);
+          const isRequired = !!selectedProduct?.options?.[groupIndex]?.required;
+          const isAlreadySelected = currentSelected.some((item: any) => String(item.id || item.name) === choiceKey);
+          if (type === 'single') {
+              if (isAlreadySelected && !isRequired) {
+                  return { ...prev, [groupIndex]: [] };
+              }
+              return { ...prev, [groupIndex]: [choice] };
+          } else {
+              if (isAlreadySelected) {
+                  return { ...prev, [groupIndex]: currentSelected.filter((item: any) => String(item.id || item.name) !== choiceKey) };
+              } else {
+                  return { ...prev, [groupIndex]: [...currentSelected, choice] };
+              }
+          }
+      });
+  };
+
+  const getChoiceImageUrl = (choice: any) => {
+      const img = choice.image_url || choice.image_name;
+      if (!img) return null;
+      if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')) {
+          return img;
+      }
+      return getMenuUrl(img);
+  };
 
   // --- 📝 Robust Data Passing ---
   const handleAdd = (addToCartOnly = true) => {
     if (!selectedProduct) return;
-    const finalNote = note ? note.trim() : ""; 
-    
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
-        specialRequest: finalNote, 
+        specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: originalPriceWithOpts,
+        toppings_snapshot: selectedToppings,
     };
 
     if (addToCartOnly) {
@@ -131,22 +223,35 @@ export default function App({ state, actions, helpers }: any) {
         }
         setSelectedProduct(null);
     } else {
-        if (cart && cart.length > 0) setShowConfirm(true); 
+        if (cart && cart.length > 0) setShowConfirm(true);
         else performCookNow();
     }
   };
 
   const performCookNow = () => {
-    const finalNote = note ? note.trim() : "";
-    const productToAdd = { 
-        ...selectedProduct, 
-        variant: variant, 
+    if (selectedProduct.options) {
+        for (let i = 0; i < selectedProduct.options.length; i++) {
+            const opt = selectedProduct.options[i];
+            if (opt.required && (!selectedOptions[i] || selectedOptions[i].length === 0)) {
+                alert(`กรุณาเลือก: ${opt.name}`);
+                return;
+            }
+        }
+    }
+
+    const finalNote = generateOptionNote();
+    const productToAdd = {
+        ...selectedProduct,
+        variant: variant,
         note: finalNote,
         specialRequest: finalNote,
         comment: finalNote,
-        remark: finalNote
+        remark: finalNote,
+        price: finalPriceWithOpts,
+        original_price: originalPriceWithOpts,
+        toppings_snapshot: selectedToppings,
     };
-    
+
     for(let i=0; i<qty; i++) {
         handleAddToCart(productToAdd, variant, finalNote);
     }
@@ -161,15 +266,15 @@ export default function App({ state, actions, helpers }: any) {
 
   return (
     // Theme: Powerpuff Girls - Townsville Diner
-    <div className="w-full max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-zinc-900 bg-white font-sans text-[#1e1b4b]">
-        
+    <div className="w-full max-w-md md:max-w-xl xl:max-w-md mx-auto min-h-screen pb-32 relative overflow-x-hidden border-x-4 border-zinc-900 bg-white font-sans text-[#1e1b4b]">
+
         {/* CSS Styles */}
         <style dangerouslySetInnerHTML={{__html: `
             @import url('https://fonts.googleapis.com/css2?family=Itim&family=Mali:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap');
-            
+
             :root {
                 /* Powerpuff Palette */
-                --blossom-pink: #f472b6; 
+                --blossom-pink: #f472b6;
                 --bubbles-blue: #38bdf8;
                 --buttercup-green: #4ade80;
                 --chemical-x-black: #18181b;
@@ -181,7 +286,7 @@ export default function App({ state, actions, helpers }: any) {
                 font-family: 'Itim', 'Sarabun', sans-serif;
                 background-color: var(--bg-townsville);
                 /* Heart & Star Pattern */
-                background-image: 
+                background-image:
                     radial-gradient(circle at 10% 20%, rgba(244, 114, 182, 0.1) 20%, transparent 21%),
                     radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.1) 15%, transparent 16%),
                     radial-gradient(circle at 50% 50%, rgba(74, 222, 128, 0.1) 25%, transparent 26%);
@@ -250,7 +355,7 @@ export default function App({ state, actions, helpers }: any) {
             .page-transition {
                 animation: bounceIn 0.8s;
             }
-            
+
             @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
             /* Item Card - Sticker / Comic Style */
@@ -263,7 +368,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 8px 8px 0px var(--blossom-pink);
                 overflow: hidden;
             }
-            
+
             .item-card:hover, .item-card:active {
                 transform: translate(-4px, -4px);
                 box-shadow: 12px 12px 0px var(--bubbles-blue);
@@ -287,7 +392,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 4px 4px 0px var(--blossom-pink);
                 transition: all 0.2s;
             }
-            
+
             .btn-power:active {
                 transform: translate(4px, 4px);
                 box-shadow: 0px 0px 0px var(--blossom-pink);
@@ -300,7 +405,7 @@ export default function App({ state, actions, helpers }: any) {
                 box-shadow: 0 0 15px var(--buttercup-green);
                 transform: scale(1.05) rotate(-1deg);
             }
-            
+
             .tab-btn {
                 transition: all 0.3s;
                 background: white;
@@ -326,7 +431,7 @@ export default function App({ state, actions, helpers }: any) {
         <header className="bg-zinc-900 text-white pt-10 pb-16 px-6 rounded-b-[4rem] relative overflow-hidden shadow-xl z-10 border-b-8 border-pink-500">
              {/* City Skyline Silhouette Overlay */}
              <div className="absolute bottom-0 left-0 w-full h-24 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/city.png')]"></div>
-             
+
              <div className="flex justify-between items-center relative z-10 mt-2">
                  <div>
                      <div className="flex items-center gap-2 mb-2 bg-pink-500 w-fit px-4 py-1.5 rounded-full border-2 border-white shadow-sm transform -rotate-1">
@@ -351,10 +456,10 @@ export default function App({ state, actions, helpers }: any) {
                 <div className="trail-blue"></div>
                 <div className="trail-green"></div>
              </div>
-        </header>
+         </header>
 
         <main className="px-5 -mt-8 relative z-20">
-            
+
             {/* --- HOME PAGE --- */}
             {activeTab === 'home' && (
                 <section className="page-transition">
@@ -362,9 +467,9 @@ export default function App({ state, actions, helpers }: any) {
                     {banners?.length > 0 && (
                         <div className="relative w-full h-56 bg-white rounded-[3rem] overflow-hidden shadow-2xl mb-10 border-4 border-zinc-900 p-2 group animate-hero">
                              <div className="h-full w-full rounded-[2.5rem] overflow-hidden bg-sky-100 relative">
-                                 <img 
-                                    src={getBannerUrl(banners[currentBannerIndex].image_name)} 
-                                    className="w-full h-full object-cover opacity-100 group-hover:opacity-100 transition-opacity" 
+                                 <img
+                                    src={getBannerUrl(banners[currentBannerIndex].image_name)}
+                                    className="w-full h-full object-cover opacity-100 group-hover:opacity-100 transition-opacity"
                                  />
                              </div>
                              <div className="absolute top-4 right-4 bg-yellow-400 text-zinc-900 px-6 py-2 rounded-xl border-4 border-zinc-900 shadow-lg transform rotate-6">
@@ -383,7 +488,7 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5 pb-10">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-5 pb-10">
                         {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
@@ -433,7 +538,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2 px-1">
                         {categories?.map((c: any) => (
-                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} 
+                            <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}
                                     className={`tab-btn shrink-0 px-8 py-3 text-lg font-bold hero-font ${selectedCategoryId === c.id ? 'tab-active' : ''}`}>
                                 <span>{c.name}</span>
                             </button>
@@ -542,9 +647,9 @@ export default function App({ state, actions, helpers }: any) {
                  <button onClick={() => setActiveTab('cart')} className="absolute w-20 h-20 bg-zinc-900 rounded-full shadow-lg flex items-center justify-center text-white border-4 border-white active:scale-90 transition-all duration-100 z-20 group hover:bg-zinc-800">
                      <Icon name="basket" size={32} />
                      {cart?.length > 0 && (
-                         <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center border-2 border-white animate-hero">
+                          <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center border-2 border-white animate-hero">
                              {cart.length}
-                         </span>
+                          </span>
                      )}
                  </button>
              </div>
@@ -558,30 +663,30 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ITEM DETAIL MODAL --- */}
         {selectedProduct && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-indigo-950/70 backdrop-blur-sm animate-hero">
-                <div className="w-full max-w-md bg-white border-t-8 border-pink-500 h-auto max-h-[95vh] overflow-y-auto no-scrollbar shadow-2xl rounded-t-[4rem] relative">
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center xl:items-end justify-center bg-indigo-950/70 backdrop-blur-sm animate-hero">
+                <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white border-t-8 border-pink-500 h-auto max-h-[95vh] md:max-h-[85vh] xl:max-h-[95vh] flex flex-col overflow-hidden shadow-2xl rounded-t-[4rem] md:rounded-[4rem] xl:rounded-none xl:rounded-t-[4rem] relative">
                     <div className="relative">
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-30 w-12 h-12 bg-white text-zinc-900 rounded-full border-4 border-zinc-900 flex items-center justify-center hover:bg-red-50 transition-colors shadow-md active:scale-90">
                             <Icon name="x" strokeWidth={4} />
                         </button>
-                        <div className="relative w-full h-85 overflow-hidden border-b-8 border-zinc-900 rounded-b-[3.5rem] bg-pink-50">
+                        <div className="relative w-full h-85 shrink-0 md:h-52 xl:h-85 overflow-hidden border-b-8 border-zinc-900 rounded-b-[3.5rem] bg-pink-50">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-yellow-400 text-zinc-900 font-black text-3xl hero-font rounded-2xl border-4 border-zinc-900 shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
-                                    {currentPriceObj.discount > 0 && (
+                                    {basePriceObj.discount > 0 && (
                                         <span className="text-sm line-through text-zinc-600 decoration-red-500 decoration-4 mb-1">
-                                            {currentPriceObj.original}
+                                            {originalPriceWithOpts}.-
                                         </span>
                                     )}
-                                    <span>{currentPriceObj.final}.-</span>
+                                    <span>{finalPriceWithOpts}.-</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-8 pt-10 pb-32 relative">
+                    <div className="px-8 pt-10 pb-6 relative flex-1 overflow-y-auto no-scrollbar">
                         <h2 className="text-4xl hero-font text-zinc-900 mb-6 leading-tight drop-shadow-sm uppercase tracking-widest">{selectedProduct.name}</h2>
-                        
+
                         <div className="space-y-6">
                             {/* --- 3 PRICES VARIANT SELECTOR --- */}
                             <div>
@@ -591,26 +696,29 @@ export default function App({ state, actions, helpers }: any) {
                                         { key: 'normal', label: 'MINI', icon: 'star', ...calculatePrice(selectedProduct, 'normal') },
                                         selectedProduct.price_special && { key: 'special', label: 'SUPER', icon: 'star', ...calculatePrice(selectedProduct, 'special') },
                                         selectedProduct.price_jumbo && { key: 'jumbo', label: 'ULTRA', icon: 'star', ...calculatePrice(selectedProduct, 'jumbo') }
-                                    ].filter(Boolean).map((v) => (
-                                        <button 
-                                            key={v.key} 
-                                            onClick={() => setVariant(v.key)}
-                                            className={`p-2 rounded-2xl border-4 transition-all flex flex-col items-center justify-between h-28 hero-font
-                                                ${variant === v.key 
-                                                    ? 'bg-zinc-900 border-zinc-900 shadow-lg -translate-y-1 text-white' 
-                                                    : 'bg-white border-zinc-200 text-zinc-400 hover:border-zinc-900 hover:text-zinc-900'}`}
-                                        >
-                                            <span className="text-sm font-black tracking-widest">{v.label}</span>
-                                            <Icon name={v.icon || "star"} size={24} className={variant === v.key ? "text-[#facc15]" : "text-gray-300"} />
-                                            
-                                            <div className="flex flex-col items-center leading-none mt-1">
-                                                {v.discount > 0 && (
-                                                    <span className="text-[10px] line-through decoration-white decoration-2">{v.original}</span>
-                                                )}
-                                                <span className="text-2xl font-black">{v.final}.-</span>
-                                            </div>
-                                        </button>
-                                    ))}
+                                    ].filter(Boolean).map((v) => {
+                                        const origPriceVal = parseOriginalPrice(v.original) || (Number(v.final) + Number(v.discount || 0));
+                                        return (
+                                            <button
+                                                key={v.key}
+                                                onClick={() => setVariant(v.key)}
+                                                className={`p-2 rounded-2xl border-4 transition-all flex flex-col items-center justify-between h-28 hero-font
+                                                    ${variant === v.key
+                                                        ? 'bg-zinc-900 border-zinc-900 shadow-lg -translate-y-1 text-white'
+                                                        : 'bg-white border-zinc-200 text-zinc-400 hover:border-zinc-900 hover:text-zinc-900'}`}
+                                            >
+                                                <span className="text-sm font-black tracking-widest">{v.label}</span>
+                                                <Icon name={v.icon || "star"} size={24} className={variant === v.key ? "text-[#facc15]" : "text-gray-300"} />
+
+                                                <div className="flex flex-col items-center leading-none mt-1">
+                                                    {v.discount > 0 && (
+                                                        <span className="text-[10px] line-through decoration-white decoration-2">{origPriceVal}</span>
+                                                    )}
+                                                    <span className="text-2xl font-black">{v.final}.-</span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -623,30 +731,108 @@ export default function App({ state, actions, helpers }: any) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-1 hero-font">Power Cost</p>
-                                    <p className="text-4xl font-black text-zinc-900 hero-font">{currentPriceObj.final * qty}.-</p>
+                                    <p className="text-4xl font-black text-zinc-900 hero-font">{finalPriceWithOpts * qty}.-</p>
                                 </div>
                             </div>
+
+                            {/* --- Product Options --- */}
+                            {selectedProduct.options && Array.isArray(selectedProduct.options) && selectedProduct.options.length > 0 && (
+                                <div className="space-y-6 mt-4">
+                                    {selectedProduct.options.map((opt: any, groupIndex: number) => {
+                                        const selectedChoices = selectedOptions[groupIndex] || [];
+                                        return (
+                                            <div key={opt.id || groupIndex} className="bg-white p-6 border-4 border-zinc-900 rounded-[2.5rem] shadow-sm relative overflow-hidden">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xl font-black text-zinc-900 hero-font uppercase tracking-wider">{opt.name}</span>
+                                                        {opt.required && (
+                                                            <span className="bg-pink-500 text-white text-[10px] font-black px-3 py-1 rounded-full border-2 border-white shadow-sm hero-font transform -rotate-1">
+                                                                REQUIRED
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-xs text-gray-400 font-bold hero-font uppercase">
+                                                        {opt.type === 'single' ? 'Pick One' : 'Pick Many'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    {opt.choices.map((choice: any) => {
+                                                        const choiceKey = String(choice.id || choice.name);
+                                                        const isSelected = selectedChoices.some((item: any) => String(item.id || item.name) === choiceKey);
+                                                        const choiceImage = choice.image_url || choice.image_name;
+
+                                                        return (
+                                                            <button
+                                                                key={choiceKey}
+                                                                type="button"
+                                                                onClick={() => handleOptionToggle(groupIndex, choice, opt.type)}
+                                                                className={`p-3 rounded-[1.5rem] border-4 transition-all flex flex-col justify-between items-stretch text-center min-h-[120px] relative overflow-hidden hero-font
+                                                                    ${isSelected
+                                                                        ? 'bg-zinc-900 border-zinc-900 shadow-md text-white'
+                                                                        : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-900'}`}
+                                                            >
+                                                                {/* Check indicator */}
+                                                                <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 z-10
+                                                                    ${isSelected
+                                                                        ? 'border-white bg-[#4ade80]'
+                                                                        : 'border-zinc-300 bg-white'}`}>
+                                                                    {isSelected && (
+                                                                        <span className="text-white font-black text-xs">✓</span>
+                                                                    )}
+                                                                </div>
+
+                                                                {choiceImage ? (
+                                                                    <div className="w-full h-20 rounded-xl overflow-hidden border-2 border-zinc-900 bg-[#fdf2f8] mb-2 shrink-0">
+                                                                        <img
+                                                                            src={getChoiceImageUrl(choice)}
+                                                                            alt={choice.name}
+                                                                            className="w-full h-full object-cover"
+                                                                            onError={(e: any) => {
+                                                                                e.target.style.display = 'none';
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                ) : null}
+
+                                                                <div className="flex-1 flex flex-col justify-center items-center leading-tight">
+                                                                    <span className="font-black text-sm text-center uppercase tracking-wide">{choice.name}</span>
+                                                                    {Number(choice.price || 0) > 0 && (
+                                                                        <span className={`text-xs font-black mt-1 ${isSelected ? 'text-[#facc15]' : 'text-[#f472b6]'}`}>
+                                                                            +{choice.price}.-
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
                             {/* 📝 Item Note Input */}
                             <div className="relative">
                                 <label className="block text-xl font-bold text-zinc-900 mb-2 hero-font uppercase tracking-wider">MESSAGE:</label>
-                                <textarea 
+                                <textarea
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="Instructions for the Professor..." 
+                                    placeholder="Instructions for the Professor..."
                                     className="w-full p-6 bg-zinc-50 border-4 border-zinc-900 rounded-[2.5rem] focus:border-pink-500 focus:outline-none h-36 resize-none text-xl font-bold text-zinc-800 placeholder:text-zinc-300 transition-colors shadow-inner hero-font"
                                 />
                             </div>
                         </div>
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-10">
-                            <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-zinc-900 text-zinc-900 font-black text-xl rounded-2xl active:scale-95 transition-all shadow-[6px_6px_0_#38bdf8] hero-font">
-                                Stash It
-                            </button>
-                            <button onClick={() => handleAdd(false)} className="py-5 btn-power text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hero-font">
-                                ACTION! <Icon name="flame" size={24} />
-                            </button>
-                        </div>
+                    <div className="shrink-0 w-full p-5 md:p-6 bg-white border-t-8 border-zinc-900 grid grid-cols-2 gap-5 z-30">
+                        <button onClick={() => handleAdd(true)} className="py-5 bg-white border-4 border-zinc-900 text-zinc-900 font-black text-xl rounded-2xl active:scale-95 transition-all shadow-[6px_6px_0_#38bdf8] hero-font">
+                            Stash It
+                        </button>
+                        <button onClick={() => handleAdd(false)} className="py-5 btn-power text-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hero-font">
+                            ACTION! <Icon name="flame" size={24} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -654,18 +840,18 @@ export default function App({ state, actions, helpers }: any) {
 
         {/* --- ORDER SUMMARY MODAL --- */}
         <div id="orderSummaryOverlay" className={`fixed inset-0 bg-indigo-950/80 z-[130] hidden backdrop-blur-sm animate__animated animate__fadeIn ${activeTab === 'cart' ? 'block' : 'hidden'}`} onClick={() => setActiveTab('menu')}></div>
-        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t-[10px] border-zinc-900 z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div id="orderSummary" className={`fixed bottom-0 left-0 right-0 max-w-md md:max-w-xl xl:max-w-md mx-auto bg-white border-t-[10px] border-zinc-900 z-[140] flex flex-col shadow-2xl h-[92vh] rounded-t-[4rem] md:rounded-t-[4rem] md:rounded-[4rem] xl:rounded-none xl:rounded-t-[4rem] transition-transform duration-300 ${activeTab === 'cart' ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="sticky top-0 bg-white z-20 rounded-t-[4rem] border-b-4 border-zinc-50 p-4 cursor-pointer" onClick={() => setActiveTab('menu')}>
                 <div className="w-24 h-2 bg-zinc-200 rounded-full mx-auto mt-2 opacity-30"></div>
             </div>
-            
+
             <div className="flex justify-between items-center mb-6 px-10 pt-8">
                 <h2 className="text-4xl hero-font text-zinc-900 transform -rotate-1 tracking-widest">Inventory</h2>
                 <div className="w-14 h-14 bg-pink-100 text-pink-500 border-4 border-zinc-900 rounded-2xl flex items-center justify-center font-black text-2xl hero-font shadow-lg">
                     <span>{cart.reduce((a: any, b: any) => a + b.quantity, 0)}</span>
                 </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto space-y-6 px-8 pb-4 no-scrollbar">
                 {cart.map((item: any, idx: any) => (
                     <div key={idx} className="flex items-center gap-4 bg-white p-4 border-4 border-zinc-900 rounded-[2rem] shadow-sm relative overflow-hidden hover:shadow-md hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
@@ -724,18 +910,18 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="w-28 h-28 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-zinc-900 shadow-lg relative z-10 animate-hero">
                         <Icon name="shield" size={60} />
                     </div>
-                    
+
                     {selectedProduct ? (
                          <>
                             <h3 className="text-3xl hero-font text-zinc-900 mb-4 leading-tight relative z-10 uppercase tracking-widest">Backup Arrived!</h3>
                             <p className="text-lg text-zinc-500 mb-10 font-bold hero-font relative z-10">Add "{selectedProduct.name}" to your stash?</p>
                             <div className="flex flex-col gap-4 relative z-10">
-                                <button onClick={() => { 
-                                    performCookNow(); 
-                                    setShowConfirm(false); 
+                                <button onClick={() => {
+                                    performCookNow();
+                                    setShowConfirm(false);
                                 }} className="w-full py-5 bg-zinc-900 text-white font-black border-4 border-white shadow-xl active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all text-2xl hero-font uppercase">YES! GO TEAM!</button>
-                                
-                                <button onClick={() => { 
+
+                                <button onClick={() => {
                                     handleAdd(true);
                                     setShowConfirm(false);
                                 }} className="w-full py-5 bg-white border-4 border-zinc-200 text-zinc-300 font-black text-lg active:scale-95 transition-transform hover:bg-zinc-50 hero-font uppercase">Just Add</button>

@@ -61,14 +61,26 @@ import MinimalEarth from "@/components/themes/MinimalEarth"
 import DarkLuxury from "@/components/themes/DarkLuxury"
 import LeafGreen from "@/components/themes/LeafGreen"
 import CozyWood from "@/components/themes/CozyWood"
+import SiamMidnight from "@/components/themes/SiamMidnight"
+import OmakaseInk from "@/components/themes/OmakaseInk"
+import MediterraneanMosaic from "@/components/themes/MediterraneanMosaic"
+import EspressoBlueprint from "@/components/themes/EspressoBlueprint"
+import GlacierGlass from "@/components/themes/GlacierGlass"
+import ObsidianGold from "@/components/themes/ObsidianGold"
+import WarmGrid from "@/components/themes/WarmGrid"
+import Y2KSnackBar from "@/components/themes/Y2KSnackBar"
+import RamadanMoonTable from "@/components/themes/RamadanMoonTable"
+import VeganBotanica from "@/components/themes/VeganBotanica"
 
 // 🌟 1. ประกาศ URL ของ Cloudflare ตรงนี้
 const CDN_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "https://img.pos-foodscan.com";
 
-export default function Page({ params }: { params: any }) {
+export default function Page({ params, searchParams }: { params: any, searchParams?: any }) {
+  const resolvedParams = React.use(params);
+  const resolvedSearchParams = (searchParams ? React.use(searchParams) : {}) as { theme?: string };
 
   // ดึง state และ actions มาตามปกติ
-  const { state, actions, helpers: originalHelpers } = useShopLogic(params);
+  const { state, actions, helpers: originalHelpers } = useShopLogic(resolvedParams);
   
   const { loading, error, brand } = state;
 
@@ -105,7 +117,7 @@ export default function Page({ params }: { params: any }) {
       );
   }
 
-  const themeMode = brand.theme_mode || 'mkinimalearth';
+  const themeMode = resolvedSearchParams?.theme || brand.theme_mode || 'mkinimalearth';
 
   // 🌟 3. ส่ง helpers ตัวใหม่ (ที่ดัดแปลงแล้ว) ลงไปให้ทุกธีม!
   switch (themeMode) {
@@ -161,6 +173,16 @@ export default function Page({ params }: { params: any }) {
     case 'football': return <StadiumEats state={state} actions={actions} helpers={helpers} />;
     case 'blue': return <PremiumBlue state={state} actions={actions} helpers={helpers} />;
     case 'warmsavory': return <WarmSavoryOrange state={state} actions={actions} helpers={helpers} />;
+    case 'siammidnight': return <SiamMidnight state={state} actions={actions} helpers={helpers} />;
+    case 'omakaseink': return <OmakaseInk state={state} actions={actions} helpers={helpers} />;
+    case 'mediterraneanmosaic': return <MediterraneanMosaic state={state} actions={actions} helpers={helpers} />;
+    case 'espressoblueprint': return <EspressoBlueprint state={state} actions={actions} helpers={helpers} />;
+    case 'glacierglass': return <GlacierGlass state={state} actions={actions} helpers={helpers} />;
+    case 'obsidiangold': return <ObsidianGold state={state} actions={actions} helpers={helpers} />;
+    case 'warmgrid': return <WarmGrid state={state} actions={actions} helpers={helpers} />;
+    case 'y2ksnackbar': return <Y2KSnackBar state={state} actions={actions} helpers={helpers} />;
+    case 'ramadanmoontable': return <RamadanMoonTable state={state} actions={actions} helpers={helpers} />;
+    case 'veganbotanica': return <VeganBotanica state={state} actions={actions} helpers={helpers} />;
     case 'mkinimalearth': return <MinimalEarth state={state} actions={actions} helpers={helpers} />;
     case 'darkluxury': return <DarkLuxury state={state} actions={actions} helpers={helpers} />;
     case 'leafgreen': return <LeafGreen state={state} actions={actions} helpers={helpers} />;
