@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import dayjs from 'dayjs';
 
 // 🔧 CONFIG: แพ็กเกจฟรีรองรับ 100 ออเดอร์ต่อรอบ 30 วัน
-const MAX_FREE_ORDERS = 100;
+const MAX_FREE_ORDERS = 1000;
 
 // Helper สร้าง Supabase
 async function getSupabase() {
