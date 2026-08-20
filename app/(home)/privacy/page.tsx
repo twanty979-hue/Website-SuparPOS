@@ -112,6 +112,24 @@ export default function PrivacyPage() {
               </div>
             </section>
 
+            <hr className="border-slate-100" />
+
+            <section className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
+                  <i className="fa-solid fa-user-xmark"></i>
+                </div>
+                <h2 className="text-xl font-bold text-slate-800">4. การลบบัญชีและข้อมูล</h2>
+              </div>
+              <div className="pl-14 text-sm md:text-base space-y-3">
+                <p>คุณสามารถขอลบบัญชี SuparPOS และข้อมูลส่วนบุคคลที่เกี่ยวข้องได้ โดยเข้าสู่ระบบเพื่อยืนยันตัวตนก่อนส่งคำขอ</p>
+                <Link href="/delete-account" className="inline-flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-2.5 font-bold text-rose-700 transition hover:bg-rose-100">
+                  ส่งคำขอลบบัญชี <i className="fa-solid fa-arrow-right"></i>
+                </Link>
+                <p className="text-xs leading-5 text-slate-500">คำขอจะได้รับการตรวจสอบและดำเนินการภายใน 30 วัน โดยข้อมูลที่กฎหมายกำหนดให้เก็บรักษาอาจยังคงถูกเก็บไว้ตามระยะเวลาที่จำเป็น</p>
+              </div>
+            </section>
+
             {/* Footer Date */}
             <div className="pt-6 mt-8 border-t border-slate-100 text-center">
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">

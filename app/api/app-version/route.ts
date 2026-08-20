@@ -34,7 +34,9 @@ export async function GET() {
       );
     }
 
-    // Default response if table is not yet migrated or empty
+    // Default response if table is not yet migrated or empty.
+    // Keep every module enabled by default so an older database never hides
+    // a feature unintentionally.
     const defaultSettings = {
       maintenance_mode: false,
       maintenance_message: 'ระบบปิดปรับปรุงชั่วคราวเพื่อพัฒนาการบริการ คาดว่าจะเปิดให้บริการได้ปกติเร็วๆ นี้',
@@ -43,11 +45,33 @@ export async function GET() {
       android_min_version: '1.0.0',
       ios_min_version: '1.0.0',
       update_url: '',
-      modules: { pos: true, kitchen: true, receipt_history: true, inventory: true, dashboard: true, products: true, discounts: true, staff: true, tables: true, store_settings: true, themes: true, marketplace: true }
+      marketplace_enabled: true,
+      modules: {
+        pos: true,
+        kitchen: true,
+        receipt_history: true,
+        inventory: true,
+        dashboard: true,
+        products: true,
+        discounts: true,
+        staff: true,
+        tables: true,
+        store_settings: true,
+        themes: true,
+        marketplace: true,
+      },
+    };
+    const settings = {
+      ...defaultSettings,
+      ...(data || {}),
+      modules: {
+        ...defaultSettings.modules,
+        marketplace: data?.marketplace_enabled !== false,
+      },
     };
 
     return NextResponse.json(
-      { success: true, settings: data || defaultSettings },
+      { success: true, settings },
       { status: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {

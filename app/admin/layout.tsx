@@ -10,6 +10,7 @@ export default function AdminLayout({
   const menuItems = [
     { name: 'clear-test-data', href: '/admin' },
     { name: 'app-settings (ควบคุมแอป)', href: '/admin/app-settings' },
+    { name: 'account-deletion-requests', href: '/admin/account-deletion-requests' },
     { name: 'adphoto', href: '/admin/adphoto' },
     { name: 'brands', href: '/admin/brands' },
     { name: 'marketplace-categories', href: '/admin/marketplace-categories' },

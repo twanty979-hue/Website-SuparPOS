@@ -18,6 +18,14 @@ const IconBell = ({ size = 24 }) => (
     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
   </svg>
 );
+const IconMarketplace = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 10h18l-1.1-5H4.1L3 10Z" />
+    <path d="M5 10v9h14v-9" />
+    <path d="M9 19v-5h6v5" />
+    <path d="M3 10c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2" />
+  </svg>
+);
 const IconCheck = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="20 6 9 17 4 12" />
@@ -44,7 +52,8 @@ export default function AppSettingsPage() {
     latest_version: '1.0.0',
     android_min_version: '1.0.0',
     ios_min_version: '1.0.0',
-    update_url: ''
+    update_url: '',
+    marketplace_enabled: true,
   });
 
   const [notif, setNotif] = useState({ title: '', body: '' });
@@ -67,7 +76,8 @@ export default function AppSettingsPage() {
           latest_version: s.latest_version ?? '1.0.0',
           android_min_version: s.android_min_version ?? '1.0.0',
           ios_min_version: s.ios_min_version ?? '1.0.0',
-          update_url: s.update_url ?? ''
+          update_url: s.update_url ?? '',
+          marketplace_enabled: s.marketplace_enabled ?? true,
         });
       } else {
         setStatusMsg({ type: 'error', text: data.error || 'โหลดข้อมูลตั้งค่าล้มเหลว' });
@@ -139,6 +149,7 @@ export default function AppSettingsPage() {
   android_min_version TEXT DEFAULT '1.0.0',
   ios_min_version TEXT DEFAULT '1.0.0',
   update_url TEXT DEFAULT '',
+  marketplace_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -169,6 +180,7 @@ ON CONFLICT (id) DO NOTHING;`);
   android_min_version TEXT DEFAULT '1.0.0',
   ios_min_version TEXT DEFAULT '1.0.0',
   update_url TEXT DEFAULT '',
+  marketplace_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 INSERT INTO public.system_settings (id)
@@ -235,6 +247,27 @@ VALUES ('global') ON CONFLICT (id) DO NOTHING;`}
               placeholder="ระบบปิดปรับปรุง..."
               className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:border-[#5F8565] disabled:bg-slate-50 disabled:text-slate-400 transition-colors resize-none"
             />
+          </div>
+        </div>
+
+        {/* ── Marketplace visibility ── */}
+        <div className="bg-white border border-[#EFECE6] rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 bg-[#FAF9F5] border-b border-[#EFECE6]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <IconMarketplace size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#2C4A34]">Marketplace</p>
+                <p className="text-[10px] text-[#869E8D]">แสดงหรือซ่อนปุ่ม Marketplace ในแอปของทุกร้าน</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked={settings.marketplace_enabled}
+                onChange={e => setSettings({ ...settings, marketplace_enabled: e.target.checked })}
+                className="sr-only peer" />
+              <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-[#5F8565] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+            </label>
           </div>
         </div>
 

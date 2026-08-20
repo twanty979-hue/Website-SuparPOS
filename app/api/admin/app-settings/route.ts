@@ -32,6 +32,7 @@ async function broadcastSystemStatus(settings: {
   force_update: boolean;
   latest_version: string;
   update_url: string;
+  marketplace_enabled: boolean;
 }) {
   const supabase = getSupabaseAdmin();
 
@@ -62,6 +63,7 @@ async function broadcastSystemStatus(settings: {
         force_update: String(settings.force_update),
         latest_version: settings.latest_version,
         update_url: settings.update_url,
+        marketplace_enabled: String(settings.marketplace_enabled),
       },
       android: { priority: 'high' },
       apns: { headers: { 'apns-priority': '10' } },
@@ -97,6 +99,7 @@ export async function GET() {
           android_min_version: '1.0.0',
           ios_min_version: '1.0.0',
           update_url: '',
+          marketplace_enabled: true,
         })
         .select('*')
         .single();
@@ -131,6 +134,7 @@ export async function POST(request: Request) {
       'android_min_version',
       'ios_min_version',
       'update_url',
+      'marketplace_enabled',
     ];
 
     allowedKeys.forEach(key => {
@@ -158,6 +162,7 @@ export async function POST(request: Request) {
       force_update: data.force_update,
       latest_version: data.latest_version,
       update_url: data.update_url,
+      marketplace_enabled: data.marketplace_enabled !== false,
     }).catch(e => console.error('[FCM system_status] broadcast error:', e));
     // ─────────────────────────────────────────────────────────────────────────
 
