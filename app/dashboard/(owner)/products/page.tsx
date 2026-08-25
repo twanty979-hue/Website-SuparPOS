@@ -38,6 +38,8 @@ export default function ProductsPage() {
 
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  // Keep the editor focused: show one option group at a time instead of a long form.
+  const [expandedOptionIndex, setExpandedOptionIndex] = useState<number | null>(null);
 
   const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -342,10 +344,14 @@ export default function ProductsPage() {
     </div>
     <button
       type="button"
-      onClick={() => setFormData({
-        ...formData, 
-        options: [...(formData.options || []), { name: '', type: 'single', required: false, choices: [{name: '', price: 0}] }]
-      })}
+      onClick={() => {
+        const nextIndex = (formData.options || []).length;
+        setFormData({
+          ...formData,
+          options: [...(formData.options || []), { name: '', type: 'single', required: false, choices: [{name: '', price: 0}] }]
+        });
+        setExpandedOptionIndex(nextIndex);
+      }}
       className="w-full sm:w-auto text-xs font-black text-white bg-violet-600 px-4 py-2.5 rounded-xl hover:bg-violet-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-200 active:scale-95"
     >
       <IconPlus size={16} /> เพิ่มกลุ่มตัวเลือก
@@ -355,13 +361,21 @@ export default function ProductsPage() {
   <div className="space-y-4">
     {(formData.options || []).map((opt: any, optIndex: number) => (
       <div key={optIndex} className="overflow-hidden bg-white border border-slate-200 rounded-2xl relative group/opt shadow-sm">
-        <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setExpandedOptionIndex(expandedOptionIndex === optIndex ? null : optIndex)}
+          aria-expanded={expandedOptionIndex === optIndex}
+          className="flex w-full items-center gap-3 bg-slate-50/80 px-4 py-3 text-left transition-colors hover:bg-violet-50/70"
+        >
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-xs font-black text-white">{optIndex + 1}</span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-black text-slate-800">{opt.name || `กลุ่มตัวเลือกที่ ${optIndex + 1}`}</p>
-            <p className="text-[11px] text-slate-400">{opt.type === 'single' ? 'ลูกค้าเลือกได้ 1 รายการ' : 'ลูกค้าเลือกได้หลายรายการ'} · {opt.required ? 'ต้องเลือก' : 'ไม่บังคับ'}</p>
+            <p className="text-[11px] text-slate-400">{opt.type === 'single' ? 'เลือกได้ 1 อย่าง' : 'เลือกได้หลายอย่าง'} · {opt.required ? 'ต้องเลือก' : 'ไม่บังคับ'} · {opt.choices.length} รายการ</p>
           </div>
-        </div>
+          <span className={`mr-7 text-xs font-black text-violet-600 transition-transform ${expandedOptionIndex === optIndex ? 'rotate-180' : ''}`}>
+            <IconChevronDown size={18} />
+          </span>
+        </button>
         
         {/* ปุ่มลบกลุ่ม */}
         <button 
@@ -378,6 +392,8 @@ export default function ProductsPage() {
           <IconX size={14}/>
         </button>
 
+        {expandedOptionIndex === optIndex && (
+        <div className="border-t border-slate-100">
         {/* ตั้งค่ากลุ่ม */}
         <div className="flex flex-col gap-4 p-4 md:p-5">
           <div className="w-full">
@@ -500,6 +516,8 @@ export default function ProductsPage() {
         </div>
         </div>
       </div>
+        )}
+      </div>
     ))}
     
     {(!formData.options || formData.options.length === 0) && (
@@ -524,7 +542,7 @@ export default function ProductsPage() {
                 </label>
 
                 {/* Footer Buttons */}
-                <div className="pt-2 flex gap-3 pb-safe">
+                <div className="sticky bottom-0 -mx-6 flex gap-3 border-t border-slate-100 bg-white/95 px-6 pt-4 pb-safe backdrop-blur">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 rounded-xl font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 transition-colors">ยกเลิก</button>
                   <button type="submit" disabled={isSubmitting || isCropModalOpen} className="flex-[2] py-3.5 rounded-xl font-bold text-white bg-slate-900 shadow-lg shadow-slate-900/20 hover:bg-slate-800 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                       {isSubmitting ? <span className="animate-pulse">กำลังบันทึก...</span> : 'บันทึกเมนู'}

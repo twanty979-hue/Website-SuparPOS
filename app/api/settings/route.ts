@@ -32,6 +32,41 @@ const getSupabaseAndBrandId = async (request: Request) => {
   return { supabase, brandId: profile.brand_id, role: profile.role };
 };
 
+const tutorialModules = ['pos', 'menu', 'theme'] as const;
+type TutorialModule = typeof tutorialModules[number];
+type TutorialProgress = Record<TutorialModule, boolean>;
+
+function getTutorialProgress(config: unknown): TutorialProgress {
+  const source = config && typeof config === 'object' && !Array.isArray(config)
+    ? config as Record<string, unknown>
+    : {};
+  const nested = source.tutorial_progress && typeof source.tutorial_progress === 'object'
+    && !Array.isArray(source.tutorial_progress)
+    ? source.tutorial_progress as Record<string, unknown>
+    : {};
+
+  return tutorialModules.reduce((progress, tutorialModule) => {
+    const value = nested[tutorialModule] ?? source[`tutorial_${tutorialModule}`];
+    progress[tutorialModule] = typeof value === 'boolean' ? value : false;
+    return progress;
+  }, {} as TutorialProgress);
+}
+
+function withTutorialProgress(config: unknown): Record<string, unknown> {
+  const currentConfig = config && typeof config === 'object' && !Array.isArray(config)
+    ? { ...(config as Record<string, unknown>) }
+    : {};
+  const progress = getTutorialProgress(currentConfig);
+
+  return {
+    ...currentConfig,
+    tutorial_pos: progress.pos,
+    tutorial_menu: progress.menu,
+    tutorial_theme: progress.theme,
+    tutorial_progress: progress,
+  };
+}
+
 // 🌟 HELPER: ฟังก์ชันเช็ควันหมดอายุ
 function calculateEffectivePlan(brand: any) {
     const now = dayjs();
@@ -52,6 +87,9 @@ export async function GET(request: Request) {
       .single();
 
     if (error) throw error;
+
+    // Always expose all modules, including for brands created before tutorials existed.
+    brand.config = withTutorialProgress(brand.config);
 
     // 🌟 เช็ควันหมดอายุแบบเรียลไทม์
     const effectivePlan = calculateEffectivePlan(brand);
@@ -90,7 +128,10 @@ export async function POST(request: Request) {
       updateData.table_qr_mode = body.table_qr_mode;
     }
 
-    if (body.vat !== undefined || body.vat_mode !== undefined) {
+    const hasTutorialUpdate = body.tutorial_progress !== undefined
+      || tutorialModules.some((module) => body[`tutorial_${module}`] !== undefined);
+
+    if (body.vat !== undefined || body.vat_mode !== undefined || hasTutorialUpdate) {
       const { data: currentBrand, error: configError } = await supabase
         .from('brands')
         .select('config')
@@ -98,12 +139,43 @@ export async function POST(request: Request) {
         .single();
       if (configError) throw configError;
 
-      const currentConfig =
-        currentBrand?.config && typeof currentBrand.config === 'object'
-          ? currentBrand.config
-          : {};
+      const currentConfig = withTutorialProgress(currentBrand?.config);
       const vat = Number(body.vat ?? currentConfig.vat ?? 0);
       const vatMode = body.vat_mode ?? currentConfig.vat_mode ?? 'included';
+
+      const progress = getTutorialProgress(currentConfig);
+      if (body.tutorial_progress !== undefined) {
+        if (!body.tutorial_progress || typeof body.tutorial_progress !== 'object'
+          || Array.isArray(body.tutorial_progress)) {
+          return NextResponse.json(
+            { success: false, error: 'tutorial_progress must be an object' },
+            { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
+          );
+        }
+        for (const tutorialModule of tutorialModules) {
+          if (body.tutorial_progress[tutorialModule] !== undefined) {
+            if (typeof body.tutorial_progress[tutorialModule] !== 'boolean') {
+              return NextResponse.json(
+                { success: false, error: `tutorial_progress.${tutorialModule} must be boolean` },
+                { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
+              );
+            }
+            progress[tutorialModule] = body.tutorial_progress[tutorialModule];
+          }
+        }
+      }
+      for (const tutorialModule of tutorialModules) {
+        const key = `tutorial_${tutorialModule}`;
+        if (body[key] !== undefined) {
+          if (typeof body[key] !== 'boolean') {
+            return NextResponse.json(
+              { success: false, error: `${key} must be boolean` },
+              { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
+            );
+          }
+          progress[tutorialModule] = body[key];
+        }
+      }
 
       if (!Number.isFinite(vat) || vat < 0 || vat > 100) {
         return NextResponse.json(
@@ -122,6 +194,10 @@ export async function POST(request: Request) {
         ...currentConfig,
         vat,
         vat_mode: vatMode,
+        tutorial_pos: progress.pos,
+        tutorial_menu: progress.menu,
+        tutorial_theme: progress.theme,
+        tutorial_progress: progress,
       };
     }
 

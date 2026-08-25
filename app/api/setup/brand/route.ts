@@ -88,7 +88,21 @@ export async function POST(request: Request) {
       name: shopName,
       phone: shopPhone,
       plan: 'free',
-      status: 'trial'
+      status: 'trial',
+      // Keep tutorial completion state on the brand so every device for this
+      // shop sees the same onboarding progress from its first sign-in.
+      config: {
+        vat: 0,
+        service_charge: 0,
+        tutorial_pos: false,
+        tutorial_menu: false,
+        tutorial_theme: false,
+        tutorial_progress: {
+          pos: false,
+          menu: false,
+          theme: false,
+        },
+      },
     }).select().single();
 
     if (brandErr) throw brandErr;
