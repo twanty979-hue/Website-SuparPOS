@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // firebase-admin brings in jose through jwks-rsa. The Worker bundler resolves
+  // jose's `workerd` export, so include its browser build in Next's file trace.
+  outputFileTracingIncludes: {
+    '/*': ['./node_modules/jose/dist/browser/**/*'],
+  },
   async headers() {
     return [
       {
