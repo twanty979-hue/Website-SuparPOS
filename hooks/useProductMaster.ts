@@ -1,6 +1,6 @@
 // hooks/useProductMaster.ts
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase';
 import { 
     getMasterProducts, 
     getMasterCategories, 
@@ -17,11 +17,6 @@ const CDN_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "https://img.pos-foodsc
 
 export function useProductMaster() {
   const { showAlert, showConfirm } = useGlobalAlert(); // ✅ เอา showConfirm มาใช้ตอนลบด้วย
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

@@ -1,8 +1,8 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
 import { Boxes, ChefHat, QrCode, ShoppingCart } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 // ✅ Component โลโก้ (ดึงไฟล์รูปจาก public/icon.png)
 const LogoIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -72,11 +72,6 @@ export default function LandingClient() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [currentThemeIndex, setCurrentThemeIndex] = useState(0);
   const [isPhoneExiting, setIsPhoneExiting] = useState(false);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   useEffect(() => {
       let swapTimer: ReturnType<typeof setTimeout> | undefined;
