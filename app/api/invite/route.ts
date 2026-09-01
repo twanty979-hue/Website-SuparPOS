@@ -1,14 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-
-// ⚠️ สำคัญมาก: ตรงนี้ต้องเปลี่ยนมาใช้ SERVICE_ROLE_KEY เพื่อให้มีสิทธิ์เชิญคนอื่นนะครับนาย
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // คีย์แอดมินหลังบ้าน ห้ามหลุดไปหน้าบ้าน
-)
+import { getSupabaseAdmin } from '@/lib/supabaseServer'
 
 export async function POST(request: Request) {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
     const { email, role } = await request.json()
 
     if (!email) {

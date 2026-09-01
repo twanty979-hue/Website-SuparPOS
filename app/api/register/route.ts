@@ -1,12 +1,7 @@
 // app/api/register/route.ts
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { authRedirectTargets } from '../_authRedirect';
-
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+import { getSupabaseAnon } from '@/lib/supabaseServer';
 
 // ✅ 1. รองรับ OPTIONS สำหรับ Android/Flutter
 export async function OPTIONS() {
@@ -22,6 +17,7 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
+    const supabaseAdmin = getSupabaseAnon();
     const { email, password, source } = await request.json();
     const { callbackOrigin, returnTo } = authRedirectTargets(request, source);
     const callbackUrl = new URL('/auth/callback', callbackOrigin);

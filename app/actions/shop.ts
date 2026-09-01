@@ -3,6 +3,7 @@
 
 import 'server-only';
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabaseServer';
 import { checkOrderLimitOrThrow } from './limitGuard';
 import { sendBrandNotification } from '@/lib/brandNotifications';
 
@@ -24,12 +25,6 @@ const STANDARD_BANNERS = [
 ];
 
 // ✅ สร้าง Client
-const supabaseServer = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
-
 type ShopParams = {
   brandId: string;
   combinedId: string;
@@ -198,6 +193,7 @@ const getImageUrl = (imageName: string | null) => {
 
 // --- Action 1: ดึงข้อมูลร้านค้า (Initial Data) ---
 export async function fetchShopData(params: ShopParams) {
+  const supabaseServer = getSupabaseAdmin();
   const { brandId, combinedId, slug } = params;
   const realTableId = combinedId?.substring(0, 36);
   const providedCode = combinedId?.substring(36);
@@ -357,6 +353,7 @@ export async function fetchShopData(params: ShopParams) {
 
 // --- Action 2: สั่งซื้อสินค้า (Checkout) - คงเดิม ---
 export async function fetchShopOrderStatus(params: ShopParams) {
+  const supabaseServer = getSupabaseAdmin();
   const { brandId, combinedId } = params;
   const realTableId = combinedId?.substring(0, 36);
   const providedCode = combinedId?.substring(36);
@@ -405,6 +402,7 @@ export async function submitOrder(payload: {
   totalPrice: number;
   cart: any[];
 }) {
+  const supabaseServer = getSupabaseAdmin();
   const { brandId, combinedId, tableLabel, cart } = payload;
   const realTableId = combinedId?.substring(0, 36);
   const providedCode = combinedId?.substring(36);

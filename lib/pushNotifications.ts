@@ -1,12 +1,6 @@
 import admin from 'firebase-admin';
-import { createClient } from '@supabase/supabase-js';
 import { getFirebaseAdmin } from './firebaseAdmin';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } },
-);
+import { getSupabaseAdmin } from './supabaseServer';
 
 type ProfilePushOptions = {
   profileIds: string[];
@@ -24,6 +18,7 @@ export async function sendProfilePush({
   data = {},
 }: ProfilePushOptions) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const uniqueProfileIds = [...new Set(profileIds.filter(Boolean))];
     if (uniqueProfileIds.length === 0) return { success: false, reason: 'no_recipients' };
 

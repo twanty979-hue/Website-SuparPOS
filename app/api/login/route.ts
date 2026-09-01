@@ -1,11 +1,6 @@
 // app/api/login/route.ts
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+import { getSupabaseAnon } from '@/lib/supabaseServer';
 
 // ✅ 1. เพิ่มฟังก์ชัน OPTIONS เพื่อรองรับการยิงจาก Android/Flutter (CORS Preflight)
 export async function OPTIONS() {
@@ -21,6 +16,7 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
+    const supabaseAdmin = getSupabaseAnon();
     const { email, password } = await request.json();
 
     // ล็อกอินผ่าน Supabase

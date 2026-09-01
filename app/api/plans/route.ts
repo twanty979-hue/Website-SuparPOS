@@ -1,12 +1,7 @@
 // app/api/plans/route.ts
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-// ใช้ Admin Client เพื่อทะลุ RLS คิวรีราคาและประวัติ
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -21,6 +16,7 @@ export async function OPTIONS() {
 
 export async function GET(request: Request) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const authHeader = request.headers.get('authorization');
     if (!authHeader) throw new Error('Unauthorized');
 

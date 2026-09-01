@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendBrandNotification } from '@/lib/brandNotifications';
+import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 type PlanKey = 'basic' | 'pro' | 'ultimate';
 type BillingPeriod = 'monthly' | 'yearly';
@@ -21,11 +22,6 @@ const NON_BLOCKING_EVENTS = new Set([
   'SUBSCRIPTION_PAUSED',
   'TRANSFER',
 ]);
-
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(req: NextRequest) {
   try {
@@ -274,6 +270,7 @@ async function applyPlanPurchase(params: {
   transactionId: string;
   eventType: string;
 }) {
+  const supabaseAdmin = getSupabaseAdmin();
   const { brandId, plan, period, expiryDate, event, productId, transactionId, eventType } = params;
 
   const eventId = String(event.id ?? transactionId ?? `${brandId}_${productId}_${eventType}_${expiryDate}`);
@@ -391,6 +388,7 @@ async function logRevenueCatEvent(
   transactionId: string,
   eventType: string
 ) {
+  const supabaseAdmin = getSupabaseAdmin();
   const eventId = String(event.id ?? transactionId ?? `${brandId}_${productId}_${eventType}`);
   const chargeId = `revenuecat_${eventId}`;
 
@@ -420,6 +418,7 @@ async function logRevenueCatEvent(
 }
 
 async function refreshEffectivePlan(brandId: string) {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: brand, error } = await supabaseAdmin
     .from('brands')
     .select('*')
@@ -449,6 +448,7 @@ function calculateEffectivePlan(brand: any) {
 }
 
 async function calculateBonusCoins(plan: PlanKey, period: BillingPeriod) {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data } = await supabaseAdmin
     .from('subscription_plans')
     .select('coins_monthly, coins_yearly')

@@ -1,12 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js';
-
-// 🗝️ สร้าง Admin Client (กุญแจผี) เพื่อข้ามระบบ RLS สำหรับงานหลังบ้านโดยเฉพาะ
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! 
-);
+import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 /**
  * 📝 1. สร้าง Log ใหม่ (ใช้ตอนเริ่มธุรกรรม เช่น สร้าง QR Code)
@@ -21,6 +15,7 @@ export async function createPaymentLog(data: {
     plan_detail?: string,
     period?: string
 }) {
+    const supabaseAdmin = getSupabaseAdmin();
     const { error } = await supabaseAdmin.from('payment_logs').insert({
         ...data,
         created_at: new Date().toISOString()
@@ -41,6 +36,7 @@ export async function updatePaymentLogStatus(
     status: string, 
     errorMessage?: string
 ) {
+    const supabaseAdmin = getSupabaseAdmin();
     const { error } = await supabaseAdmin
         .from('payment_logs')
         .update({ 

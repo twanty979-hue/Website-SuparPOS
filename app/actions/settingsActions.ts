@@ -2,20 +2,15 @@
 'use server'
 
 import { createServerClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js'; 
 import { cookies } from 'next/headers';
 import dayjs from 'dayjs';
+import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 import { createPaymentLog, updatePaymentLogStatus } from './logActions'; 
 
 // 🚨 นำเข้า Key และ Merchant ID ของ Beam
 const BEAM_SECRET_KEY = process.env.BEAM_SECRET_KEY!;
 const BEAM_MERCHANT_ID = process.env.BEAM_MERCHANT_ID!;
-
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! 
-);
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -27,6 +22,7 @@ async function getSupabase() {
 }
 
 async function calculatePriceFromDB(brandId: string, planKey: string, period: 'monthly' | 'yearly'): Promise<number> {
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: plan, error: planError } = await supabaseAdmin
     .from('subscription_plans')
     .select('*')
@@ -74,6 +70,7 @@ function calculateNewExpiryForTier(currentExpiry: string | null, period: 'monthl
 }
 
 export async function getAvailablePlansAction(brandId: string) {
+    const supabaseAdmin = getSupabaseAdmin();
     try {
         const { data: plans, error: planError } = await supabaseAdmin
             .from('subscription_plans')
@@ -250,6 +247,7 @@ export async function createBeamCheckoutAction(
 }
 
 export async function checkPaymentStatusAction(brandId: string, chargeId: string) {
+    const supabaseAdmin = getSupabaseAdmin();
   try {
       const { data: log, error } = await supabaseAdmin
           .from('payment_logs')
@@ -272,6 +270,7 @@ export async function processFreeUpgradeFromApi(
     newPlan: string, 
     period: 'monthly' | 'yearly'
 ) {
+    const supabaseAdmin = getSupabaseAdmin();
     try {
         const { data: brand } = await supabaseAdmin.from('brands').select('*').eq('id', brandId).single();
         if (!brand) throw new Error("Brand not found");

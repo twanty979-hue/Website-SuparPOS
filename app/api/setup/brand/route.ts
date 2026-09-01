@@ -1,11 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-// ใช้ Service Role Key เพื่อให้หลังบ้านมีอำนาจจัดการข้ามตารางอย่างสมบูรณ์
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! 
-);
+import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -20,6 +14,7 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     // 🛡️ ขั้นตอนที่ 1: ดึง Token จาก Header ที่ Flutter ส่งมา
     const authHeader = request.headers.get('Authorization');
     const token = authHeader?.split(' ')[1];
