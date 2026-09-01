@@ -1,15 +1,6 @@
 import admin from 'firebase-admin';
 import { createClient } from '@supabase/supabase-js';
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
+import { getFirebaseAdmin } from './firebaseAdmin';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,7 +44,7 @@ export async function sendProfilePush({
 
     if (tokens.length === 0) return { success: false, reason: 'no_tokens' };
 
-    const response = await admin.messaging().sendEachForMulticast({
+    const response = await getFirebaseAdmin().messaging().sendEachForMulticast({
       tokens,
       notification: { title, body: message },
       android: {

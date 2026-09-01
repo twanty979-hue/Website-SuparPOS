@@ -1,17 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import admin from 'firebase-admin';
-
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
+import { getFirebaseAdmin } from '@/lib/firebaseAdmin';
 
 const getSupabaseAdmin = () => {
   return createClient(
@@ -64,7 +53,7 @@ export async function POST(request: Request) {
 
     for (let i = 0; i < tokens.length; i += 500) {
       const batch = tokens.slice(i, i + 500);
-      const response = await admin.messaging().sendEachForMulticast({
+      const response = await getFirebaseAdmin().messaging().sendEachForMulticast({
         tokens: batch,
         notification: { title, body },
         android: {

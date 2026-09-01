@@ -1,21 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import admin from 'firebase-admin';
-
-// Initialize Firebase Admin (shared with broadcast-notification route)
-if (!admin.apps.length) {
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY
-    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    : undefined;
-
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: privateKey,
-    }),
-  });
-}
+import { getFirebaseAdmin } from '@/lib/firebaseAdmin';
 
 const getSupabaseAdmin = () => {
   return createClient(
@@ -54,7 +39,7 @@ async function broadcastSystemStatus(settings: {
   // Flutter รับผ่าน onMessage.listen แล้วจัดการ UI เอง
   for (let i = 0; i < tokens.length; i += 500) {
     const batch = tokens.slice(i, i + 500);
-    await admin.messaging().sendEachForMulticast({
+    await getFirebaseAdmin().messaging().sendEachForMulticast({
       tokens: batch,
       data: {
         type: 'system_status',
