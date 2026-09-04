@@ -1,6 +1,8 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import { Boxes, ChefHat, QrCode, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -216,93 +218,8 @@ export default function LandingClient() {
   return (
     <div className="font-sans text-gray-800 bg-white antialiased overflow-x-hidden selection:bg-emerald-500 selection:text-white">
 
-      {/* Navbar */}
-      <nav id="navbar" className="fixed w-full z-50 transition-all duration-500 py-4 px-6 lg:px-12 bg-white/0 backdrop-blur-[0px] text-slate-700 border-b border-transparent">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <Link href="/" className="flex items-center gap-2 group relative">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-all duration-300 overflow-hidden border border-emerald-100">
-                    <LogoIcon className="w-full h-full p-1" />
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-xl font-black tracking-tight text-slate-800 leading-none group-hover:text-emerald-600 transition-colors">
-                        Supar<span className="text-emerald-500">POS</span>
-                    </span>
-                </div>
-            </Link>
-
-            <div className="hidden md:flex gap-8 items-center">
-                <Link href="/" className="text-emerald-600 font-medium relative group">
-                    หน้าแรก
-                    <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-emerald-500"></span>
-                </Link>
-                <Link href="/features" className="hover:text-emerald-500 transition-colors font-medium relative group">
-                    จุดเด่น
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-                <Link href="/pricing" className="hover:text-emerald-500 transition-colors font-medium relative group">
-                    ราคา
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-                <Link href="/manual" className="hover:text-emerald-500 transition-colors font-medium relative group">
-                    วิธีใช้งาน
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-                <Link href="/setup-printer" className="hover:text-emerald-500 transition-colors font-medium relative group">
-                    ตั้งค่าเครื่องพิมพ์
-                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-
-                {isAuthLoading ? (
-                    <div className="w-24 h-10 bg-slate-200 animate-pulse rounded-full"></div>
-                ) : user ? (
-                    <Link href="https://app.suparpos.com" className="flex items-center gap-3 p-1 pr-4 bg-white border border-slate-200 rounded-full hover:border-emerald-500 hover:shadow-md transition-all group">
-                        <div className="w-8 h-8 rounded-full overflow-hidden bg-emerald-100 flex items-center justify-center border border-slate-100">
-                            {profile?.avatar_url ? (
-                                <img src={getAvatarUrlForNavbar(profile.avatar_url)} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                                <i className="fa-solid fa-user text-emerald-500 text-sm"></i>
-                            )}
-                        </div>
-                        <span className="text-sm font-bold text-slate-700 group-hover:text-emerald-600 transition-colors">
-                            {profile?.full_name?.split(' ')[0] || 'แดชบอร์ด'}
-                        </span>
-                    </Link>
-                ) : (
-                    <Link href="https://app.suparpos.com" className="relative px-6 py-2 bg-emerald-600 text-white hover:bg-emerald-700 font-bold rounded-full transition-all shadow-lg hover:shadow-emerald-500/50 hover:-translate-y-1 overflow-hidden group">
-                        <span className="absolute top-0 left-0 w-full h-full bg-white/20 -skew-x-12 -translate-x-full group-hover:animate-shine"></span>
-                        <span className="relative z-10">เข้าสู่ระบบ</span>
-                    </Link>
-                )}
-            </div>
-
-            <button onClick={() => document.getElementById('mobile-menu')?.classList.toggle('hidden')} className="md:hidden text-2xl focus:outline-none hover:text-emerald-500 transition-colors">
-                <i className="fa-solid fa-bars"></i>
-            </button>
-        </div>
-
-        <div id="mobile-menu" className="hidden absolute top-full left-0 w-full bg-white/95 backdrop-blur-md text-gray-800 shadow-2xl md:hidden flex flex-col items-center py-6 gap-6 mt-0 border-t border-gray-100 transition-all duration-300">
-            <Link href="/" className="text-lg font-medium hover:text-emerald-600">หน้าแรก</Link>
-            <Link href="/features" className="text-lg font-medium hover:text-emerald-600">จุดเด่น</Link>
-            <Link href="/pricing" className="text-lg font-medium hover:text-emerald-600">ราคา</Link>
-            <Link href="/manual" className="text-lg font-medium hover:text-emerald-600">วิธีใช้งาน</Link>
-            <Link href="/setup-printer" className="text-lg font-medium hover:text-emerald-600">ตั้งค่าเครื่องพิมพ์ (Win)</Link>
-            
-            {!isAuthLoading && user ? (
-                 <Link href="https://app.suparpos.com" className="flex items-center gap-3 text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2.5 rounded-full font-bold shadow-lg shadow-emerald-500/30">
-                    <div className="w-6 h-6 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
-                        {profile?.avatar_url ? (
-                            <img src={getAvatarUrlForNavbar(profile.avatar_url)} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            <i className="fa-solid fa-user text-white text-xs"></i>
-                        )}
-                    </div>
-                    เข้าสู่แดชบอร์ด
-                 </Link>
-            ) : (
-                <Link href="https://app.suparpos.com" className="text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2 rounded-full font-bold shadow-lg shadow-emerald-500/30">สมัครใช้งานฟรี</Link>
-            )}
-        </div>
-      </nav>
+      {/* Shared Navbar */}
+      <Navbar />
 
       {/* 1. Hero Section */}
       <section id="home" className="hero-bg min-h-screen flex items-center justify-center px-4 relative pt-20 overflow-hidden bg-[#F4FBF4]">
@@ -353,6 +270,82 @@ export default function LandingClient() {
                         <i className="fa-regular fa-circle-play text-emerald-500 text-xl"></i> ดูวิดีโอตัวอย่าง
                     </a>
                 </div>
+
+                {/* 📲 การ์ดดาวน์โหลดแอปพลิเคชัน Android & Windows (.exe) - ดีไซน์ขาวมรกต สวย คลีน เข้ากับระบบ 100% */}
+                <div id="download" className="mt-8 p-5 sm:p-6 rounded-3xl bg-white/90 backdrop-blur-md border border-emerald-100 shadow-[0_20px_50px_-20px_rgba(16,185,129,0.22)] relative overflow-hidden transition-all hover:shadow-[0_25px_60px_-20px_rgba(16,185,129,0.3)]">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-100/50 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-700 text-xs font-bold shadow-sm">
+                            <span className="relative flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                            </span>
+                            พร้อมให้ดาวน์โหลดใช้งานฟรี
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-400">
+                            รองรับทั้งมือถือ แท็บเล็ต และคอมพิวเตอร์
+                        </span>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-3.5 pt-1">
+                        {/* 🟢 Google Play (สวย คลีน ขาว ขอบเขียว ตรงธีม) */}
+                        <a 
+                            href="https://play.google.com/store/apps/details?id=com.pos.foodscan" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="group flex items-center gap-3.5 px-4.5 py-3.5 rounded-2xl border border-slate-200/80 hover:border-emerald-500 bg-white hover:bg-emerald-50/40 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                        >
+                            <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 group-hover:border-emerald-200 flex items-center justify-center flex-shrink-0 shadow-sm transition-all group-hover:scale-105 group-hover:bg-white">
+                                <svg className="w-6 h-6" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.7 2.2l-.1.1z"/>
+                                    <path fill="#FBBC04" d="M16.1 14.8l-3.1-3.1v-.2l3.1-3.1.1.1 3.7 2.1c1 .6 1 1.5 0 2.1l-3.8 2.2z"/>
+                                    <path fill="#EA4335" d="M16.2 14.7L13 11.5 3.6 20.9c.4.4.9.4 1.6 0l11-6.2z"/>
+                                    <path fill="#34A853" d="M16.2 8.3L5.2 2.1C4.5 1.7 4 1.7 3.6 2.1L13 11.5l3.2-3.2z"/>
+                                </svg>
+                            </div>
+                            <div className="text-left flex-1 min-w-0">
+                                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 leading-tight">GET IT ON</div>
+                                <div className="text-base font-black text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight mt-0.5">Google Play</div>
+                                <div className="text-[11px] text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
+                                    <span>Android</span>
+                                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                    <span className="text-slate-400 font-normal">ฟรี v1.0.6</span>
+                                </div>
+                            </div>
+                            <i className="fa-solid fa-arrow-up-right-from-square text-xs text-slate-300 group-hover:text-emerald-500 transition-colors pr-1"></i>
+                        </a>
+
+                        {/* 🔵 Windows PC (.exe) (สวย คลีน ขาว ขอบฟ้า ตรงธีม) */}
+                        <a 
+                            href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe" 
+                            download="SuparPOS-Setup.exe"
+                            className="group flex items-center gap-3.5 px-4.5 py-3.5 rounded-2xl border border-slate-200/80 hover:border-sky-500 bg-white hover:bg-sky-50/40 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                        >
+                            <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 group-hover:border-sky-200 flex items-center justify-center flex-shrink-0 shadow-sm transition-all group-hover:scale-105 group-hover:bg-white">
+                                <svg className="w-6 h-6 fill-current text-[#0078D4]" viewBox="0 0 24 24">
+                                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.606L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.8" />
+                                </svg>
+                            </div>
+                            <div className="text-left flex-1 min-w-0">
+                                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 leading-tight">DOWNLOAD FOR</div>
+                                <div className="text-base font-black text-slate-900 group-hover:text-sky-600 transition-colors leading-tight mt-0.5">Windows (.exe)</div>
+                                <div className="text-[11px] text-sky-600 font-semibold mt-0.5 flex items-center gap-1">
+                                    <span>PC 64-bit</span>
+                                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                    <span className="text-slate-400 font-normal">83 MB</span>
+                                </div>
+                            </div>
+                            <i className="fa-solid fa-download text-xs text-slate-300 group-hover:text-sky-500 transition-colors pr-1"></i>
+                        </a>
+                    </div>
+
+                    <div className="mt-3.5 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-medium">
+                        <span className="flex items-center gap-1.5"><i className="fa-solid fa-print text-emerald-500"></i> ต่อเครื่องพิมพ์ USB, LAN, Bluetooth</span>
+                        <span className="flex items-center gap-1.5"><i className="fa-solid fa-wifi text-emerald-500"></i> ขายออฟไลน์ได้</span>
+                        <span className="flex items-center gap-1.5"><i className="fa-solid fa-bell text-emerald-500"></i> เสียงเตือนออเดอร์เข้า</span>
+                    </div>
+                </div>
             </div>
 
             {/* 🟢 3D Layout (มือถือ 1 เครื่อง + เครื่อง POS ขนาดใหญ่) */}
@@ -377,7 +370,7 @@ export default function LandingClient() {
         </div>
       </section>
 
-      <section className="hidden lg:block relative z-20 -mt-14 pb-10">
+      <section className="hidden lg:block relative z-20 mt-6 pb-12">
         <div className="mx-auto grid max-w-6xl grid-cols-4 gap-3 px-6">
           {[
             { icon: ShoppingCart, title: 'หน้าขาย POS', detail: 'คิดเงินไว ใช้งานง่าย' },
@@ -639,12 +632,48 @@ export default function LandingClient() {
                                     <i className="fa-solid fa-bolt text-emerald-500"></i> Instant Set Up
                                 </span>
                             </div>
+
+                            {/* ดาวน์โหลดแอปพลิเคชันท้ายหน้า */}
+                            <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                                    หรือดาวน์โหลดแอปพลิเคชันไปติดตั้งใช้งาน
+                                </p>
+                                <div className="flex flex-wrap justify-center items-center gap-3">
+                                    <a 
+                                        href="https://play.google.com/store/apps/details?id=com.pos.foodscan"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group inline-flex items-center gap-2.5 px-4.5 py-2.5 bg-white hover:bg-emerald-50/50 text-slate-800 rounded-2xl text-xs font-bold shadow-sm hover:shadow-md border border-slate-200 hover:border-emerald-500 transition-all hover:-translate-y-0.5 active:scale-95"
+                                    >
+                                        <svg className="w-4 h-4" viewBox="0 0 24 24">
+                                            <path fill="#4285F4" d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.7 2.2l-.1.1z"/>
+                                            <path fill="#FBBC04" d="M16.1 14.8l-3.1-3.1v-.2l3.1-3.1.1.1 3.7 2.1c1 .6 1 1.5 0 2.1l-3.8 2.2z"/>
+                                            <path fill="#EA4335" d="M16.2 14.7L13 11.5 3.6 20.9c.4.4.9.4 1.6 0l11-6.2z"/>
+                                            <path fill="#34A853" d="M16.2 8.3L5.2 2.1C4.5 1.7 4 1.7 3.6 2.1L13 11.5l3.2-3.2z"/>
+                                        </svg>
+                                        <span className="group-hover:text-emerald-600 transition-colors">Google Play (Android)</span>
+                                    </a>
+                                    <a 
+                                        href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe"
+                                        download="SuparPOS-Setup.exe"
+                                        className="group inline-flex items-center gap-2.5 px-4.5 py-2.5 bg-white hover:bg-sky-50/50 text-slate-800 rounded-2xl text-xs font-bold shadow-sm hover:shadow-md border border-slate-200 hover:border-sky-500 transition-all hover:-translate-y-0.5 active:scale-95"
+                                    >
+                                        <svg className="w-4 h-4 fill-current text-[#0078D4]" viewBox="0 0 24 24">
+                                            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.606L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.8" />
+                                        </svg>
+                                        <span className="group-hover:text-sky-600 transition-colors">Windows (.exe)</span>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
       </section>
+
+      {/* Shared Footer */}
+      <Footer />
 
     </div>
   );

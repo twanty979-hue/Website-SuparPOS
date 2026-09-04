@@ -1,6 +1,8 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import { Download, Monitor, ShieldAlert, ArrowLeft, CheckCircle2, FileCode } from 'lucide-react';
 
 export default function SetupPrinterPage() {
@@ -17,24 +19,10 @@ export default function SetupPrinterPage() {
 
   return (
     <div className="min-h-screen bg-[#F4FBF4] font-sans antialiased text-slate-800">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-100 sticky top-0 z-40 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-slate-600 hover:text-emerald-600 font-medium transition-colors group">
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span>กลับหน้าแรก</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <img src="/icon.png" alt="Logo" className="w-8 h-8 object-contain" />
-            <span className="text-lg font-black text-slate-800 leading-none">
-              Supar<span className="text-emerald-500">POS</span>
-            </span>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-4xl mx-auto px-6 pt-32 pb-16">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 leading-tight">
             คู่มือการตั้งค่าเครื่องพิมพ์บิลอัตโนมัติ
@@ -148,7 +136,7 @@ export default function SetupPrinterPage() {
         </div>
       </main>
 
-
+      <Footer />
     </div>
   );
 }

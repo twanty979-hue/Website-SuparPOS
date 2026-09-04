@@ -6,6 +6,25 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/*': ['./node_modules/jose/dist/browser/**/*'],
   },
+  async redirects() {
+    return [
+      {
+        source: '/downloads/SuparPOS-Setup.exe',
+        destination: 'https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe',
+        permanent: false,
+      },
+      {
+        source: '/download/windows',
+        destination: 'https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe',
+        permanent: false,
+      },
+      {
+        source: '/download/android',
+        destination: 'https://play.google.com/store/apps/details?id=com.pos.foodscan',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {
