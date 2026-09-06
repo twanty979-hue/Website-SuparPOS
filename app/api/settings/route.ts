@@ -131,7 +131,13 @@ export async function POST(request: Request) {
     const hasTutorialUpdate = body.tutorial_progress !== undefined
       || tutorialModules.some((module) => body[`tutorial_${module}`] !== undefined);
 
-    if (body.vat !== undefined || body.vat_mode !== undefined || hasTutorialUpdate) {
+    const hasConfigUpdate =
+      body.vat !== undefined ||
+      body.vat_mode !== undefined ||
+      body.notification_sound !== undefined ||
+      hasTutorialUpdate;
+
+    if (hasConfigUpdate) {
       const { data: currentBrand, error: configError } = await supabase
         .from('brands')
         .select('config')
@@ -140,65 +146,77 @@ export async function POST(request: Request) {
       if (configError) throw configError;
 
       const currentConfig = withTutorialProgress(currentBrand?.config);
-      const vat = Number(body.vat ?? currentConfig.vat ?? 0);
-      const vatMode = body.vat_mode ?? currentConfig.vat_mode ?? 'included';
+      const updatedConfig: Record<string, unknown> = {
+        ...currentConfig,
+      };
 
-      const progress = getTutorialProgress(currentConfig);
-      if (body.tutorial_progress !== undefined) {
-        if (!body.tutorial_progress || typeof body.tutorial_progress !== 'object'
-          || Array.isArray(body.tutorial_progress)) {
+      if (body.notification_sound !== undefined) {
+        updatedConfig.notification_sound =
+          typeof body.notification_sound === 'string' && body.notification_sound.trim()
+            ? body.notification_sound.trim()
+            : null;
+      }
+
+      if (body.vat !== undefined || body.vat_mode !== undefined) {
+        const vat = Number(body.vat ?? currentConfig.vat ?? 0);
+        const vatMode = body.vat_mode ?? currentConfig.vat_mode ?? 'included';
+        if (!Number.isFinite(vat) || vat < 0 || vat > 100) {
           return NextResponse.json(
-            { success: false, error: 'tutorial_progress must be an object' },
+            { success: false, error: 'VAT must be between 0 and 100' },
             { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
           );
         }
-        for (const tutorialModule of tutorialModules) {
-          if (body.tutorial_progress[tutorialModule] !== undefined) {
-            if (typeof body.tutorial_progress[tutorialModule] !== 'boolean') {
-              return NextResponse.json(
-                { success: false, error: `tutorial_progress.${tutorialModule} must be boolean` },
-                { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
-              );
-            }
-            progress[tutorialModule] = body.tutorial_progress[tutorialModule];
-          }
+        if (vatMode !== 'included' && vatMode !== 'excluded') {
+          return NextResponse.json(
+            { success: false, error: 'Invalid VAT mode' },
+            { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
+          );
         }
+        updatedConfig.vat = vat;
+        updatedConfig.vat_mode = vatMode;
       }
-      for (const tutorialModule of tutorialModules) {
-        const key = `tutorial_${tutorialModule}`;
-        if (body[key] !== undefined) {
-          if (typeof body[key] !== 'boolean') {
+
+      if (hasTutorialUpdate) {
+        const progress = getTutorialProgress(currentConfig);
+        if (body.tutorial_progress !== undefined) {
+          if (!body.tutorial_progress || typeof body.tutorial_progress !== 'object'
+            || Array.isArray(body.tutorial_progress)) {
             return NextResponse.json(
-              { success: false, error: `${key} must be boolean` },
+              { success: false, error: 'tutorial_progress must be an object' },
               { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
             );
           }
-          progress[tutorialModule] = body[key];
+          for (const tutorialModule of tutorialModules) {
+            if (body.tutorial_progress[tutorialModule] !== undefined) {
+              if (typeof body.tutorial_progress[tutorialModule] !== 'boolean') {
+                return NextResponse.json(
+                  { success: false, error: `tutorial_progress.${tutorialModule} must be boolean` },
+                  { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
+                );
+              }
+              progress[tutorialModule] = body.tutorial_progress[tutorialModule];
+            }
+          }
         }
+        for (const tutorialModule of tutorialModules) {
+          const key = `tutorial_${tutorialModule}`;
+          if (body[key] !== undefined) {
+            if (typeof body[key] !== 'boolean') {
+              return NextResponse.json(
+                { success: false, error: `${key} must be boolean` },
+                { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
+              );
+            }
+            progress[tutorialModule] = body[key];
+          }
+        }
+        updatedConfig.tutorial_pos = progress.pos;
+        updatedConfig.tutorial_menu = progress.menu;
+        updatedConfig.tutorial_theme = progress.theme;
+        updatedConfig.tutorial_progress = progress;
       }
 
-      if (!Number.isFinite(vat) || vat < 0 || vat > 100) {
-        return NextResponse.json(
-          { success: false, error: 'VAT must be between 0 and 100' },
-          { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
-        );
-      }
-      if (vatMode !== 'included' && vatMode !== 'excluded') {
-        return NextResponse.json(
-          { success: false, error: 'Invalid VAT mode' },
-          { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } },
-        );
-      }
-
-      updateData.config = {
-        ...currentConfig,
-        vat,
-        vat_mode: vatMode,
-        tutorial_pos: progress.pos,
-        tutorial_menu: progress.menu,
-        tutorial_theme: progress.theme,
-        tutorial_progress: progress,
-      };
+      updateData.config = updatedConfig;
     }
 
     const { error } = await supabase.from('brands').update(updateData).eq('id', brandId);

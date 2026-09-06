@@ -62,6 +62,7 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
+      url.searchParams.set('redirectTo', request.nextUrl.pathname)
       return NextResponse.redirect(url)
     }
 

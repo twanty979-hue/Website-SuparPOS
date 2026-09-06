@@ -141,6 +141,13 @@ export async function updateBrandSettingsAction(brandId: string, payload: any) {
             qr_mode: updateData.table_qr_mode
         };
     }
+
+    if (payload.notification_sound !== undefined) {
+        updateData.config = {
+            ...(updateData.config || currentBrand?.config || {}),
+            notification_sound: payload.notification_sound ? String(payload.notification_sound).trim() : null
+        };
+    }
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
     const { error } = await supabase.from('brands').update(updateData).eq('id', brandId);
