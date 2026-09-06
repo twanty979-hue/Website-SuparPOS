@@ -113,11 +113,18 @@ export async function sendBrandNotification(input: NotificationInput) {
       apns: {
         headers: isSilentSync
           ? { 'apns-push-type': 'background', 'apns-priority': '5' }
-          : undefined,
+          : { 'apns-push-type': 'alert', 'apns-priority': '10' },
         payload: {
           aps: isSilentSync
             ? { 'content-available': 1 }
-            : { sound: 'default' },
+            : {
+                alert: {
+                  title,
+                  body: notificationData.body,
+                },
+                sound: 'default',
+                badge: 1,
+              },
         },
       },
       data: notificationData,
@@ -149,8 +156,15 @@ export async function sendBrandNotification(input: NotificationInput) {
     successCount += response.successCount;
     failureCount += response.failureCount;
     response.responses.forEach((result, index) => {
-      if (!result.success && isInvalidFcmToken(result.error)) {
-        invalidTokens.push(tokenChunk[index]);
+      if (!result.success) {
+        console.error(
+          `[FCM Send Error] Token ${tokenChunk[index].slice(0, 12)}... failed:`,
+          result.error?.code,
+          result.error?.message,
+        );
+        if (isInvalidFcmToken(result.error)) {
+          invalidTokens.push(tokenChunk[index]);
+        }
       }
     });
   }

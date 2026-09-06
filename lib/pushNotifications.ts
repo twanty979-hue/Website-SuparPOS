@@ -51,7 +51,19 @@ export async function sendProfilePush({
           defaultVibrateTimings: true,
         },
       },
-      apns: { payload: { aps: { sound: 'default' } } },
+      apns: {
+        headers: {
+          'apns-push-type': 'alert',
+          'apns-priority': '10',
+        },
+        payload: {
+          aps: {
+            alert: { title, body: message },
+            sound: 'default',
+            badge: 1,
+          },
+        },
+      },
       webpush: { notification: { title, body: message } },
       data: {
         title,
@@ -60,6 +72,18 @@ export async function sendProfilePush({
         ...data,
       },
     });
+
+    if (response.failureCount > 0) {
+      response.responses.forEach((result, idx) => {
+        if (!result.success) {
+          console.error(
+            `[Profile Push Error] Token ${tokens[idx]?.slice(0, 12)}... failed:`,
+            result.error?.code,
+            result.error?.message,
+          );
+        }
+      });
+    }
 
     return {
       success: response.successCount > 0,
