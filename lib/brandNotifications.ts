@@ -59,16 +59,29 @@ export async function sendBrandNotification(input: NotificationInput) {
   if (!brandId) throw new Error('Missing brandId');
 
   const client = db();
-  const [{ data: tokenRows, error: tokenError }, { data: profiles, error: profileError }] =
-    await Promise.all([
-      client.from('profile_fcm_tokens').select('token').eq('brand_id', brandId),
-      client
-        .from('profiles')
-        .select('fcm_token, fcm_token_web')
-        .eq('brand_id', brandId),
-    ]);
+  const [
+    { data: tokenRows, error: tokenError },
+    { data: profiles, error: profileError },
+    { data: brand },
+  ] = await Promise.all([
+    client.from('profile_fcm_tokens').select('token').eq('brand_id', brandId),
+    client
+      .from('profiles')
+      .select('fcm_token, fcm_token_web')
+      .eq('brand_id', brandId),
+    client.from('brands').select('config').eq('id', brandId).maybeSingle(),
+  ]);
 
   if (tokenError && profileError) throw tokenError;
+
+  const brandConfig = (brand?.config as Record<string, any> | null) || null;
+  const rawSound = brandConfig?.notification_sound;
+  const apnsSound =
+    typeof rawSound === 'string' && rawSound.trim()
+      ? rawSound.trim().includes('.')
+        ? rawSound.trim()
+        : `${rawSound.trim()}.caf`
+      : 'level_up.caf';
 
   const excludedTokens = new Set(
     [excludeToken]
@@ -122,7 +135,7 @@ export async function sendBrandNotification(input: NotificationInput) {
                   title,
                   body: notificationData.body,
                 },
-                sound: 'default',
+                sound: apnsSound,
                 badge: 1,
               },
         },
