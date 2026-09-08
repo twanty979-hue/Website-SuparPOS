@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const { email, token, type } = await request.json()
     if (!email || !token) {
       return NextResponse.json(
-        { error: 'กรุณากรอกอีเมลและรหัส OTP 6 หลัก' },
+        { error: 'กรุณากรอกอีเมลและรหัสยืนยัน OTP' },
         { status: 400, headers }
       )
     }
