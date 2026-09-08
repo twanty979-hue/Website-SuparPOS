@@ -96,36 +96,43 @@ export async function GET(request: Request) {
     return NextResponse.redirect(webUrl)
   }
 
-  if (source === 'app' && sessionData?.user) {
-    const deepLink = new URL('/mobile/auth/callback', origin)
-    
+  const isMobileAppSource = source === 'app' || source === 'ios' || source === 'android' || source === 'macos'
+  if (isMobileAppSource && sessionData?.user) {
+    const params = new URLSearchParams()
     if (type === 'recovery') {
-      deepLink.searchParams.set('type', 'recovery')
-      deepLink.searchParams.set('ticket', recoveryTicket(sessionData.user.id))
+      params.set('type', 'recovery')
+      params.set('ticket', recoveryTicket(sessionData.user.id))
     } else {
-      deepLink.searchParams.set('type', 'verified')
+      params.set('type', 'verified')
     }
+
+    const appSchemeUrl = `posfoodscan://auth-callback?${params.toString()}`
+    const legacySchemeUrl = `com.pos.foodscan://auth-callback?${params.toString()}`
     
-    // พ่น HTML บังคับดีดเข้าแอป
+    // พ่น HTML อัจฉริยะ ดีดเข้าแอป POS FoodScan ทันที (รองรับทั้ง iOS / Android / macOS)
     const html = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>กำลังกลับเข้าสู่แอป...</title>
+          <title>กำลังกลับเข้าสู่แอป POS FoodScan...</title>
         </head>
-        <body style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; background:#F2FBF4; margin:0;">
-          <div style="text-align:center;">
-            <div style="width:50px; height:50px; border:4px solid #B7E7C3; border-top-color:#15803D; border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto 20px;"></div>
-            <h2 style="color:#15803D; margin:0;">กำลังกลับเข้าสู่แอป SuparPOS...</h2>
-            <p style="color:#64748B;">หากแอปไม่เปิดอัตโนมัติ <a href="${deepLink.toString()}" style="color:#2563EB;">คลิกที่นี่</a></p>
+        <body style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#F2FBF4; margin:0;">
+          <div style="text-align:center; padding: 24px; max-width: 420px;">
+            <div style="width:56px; height:56px; border:4px solid #B7E7C3; border-top-color:#16A34A; border-radius:50%; animation:spin 0.8s linear infinite; margin: 0 auto 24px;"></div>
+            <h2 style="color:#15803D; margin:0 0 12px; font-size:22px;">ยืนยันสำเร็จแล้ว!</h2>
+            <p style="color:#475569; font-size:15px; margin:0 0 24px; line-height:1.5;">กำลังพาคุณกลับเข้าสู่แอป POS FoodScan...</p>
+            <a href="${appSchemeUrl}" style="display:inline-block; background:#16A34A; color:#ffffff; padding:12px 28px; border-radius:12px; text-decoration:none; font-weight:bold; font-size:15px; box-shadow:0 4px 12px rgba(22,163,74,0.25);">กดเปิดแอปทันที</a>
+            <p style="color:#94A3B8; font-size:12px; margin-top:20px;">หากใช้ Android รุ่นเก่า <a href="${legacySchemeUrl}" style="color:#2563EB;">คลิกที่นี่</a></p>
           </div>
           <style>@keyframes spin { 100% { transform:rotate(360deg); } }</style>
           <script>
-            setTimeout(() => {
-              window.location.href = "${deepLink.toString()}";
-            }, 500);
+            // พยายามเปิดแอปอัตโนมัติ
+            window.location.href = "${appSchemeUrl}";
+            setTimeout(function() {
+              window.location.href = "${legacySchemeUrl}";
+            }, 800);
           </script>
         </body>
       </html>

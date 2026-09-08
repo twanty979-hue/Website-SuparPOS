@@ -20,12 +20,15 @@ export async function POST(request: Request) {
     const supabaseAdmin = getSupabaseAnon();
     const { email, password, source } = await request.json();
     const { callbackOrigin, returnTo } = authRedirectTargets(request, source);
+    const normalizedSource = typeof source === 'string' && ['ios', 'android', 'macos', 'web'].includes(source)
+      ? source
+      : (source === 'web' ? 'web' : 'app');
     const callbackUrl = new URL('/auth/callback', callbackOrigin);
-    callbackUrl.searchParams.set('source', source === 'app' ? 'app' : 'web');
+    callbackUrl.searchParams.set('source', normalizedSource);
     if (returnTo) callbackUrl.searchParams.set('return_to', returnTo);
     callbackUrl.searchParams.set(
       'next',
-      source === 'app' ? '/login?verified=1' : '/setup',
+      normalizedSource === 'web' ? '/setup' : '/login?verified=1',
     );
     // Email verification is completed on the trusted web callback. The app
     // never receives Supabase codes or project keys directly.
