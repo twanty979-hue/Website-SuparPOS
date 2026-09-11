@@ -38,10 +38,10 @@ export async function DELETE(
     const { id } = await params;
     const { supabase, brandId } = await getSupabaseAndBrandId(request);
 
-    // Soft delete by updating deleted_at
+    // Permanently delete from database
     const { error } = await supabase
       .from('products')
-      .update({ deleted_at: new Date().toISOString() })
+      .delete()
       .eq('id', id)
       .eq('brand_id', brandId);
 

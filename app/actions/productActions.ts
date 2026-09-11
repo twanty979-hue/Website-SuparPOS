@@ -32,7 +32,7 @@ export async function getProductsInitialDataAction() {
 
     const [categoriesRes, productsRes] = await Promise.all([
       supabase.from('categories').select('id, name').eq('brand_id', brandId).order('sort_order'),
-      supabase.from('products').select('*').eq('brand_id', brandId).order('created_at', { ascending: false })
+      supabase.from('products').select('*').eq('brand_id', brandId).is('deleted_at', null).order('created_at', { ascending: false })
     ]);
 
     if (categoriesRes.error) throw categoriesRes.error;

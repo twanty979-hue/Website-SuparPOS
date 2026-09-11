@@ -292,7 +292,7 @@ export async function fetchShopData(params: ShopParams) {
     ] = await Promise.all([
       supabaseServer.from('banners').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
       supabaseServer.from('categories').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
-      supabaseServer.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).order('is_recommended', { ascending: false }),
+      supabaseServer.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).is('deleted_at', null).order('is_recommended', { ascending: false }),
       supabaseServer.from('discounts').select(`*, discount_products(product_id)`).eq('brand_id', brandId).eq('is_active', true),
       supabaseServer.from('orders').select(`*, order_items(*)`).eq('brand_id', brandId).eq('table_id', realTableId).neq('status', 'paid').order('created_at', { ascending: false }),
       supabaseServer.from('topping_groups').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
@@ -449,6 +449,7 @@ export async function submitOrder(payload: {
           .select('id,name,price,price_special,price_jumbo,is_available,options')
           .eq('brand_id', brandId)
           .eq('is_available', true)
+          .is('deleted_at', null)
           .in('id', productIds),
         supabaseServer
           .from('discounts')
