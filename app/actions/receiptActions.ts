@@ -102,9 +102,13 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
 
       // เช็คเผื่อว่าออเดอร์ในบิลถูกยกเลิกทีหลัง (Paid -> Cancelled)
       const isActuallyCancelled = receipt.orders?.every((o: any) => o.status === 'cancelled');
+      const actualOrderId = receipt.orders?.[0]?.id || receipt.order_id || receipt.id;
 
       return {
-        id: receipt.id,
+        id: actualOrderId,
+        order_id: actualOrderId,
+        payment_id: receipt.id,
+        pai_order_id: receipt.id,
         created_at: receipt.created_at,
         table_label: tableName,
         total_amount: receipt.total_amount,

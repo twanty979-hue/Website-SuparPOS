@@ -178,9 +178,13 @@ export async function GET(request: Request) {
       const allItems = receipt.orders?.flatMap((o: any) => o.order_items || []) || [];
       const tableName = receipt.orders?.[0]?.table_label || 'Walk-in';
       const isActuallyCancelled = receipt.orders?.every((o: any) => o.status === 'cancelled');
+      const actualOrderId = receipt.orders?.[0]?.id || receipt.order_id || receipt.id;
 
       return {
-        id: receipt.id,
+        id: actualOrderId,
+        order_id: actualOrderId,
+        payment_id: receipt.id,
+        pai_order_id: receipt.id,
         brand_id: receipt.brand_id,
         created_at: receipt.created_at,
         table_label: tableName,
@@ -221,6 +225,8 @@ export async function GET(request: Request) {
 
       return {
         id: order.id, 
+        order_id: order.id,
+        payment_id: null,
         brand_id: order.brand_id,
         created_at: order.created_at,
         table_label: order.table_label,
