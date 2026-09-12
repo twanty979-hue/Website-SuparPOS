@@ -40,23 +40,8 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
           id,
           table_label,
           status,
-<<<<<<< HEAD
+created_at,
           order_items (*)
-=======
-          created_at,
-          order_items (
-            product_name,
-            quantity,
-            price,
-            original_price,
-            discount,
-            variant,
-            promotion_snapshot,
-            toppings_snapshot,
-            status,
-            note
-          )
->>>>>>> 017e49925c8dc672fb910945ce23a1764679ad8d
         )
       `, { count: 'exact' })
       .eq('brand_id', profile.brand_id)
@@ -74,22 +59,7 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
       .select(`
         *,
         brand:brands(name),
-<<<<<<< HEAD
-        order_items (*)
-=======
-        order_items (
-            product_name,
-            quantity,
-            price,
-            original_price,
-            discount,
-            variant,
-            promotion_snapshot,
-            toppings_snapshot,
-            status,
-            note
-        )
->>>>>>> 017e49925c8dc672fb910945ce23a1764679ad8d
+order_items (*)
       `, { count: 'exact' })
       .eq('brand_id', profile.brand_id)
       .eq('status', 'cancelled') 

@@ -143,13 +143,8 @@ export async function GET(request: Request) {
         brand:brands(name),
         cashier:profiles(full_name),
         orders:orders!orders_payment_id_fkey (
-<<<<<<< HEAD
-          id, table_label, status,
+id, table_label, status, created_at,
           order_items (*)
-=======
-          id, table_label, status, created_at,
-          order_items (product_name, quantity, price, original_price, discount, variant, promotion_snapshot, toppings_snapshot, status, note)
->>>>>>> 017e49925c8dc672fb910945ce23a1764679ad8d
         )
       `, { count: 'exact' })
       .eq('brand_id', brandId)
@@ -164,11 +159,7 @@ export async function GET(request: Request) {
       .select(`
         *,
         brand:brands(name),
-<<<<<<< HEAD
-        order_items (*)
-=======
-        order_items (product_name, quantity, price, original_price, discount, variant, promotion_snapshot, toppings_snapshot, status, note)
->>>>>>> 017e49925c8dc672fb910945ce23a1764679ad8d
+order_items (*)
       `, { count: 'exact' })
       .eq('brand_id', brandId)
       .eq('status', 'cancelled') 
@@ -190,15 +181,11 @@ export async function GET(request: Request) {
       const actualOrderId = receipt.orders?.[0]?.id || receipt.order_id || receipt.id;
 
       return {
-<<<<<<< HEAD
-        ...receipt,
-        id: receipt.id,
-=======
+...receipt,
         id: actualOrderId,
         order_id: actualOrderId,
         payment_id: receipt.id,
         pai_order_id: receipt.id,
->>>>>>> 017e49925c8dc672fb910945ce23a1764679ad8d
         brand_id: receipt.brand_id,
         created_at: receipt.orders?.[0]?.created_at || receipt.created_at,
         paid_at: receipt.created_at,
