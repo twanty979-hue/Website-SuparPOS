@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import { Boxes, ChefHat, QrCode, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-// ✅ Component โลโก้ (ดึงไฟล์รูปจาก public/icon.png)
+// ✅ asdComponent โลโก้ (ดึงไฟล์รูปจาก public/icon.png)
 const LogoIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <img 
     src="/icon.png" 
