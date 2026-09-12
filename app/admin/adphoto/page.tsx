@@ -1,4 +1,4 @@
-//app/admin/adphoto/page.tsx
+// app/admin/adphoto/page.tsx
 'use client'
 
 import { useState, useEffect, ChangeEvent, FormEvent, useCallback } from 'react'
@@ -7,7 +7,7 @@ import Cropper from 'react-easy-crop'
 
 const CDN_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "https://img.pos-foodscan.com";
 
-// Helper function สร้าง Image object สำหรับ Crop (อยู่นอก Component ได้)
+// Helper function สร้าง Image object สำหรับ Crop
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image()
@@ -17,465 +17,1014 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
   })
 
 // --- Types ---
-type Category = {
+type StoreType = {
+  id: number
+  name: string
+  icon_url: string | null
+  description: string | null
+  sort_order: number
+  is_active: boolean
+}
+
+type MasterProduct = {
+  id: number
+  store_type_id: number | null
+  category_name: string
+  name: string
+  image_url: string | null
+  price: number
+  cost_price: number | null
+  is_recommended: boolean
+  sort_order: number
+  is_active: boolean
+  master_store_types?: {
+    name: string
+  }
+}
+
+type MasterBanner = {
+  id: number
+  store_type_id: number | null
+  title: string
+  image_url: string
+  sort_order: number
+  is_active: boolean
+  master_store_types?: {
+    name: string
+  }
+}
+
+// Legacy Types
+type LegacyCategory = {
   id: number
   name: string
 }
 
-type ImageData = {
+type LegacyImage = {
   id: number
   name: string
   url: string
-  price: number | null 
+  price: number | null
   category_id: number | null
   categoriesphotoadmin?: {
     name: string
   }
 }
 
-export default function AdminPhotoPage() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [images, setImages] = useState<ImageData[]>([])
-  
-  // --- UI States ---
-  const [showCatModal, setShowCatModal] = useState(false)
-  const [showImgModal, setShowImgModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false) 
-  const [activeCategory, setActiveCategory] = useState<number | 'ALL'>('ALL')
+export default function AdminInitialSetupPage() {
+  // Main Tab Navigation
+  const [activeTab, setActiveTab] = useState<'STORE_TYPES' | 'PRODUCTS' | 'BANNERS' | 'LEGACY'>('STORE_TYPES')
 
-  // ✅ แก้ไขจุดที่ 1: ย้าย Hook มาไว้ข้างใน Body ของ Component
-  const [isEditingExistingImage, setIsEditingExistingImage] = useState(false);
+  // --- Data States ---
+  const [storeTypes, setStoreTypes] = useState<StoreType[]>([])
+  const [products, setProducts] = useState<MasterProduct[]>([])
+  const [banners, setBanners] = useState<MasterBanner[]>([])
+  const [legacyCategories, setLegacyCategories] = useState<LegacyCategory[]>([])
+  const [legacyImages, setLegacyImages] = useState<LegacyImage[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // --- Form States (Add) ---
-  const [newCatName, setNewCatName] = useState('')
-  const [isCatLoading, setIsCatLoading] = useState(false)
+  // --- Filter States ---
+  const [filterStoreTypeId, setFilterStoreTypeId] = useState<number | 'ALL'>('ALL')
+  const [legacyActiveCategory, setLegacyActiveCategory] = useState<number | 'ALL'>('ALL')
 
-  const [imgName, setImgName] = useState('')
-  const [imgPrice, setImgPrice] = useState('') 
-  const [selectedCatId, setSelectedCatId] = useState<string>('')
-  const [isImgUploading, setIsImgUploading] = useState(false)
-
-  // 🌟 State สำหรับระบบ Crop & อัปโหลด
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState('')
+  // --- Crop Modal State ---
   const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+  const [cropTarget, setCropTarget] = useState<'PRODUCT' | 'BANNER' | 'STORE_TYPE' | 'LEGACY'>('PRODUCT')
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
   const [isCropModalOpen, setIsCropModalOpen] = useState(false)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  const [cropAspect, setCropAspect] = useState<number>(1)
 
-  // --- Form States (Edit) ---
-  const [editingImage, setEditingImage] = useState<ImageData | null>(null) 
-  const [editName, setEditName] = useState('')
-  const [editPrice, setEditPrice] = useState('')
-  const [editCatId, setEditCatId] = useState('')
-  const [isUpdating, setIsUpdating] = useState(false)
+  // --- Store Type Modal States ---
+  const [showStoreTypeModal, setShowStoreTypeModal] = useState(false)
+  const [editingStoreType, setEditingStoreType] = useState<StoreType | null>(null)
+  const [stName, setStName] = useState('')
+  const [stDescription, setStDescription] = useState('')
+  const [stIconUrl, setStIconUrl] = useState('')
+  const [stSortOrder, setStSortOrder] = useState('1')
+  const [stFile, setStFile] = useState<File | null>(null)
+  const [stPreview, setStPreview] = useState('')
+  const [isStLoading, setIsStLoading] = useState(false)
 
-  // --- 1. Fetch Data ---
-  const fetchData = async () => {
-    const { data: catData } = await supabase
-      .from('categoriesphotoadmin')
-      .select('*')
-      .order('id', { ascending: true })
-    if (catData) setCategories(catData)
+  // --- Product Modal States ---
+  const [showProductModal, setShowProductModal] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<MasterProduct | null>(null)
+  const [prodName, setProdName] = useState('')
+  const [prodPrice, setProdPrice] = useState('')
+  const [prodCostPrice, setProdCostPrice] = useState('')
+  const [prodCategory, setProdCategory] = useState('')
+  const [prodStoreTypeId, setProdStoreTypeId] = useState<string>('')
+  const [prodIsRecommended, setProdIsRecommended] = useState(false)
+  const [prodFile, setProdFile] = useState<File | null>(null)
+  const [prodPreview, setProdPreview] = useState('')
+  const [isProdLoading, setIsProdLoading] = useState(false)
 
-    const { data: imgData } = await supabase
-      .from('images')
-      .select('*, categoriesphotoadmin(name)')
-      .order('id', { ascending: false })
-    if (imgData) setImages(imgData as unknown as ImageData[])
-  }
+  // --- Banner Modal States ---
+  const [showBannerModal, setShowBannerModal] = useState(false)
+  const [editingBanner, setEditingBanner] = useState<MasterBanner | null>(null)
+  const [bannerTitle, setBannerTitle] = useState('')
+  const [bannerStoreTypeId, setBannerStoreTypeId] = useState<string>('')
+  const [bannerFile, setBannerFile] = useState<File | null>(null)
+  const [bannerPreview, setBannerPreview] = useState('')
+  const [isBannerLoading, setIsBannerLoading] = useState(false)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  // --- Legacy Modals ---
+  const [showLegacyCatModal, setShowLegacyCatModal] = useState(false)
+  const [showLegacyImgModal, setShowLegacyImgModal] = useState(false)
+  const [legacyNewCatName, setLegacyNewCatName] = useState('')
+  const [legacyImgName, setLegacyImgName] = useState('')
+  const [legacyImgPrice, setLegacyImgPrice] = useState('')
+  const [legacySelectedCatId, setLegacySelectedCatId] = useState('')
+  const [legacyFile, setLegacyFile] = useState<File | null>(null)
+  const [legacyPreview, setLegacyPreview] = useState('')
+  const [isLegacyLoading, setIsLegacyLoading] = useState(false)
 
-  const filteredImages = activeCategory === 'ALL' 
-    ? images 
-    : images.filter(img => img.category_id === activeCategory)
-
-  // --- 2. Logic: เพิ่มหมวดหมู่ ---
-  const handleAddCategory = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!newCatName) return
-    setIsCatLoading(true)
+  // --- Fetch All Data ---
+  const fetchAllData = async () => {
+    setLoading(true)
     try {
-      const { error } = await supabase.from('categoriesphotoadmin').insert([{ name: newCatName }])
-      if (error) throw error
-      alert('เพิ่มหมวดหมู่สำเร็จ!')
-      setNewCatName('')
-      setShowCatModal(false)
-      fetchData()
-    } catch (error: any) {
-      alert('Error: ' + error.message)
+      const [stRes, prodRes, bannerRes, legCatRes, legImgRes] = await Promise.all([
+        supabase.from('master_store_types').select('*').order('sort_order', { ascending: true }),
+        supabase.from('master_products').select('*, master_store_types(name)').order('id', { ascending: false }),
+        supabase.from('master_banners').select('*, master_store_types(name)').order('id', { ascending: false }),
+        supabase.from('categoriesphotoadmin').select('*').order('id', { ascending: true }),
+        supabase.from('images').select('*, categoriesphotoadmin(name)').order('id', { ascending: false }),
+      ])
+
+      if (stRes.data) setStoreTypes(stRes.data)
+      if (prodRes.data) setProducts(prodRes.data as any)
+      if (bannerRes.data) setBanners(bannerRes.data as any)
+      if (legCatRes.data) setLegacyCategories(legCatRes.data)
+      if (legImgRes.data) setLegacyImages(legImgRes.data as any)
+    } catch (e: any) {
+      console.error('Fetch error:', e)
     } finally {
-      setIsCatLoading(false)
+      setLoading(false)
     }
   }
 
-  // ✅ แก้ไขจุดที่ 2: ปรับ handleFileChange ให้รองรับการเปลี่ยนรูปแบบแก้ไข
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    fetchAllData()
+  }, [])
+
+  // --- Upload Helper ---
+  const uploadToR2 = async (file: File, folder: string = 'master_assets'): Promise<string> => {
+    const apiFormData = new FormData()
+    apiFormData.append('file', file)
+    apiFormData.append('folder', folder)
+
+    const response = await fetch('/api/upload', { method: 'POST', body: apiFormData })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Upload to R2 failed')
+    return `${CDN_URL}/${data.fileName}`
+  }
+
+  // --- Crop Logic ---
+  const handleFileSelectForCrop = (
+    e: ChangeEvent<HTMLInputElement>,
+    target: 'PRODUCT' | 'BANNER' | 'STORE_TYPE' | 'LEGACY'
+  ) => {
     if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        const imageUrl = URL.createObjectURL(file);
-        setImageToCrop(imageUrl);
-        setIsCropModalOpen(true); 
-        
-        // 🌟 ระบุว่าเป็นการแก้ไขรูปเดิมหรือไม่
-        if (showEditModal) {
-            setIsEditingExistingImage(true);
-        } else {
-            setIsEditingExistingImage(false);
-        }
-        e.target.value = ''; 
+      const file = e.target.files[0]
+      const imageUrl = URL.createObjectURL(file)
+      setImageToCrop(imageUrl)
+      setCropTarget(target)
+      setCropAspect(target === 'BANNER' ? 16 / 9 : 1)
+      setIsCropModalOpen(true)
+      e.target.value = ''
     }
   }
 
   const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
+    setCroppedAreaPixels(croppedAreaPixels)
+  }, [])
 
   const handleCropSave = async () => {
-    if (!imageToCrop || !croppedAreaPixels) return;
+    if (!imageToCrop || !croppedAreaPixels) return
     try {
-      const image = await createImage(imageToCrop);
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('No 2d context');
+      const image = await createImage(imageToCrop)
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('No 2d context')
 
-      const TARGET_SIZE = 600;
-      canvas.width = TARGET_SIZE;
-      canvas.height = TARGET_SIZE;
+      const targetWidth = cropTarget === 'BANNER' ? 1200 : 600
+      const targetHeight = cropTarget === 'BANNER' ? 675 : 600
+      canvas.width = targetWidth
+      canvas.height = targetHeight
 
       ctx.drawImage(
         image,
-        croppedAreaPixels.x, croppedAreaPixels.y, croppedAreaPixels.width, croppedAreaPixels.height,
-        0, 0, TARGET_SIZE, TARGET_SIZE
-      );
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        targetWidth,
+        targetHeight
+      )
 
-      let quality = 0.9;
-      let webpBlob: Blob | null = null;
-      const MAX_BYTES = 30 * 1024; 
+      let quality = 0.9
+      let webpBlob: Blob | null = null
+      const maxBytes = cropTarget === 'BANNER' ? 150 * 1024 : 50 * 1024
 
       do {
-        webpBlob = await new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/webp', quality));
-        quality -= 0.1;
-      } while (webpBlob && webpBlob.size > MAX_BYTES && quality >= 0.4);
+        webpBlob = await new Promise((resolve) =>
+          canvas.toBlob((blob) => resolve(blob), 'image/webp', quality)
+        )
+        quality -= 0.1
+      } while (webpBlob && webpBlob.size > maxBytes && quality >= 0.4)
 
-      if (!webpBlob) throw new Error('Canvas to Blob failed');
+      if (!webpBlob) throw new Error('Canvas to Blob failed')
 
-      const fileNameOnly = `master_${Date.now()}.webp`; 
-      const webpFile = new File([webpBlob], fileNameOnly, { type: 'image/webp' });
+      const fileName = `master_${cropTarget.toLowerCase()}_${Date.now()}.webp`
+      const webpFile = new File([webpBlob], fileName, { type: 'image/webp' })
+      const previewUrl = URL.createObjectURL(webpFile)
 
-      setSelectedFile(webpFile);
-      setPreviewUrl(URL.createObjectURL(webpFile));
-      setIsCropModalOpen(false);
-      setImageToCrop(null);
+      if (cropTarget === 'STORE_TYPE') {
+        setStFile(webpFile)
+        setStPreview(previewUrl)
+      } else if (cropTarget === 'PRODUCT') {
+        setProdFile(webpFile)
+        setProdPreview(previewUrl)
+      } else if (cropTarget === 'BANNER') {
+        setBannerFile(webpFile)
+        setBannerPreview(previewUrl)
+      } else if (cropTarget === 'LEGACY') {
+        setLegacyFile(webpFile)
+        setLegacyPreview(previewUrl)
+      }
+
+      setIsCropModalOpen(false)
+      setImageToCrop(null)
     } catch (e: any) {
-      alert('การตัดรูปภาพล้มเหลว: ' + e.message);
+      alert('การตัดรูปภาพล้มเหลว: ' + e.message)
     }
   }
 
-  const handleAddImage = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!selectedFile || !imgName) return alert('กรุณากรอกข้อมูลและเลือกรูปภาพให้ครบ')
-    
-    setIsImgUploading(true)
-    try {
-      const apiFormData = new FormData()
-      apiFormData.append('file', selectedFile)
-      apiFormData.append('folder', 'master_assets') 
-
-      const response = await fetch('/api/upload', { method: 'POST', body: apiFormData })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Upload to R2 failed')
-
-      const publicUrl = `${CDN_URL}/${data.fileName}`
-      
-      const { error: dbError } = await supabase.from('images').insert([{
-        name: imgName, 
-        url: publicUrl, 
-        price: imgPrice ? parseFloat(imgPrice) : 0,
-        category_id: selectedCatId ? parseInt(selectedCatId) : null
-      }])
-      if (dbError) throw dbError
-
-      alert('บันทึกรูปภาพสำเร็จ!')
-      setImgName(''); setImgPrice(''); setSelectedCatId(''); setSelectedFile(null); setPreviewUrl('');
-      setShowImgModal(false)
-      fetchData()
-    } catch (error: any) {
-      alert('Error: ' + error.message)
-    } finally {
-      setIsImgUploading(false)
+  // =========================================================================
+  // 1. STORE TYPE ACTIONS
+  // =========================================================================
+  const openStoreTypeModal = (st?: StoreType) => {
+    if (st) {
+      setEditingStoreType(st)
+      setStName(st.name)
+      setStDescription(st.description || '')
+      setStIconUrl(st.icon_url || '')
+      setStSortOrder(String(st.sort_order || 1))
+      setStPreview(st.icon_url || '')
+    } else {
+      setEditingStoreType(null)
+      setStName('')
+      setStDescription('')
+      setStIconUrl('')
+      setStSortOrder(String(storeTypes.length + 1))
+      setStPreview('')
     }
+    setStFile(null)
+    setShowStoreTypeModal(true)
   }
 
-  const openEditModal = (img: ImageData) => {
-    setEditingImage(img)
-    setEditName(img.name)
-    setEditPrice(img.price ? img.price.toString() : '')
-    setEditCatId(img.category_id ? img.category_id.toString() : '')
-    setPreviewUrl('') // เคลียร์รูปเก่าถ้ามีค้าง
-    setSelectedFile(null)
-    setShowEditModal(true)
-  }
-
-  // ✅ แก้ไขจุดที่ 3: ปรับปรุง handleUpdateImage ให้รองรับการเปลี่ยนรูปใหม่
-  const handleUpdateImage = async (e: FormEvent) => {
+  const handleSaveStoreType = async (e: FormEvent) => {
     e.preventDefault()
-    if (!editingImage) return
-    setIsUpdating(true)
+    if (!stName.trim()) return alert('กรุณาระบุชื่อประเภทร้านค้า')
+    setIsStLoading(true)
+
     try {
-      let finalUrl = editingImage.url;
-      let oldImageToDelete = null;
-
-      // 🌟 ถ้ามีการเลือกรูปใหม่ (selectedFile) ให้โหลดขึ้น R2 ก่อน
-      if (selectedFile) {
-        const apiFormData = new FormData()
-        apiFormData.append('file', selectedFile)
-        apiFormData.append('folder', 'master_assets')
-
-        const response = await fetch('/api/upload', { method: 'POST', body: apiFormData })
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.error)
-
-        finalUrl = `${CDN_URL}/${data.fileName}`;
-        oldImageToDelete = editingImage.url; // จำ URL เก่าไว้เพื่อตามไปลบ
+      let finalIconUrl = stIconUrl.trim()
+      if (stFile) {
+        finalIconUrl = await uploadToR2(stFile, 'master_store_types')
       }
 
-      const { error } = await supabase
-        .from('images')
-        .update({
-          name: editName,
-          price: editPrice ? parseFloat(editPrice) : 0,
-          category_id: editCatId ? parseInt(editCatId) : null,
-          url: finalUrl // อัปเดต URL (ถ้ามีใหม่)
-        })
-        .eq('id', editingImage.id)
-
-      if (error) throw error
-
-      // 🗑️ ลบรูปเก่าใน R2 ทิ้ง (ถ้าเปลี่ยนรูปใหม่สำเร็จ)
-      if (oldImageToDelete && oldImageToDelete.includes('master_assets')) {
-          const oldFileName = oldImageToDelete.split('/').pop();
-          fetch('/api/delete-image', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fileName: `master_assets/${oldFileName}` })
-          }).catch(err => console.error("Clean up failed"));
+      const payload = {
+        name: stName.trim(),
+        description: stDescription.trim() || null,
+        icon_url: finalIconUrl || null,
+        sort_order: parseInt(stSortOrder) || 1,
+        is_active: true,
       }
 
-      alert('แก้ไขข้อมูลสำเร็จ!')
-      setShowEditModal(false)
-      setPreviewUrl('');
-      setSelectedFile(null);
-      fetchData() 
-    } catch (error: any) {
-      alert('Error: ' + error.message)
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
-  const handleDeleteImage = async () => {
-    if (!editingImage) return
-    if (!confirm('ยืนยันที่จะลบรูปภาพนี้? (กู้คืนไม่ได้นะ)')) return
-
-    setIsUpdating(true)
-    try {
-        const { error } = await supabase.from('images').delete().eq('id', editingImage.id)
+      if (editingStoreType) {
+        const { error } = await supabase.from('master_store_types').update(payload).eq('id', editingStoreType.id)
         if (error) throw error
-        
-        const fileName = editingImage.url.split('/').pop();
-        if (fileName && editingImage.url.includes('master_assets')) {
-             fetch('/api/delete-image', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ fileName: `master_assets/${fileName}` })
-             }).catch(err => console.error("Failed to delete image from R2:", err));
-        }
+        alert('อัปเดตประเภทร้านค้าสำเร็จ!')
+      } else {
+        const { error } = await supabase.from('master_store_types').insert([payload])
+        if (error) throw error
+        alert('เพิ่มประเภทร้านค้าใหม่สำเร็จ!')
+      }
 
-        alert('ลบรูปภาพเรียบร้อย')
-        setShowEditModal(false)
-        fetchData()
-    } catch (error: any) {
-        alert('Error: ' + error.message)
+      setShowStoreTypeModal(false)
+      fetchAllData()
+    } catch (e: any) {
+      alert('บันทึกล้มเหลว: ' + e.message)
     } finally {
-        setIsUpdating(false)
+      setIsStLoading(false)
     }
   }
+
+  const handleDeleteStoreType = async (id: number) => {
+    if (!confirm('ยืนยันที่จะลบประเภทร้านค้านี้? สินค้าและแบนเนอร์ที่ผูกอยู่จะถูกลบไปด้วย')) return
+    try {
+      const { error } = await supabase.from('master_store_types').delete().eq('id', id)
+      if (error) throw error
+      alert('ลบประเภทร้านค้าสำเร็จ')
+      fetchAllData()
+    } catch (e: any) {
+      alert('ลบล้มเหลว: ' + e.message)
+    }
+  }
+
+  // =========================================================================
+  // 2. PRODUCT ACTIONS
+  // =========================================================================
+  const openProductModal = (p?: MasterProduct) => {
+    if (p) {
+      setEditingProduct(p)
+      setProdName(p.name)
+      setProdPrice(String(p.price || 0))
+      setProdCostPrice(p.cost_price ? String(p.cost_price) : '')
+      setProdCategory(p.category_name || '')
+      setProdStoreTypeId(p.store_type_id ? String(p.store_type_id) : '')
+      setProdIsRecommended(p.is_recommended || false)
+      setProdPreview(p.image_url || '')
+    } else {
+      setEditingProduct(null)
+      setProdName('')
+      setProdPrice('')
+      setProdCostPrice('')
+      setProdCategory('')
+      setProdStoreTypeId(filterStoreTypeId !== 'ALL' ? String(filterStoreTypeId) : storeTypes[0]?.id ? String(storeTypes[0].id) : '')
+      setProdIsRecommended(false)
+      setProdPreview('')
+    }
+    setProdFile(null)
+    setShowProductModal(true)
+  }
+
+  const handleSaveProduct = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!prodName.trim()) return alert('กรุณาระบุชื่อสินค้า')
+    if (!prodCategory.trim()) return alert('กรุณาระบุหมวดหมู่สินค้า')
+    setIsProdLoading(true)
+
+    try {
+      let finalImageUrl = editingProduct?.image_url || null
+      if (prodFile) {
+        finalImageUrl = await uploadToR2(prodFile, 'master_products')
+      }
+
+      const payload = {
+        name: prodName.trim(),
+        price: parseFloat(prodPrice) || 0,
+        cost_price: prodCostPrice ? parseFloat(prodCostPrice) : null,
+        category_name: prodCategory.trim(),
+        store_type_id: prodStoreTypeId ? parseInt(prodStoreTypeId) : null,
+        image_url: finalImageUrl,
+        is_recommended: prodIsRecommended,
+        is_active: true,
+      }
+
+      if (editingProduct) {
+        const { error } = await supabase.from('master_products').update(payload).eq('id', editingProduct.id)
+        if (error) throw error
+        alert('อัปเดตสินค้าสำเร็จ!')
+      } else {
+        const { error } = await supabase.from('master_products').insert([payload])
+        if (error) throw error
+        alert('เพิ่มสินค้าใหม่สำเร็จ!')
+      }
+
+      setShowProductModal(false)
+      fetchAllData()
+    } catch (e: any) {
+      alert('บันทึกล้มเหลว: ' + e.message)
+    } finally {
+      setIsProdLoading(false)
+    }
+  }
+
+  const handleDeleteProduct = async (id: number) => {
+    if (!confirm('ยืนยันลบสินค้านี้?')) return
+    try {
+      const { error } = await supabase.from('master_products').delete().eq('id', id)
+      if (error) throw error
+      alert('ลบสินค้าสำเร็จ')
+      fetchAllData()
+    } catch (e: any) {
+      alert('ลบล้มเหลว: ' + e.message)
+    }
+  }
+
+  // =========================================================================
+  // 3. BANNER ACTIONS
+  // =========================================================================
+  const openBannerModal = (b?: MasterBanner) => {
+    if (b) {
+      setEditingBanner(b)
+      setBannerTitle(b.title || '')
+      setBannerStoreTypeId(b.store_type_id ? String(b.store_type_id) : '')
+      setBannerPreview(b.image_url || '')
+    } else {
+      setEditingBanner(null)
+      setBannerTitle('')
+      setBannerStoreTypeId(filterStoreTypeId !== 'ALL' ? String(filterStoreTypeId) : storeTypes[0]?.id ? String(storeTypes[0].id) : '')
+      setBannerPreview('')
+    }
+    setBannerFile(null)
+    setShowBannerModal(true)
+  }
+
+  const handleSaveBanner = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!bannerTitle.trim()) return alert('กรุณาระบุชื่อแบนเนอร์')
+    if (!bannerFile && !editingBanner?.image_url) return alert('กรุณาเลือกรูปแบนเนอร์')
+    setIsBannerLoading(true)
+
+    try {
+      let finalImageUrl = editingBanner?.image_url || ''
+      if (bannerFile) {
+        finalImageUrl = await uploadToR2(bannerFile, 'master_banners')
+      }
+
+      const payload = {
+        title: bannerTitle.trim(),
+        store_type_id: bannerStoreTypeId ? parseInt(bannerStoreTypeId) : null,
+        image_url: finalImageUrl,
+        is_active: true,
+      }
+
+      if (editingBanner) {
+        const { error } = await supabase.from('master_banners').update(payload).eq('id', editingBanner.id)
+        if (error) throw error
+        alert('อัปเดตแบนเนอร์สำเร็จ!')
+      } else {
+        const { error } = await supabase.from('master_banners').insert([payload])
+        if (error) throw error
+        alert('เพิ่มแบนเนอร์สำเร็จ!')
+      }
+
+      setShowBannerModal(false)
+      fetchAllData()
+    } catch (e: any) {
+      alert('บันทึกล้มเหลว: ' + e.message)
+    } finally {
+      setIsBannerLoading(false)
+    }
+  }
+
+  const handleDeleteBanner = async (id: number) => {
+    if (!confirm('ยืนยันลบแบนเนอร์นี้?')) return
+    try {
+      const { error } = await supabase.from('master_banners').delete().eq('id', id)
+      if (error) throw error
+      alert('ลบแบนเนอร์สำเร็จ')
+      fetchAllData()
+    } catch (e: any) {
+      alert('ลบล้มเหลว: ' + e.message)
+    }
+  }
+
+  // Filtered lists
+  const filteredProducts =
+    filterStoreTypeId === 'ALL'
+      ? products
+      : products.filter((p) => p.store_type_id === filterStoreTypeId)
+
+  const filteredBanners =
+    filterStoreTypeId === 'ALL'
+      ? banners
+      : banners.filter((b) => b.store_type_id === filterStoreTypeId)
+
+  const filteredLegacyImages =
+    legacyActiveCategory === 'ALL'
+      ? legacyImages
+      : legacyImages.filter((img) => img.category_id === legacyActiveCategory)
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 relative">
-      
-      {/* --- Header --- */}
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-3xl font-black text-gray-800 tracking-tight">คลังรูปภาพอาหาร</h1>
-        <div className="flex gap-3">
-          <button 
-            onClick={() => setShowCatModal(true)}
-            className="bg-white border-2 border-gray-200 text-gray-700 font-bold px-4 py-2.5 rounded-xl shadow-sm hover:border-gray-300 hover:bg-gray-50 transition flex items-center gap-2"
-          >
-            <span>📁</span> จัดการหมวดหมู่
-          </button>
-          <button 
-            onClick={() => setShowImgModal(true)}
-            className="bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-md hover:bg-blue-700 hover:shadow-lg transition flex items-center gap-2 active:scale-95"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            เพิ่มรูปภาพใหม่
-          </button>
-        </div>
-      </div>
-
-      {/* --- Filter Tabs --- */}
+    <div className="min-h-screen bg-[#F8FAFC] p-6 lg:p-10 font-sans">
+      {/* Header */}
       <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-200/80 pb-6">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+                Setup Onboarding Manager
+              </span>
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+              จัดการข้อมูลตั้งต้นสำหรับเปิดร้านใหม่
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              เพิ่ม/แก้ไขประเภทร้านค้า เมนูอาหาร และแบนเนอร์แนะนำ ที่จะแสดงให้ผู้ใช้จิ้มเลือกตอนสมัครใช้งานแอป
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={fetchAllData}
+              className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm transition flex items-center gap-2"
+            >
+              🔄 รีเฟรชข้อมูล
+            </button>
+            {activeTab === 'STORE_TYPES' && (
+              <button
+                onClick={() => openStoreTypeModal()}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2"
+              >
+                + เพิ่มประเภทร้าน
+              </button>
+            )}
+            {activeTab === 'PRODUCTS' && (
+              <button
+                onClick={() => openProductModal()}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2"
+              >
+                + เพิ่มสินค้าต้นแบบ
+              </button>
+            )}
+            {activeTab === 'BANNERS' && (
+              <button
+                onClick={() => openBannerModal()}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2"
+              >
+                + เพิ่มแบนเนอร์
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-3 mt-6 border-b border-gray-200">
           <button
-            onClick={() => setActiveCategory('ALL')}
-            className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
-              activeCategory === 'ALL' ? 'bg-gray-800 text-white shadow-md' : 'bg-white text-gray-500 border-2 border-transparent hover:bg-gray-200'
+            onClick={() => setActiveTab('STORE_TYPES')}
+            className={`pb-4 px-3 font-bold text-sm border-b-2 transition flex items-center gap-2 ${
+              activeTab === 'STORE_TYPES'
+                ? 'border-emerald-600 text-emerald-700'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
-            ทั้งหมด ({images.length})
+            <span className="text-base">🏪</span> 1. ประเภทร้านค้า ({storeTypes.length})
           </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
-                activeCategory === cat.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-500 border-2 border-transparent hover:bg-gray-200'
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
+          <button
+            onClick={() => setActiveTab('PRODUCTS')}
+            className={`pb-4 px-3 font-bold text-sm border-b-2 transition flex items-center gap-2 ${
+              activeTab === 'PRODUCTS'
+                ? 'border-emerald-600 text-emerald-700'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            <span className="text-base">🍲</span> 2. สินค้าต้นแบบ ({products.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('BANNERS')}
+            className={`pb-4 px-3 font-bold text-sm border-b-2 transition flex items-center gap-2 ${
+              activeTab === 'BANNERS'
+                ? 'border-emerald-600 text-emerald-700'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            <span className="text-base">🖼️</span> 3. แบนเนอร์แนะนำ ({banners.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('LEGACY')}
+            className={`pb-4 px-3 font-bold text-sm border-b-2 transition flex items-center gap-2 ${
+              activeTab === 'LEGACY'
+                ? 'border-emerald-600 text-emerald-700'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            <span className="text-base">📁</span> คลังรูปเดิม ({legacyImages.length})
+          </button>
         </div>
       </div>
 
-      {/* --- Gallery Display --- */}
-      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {filteredImages.map((img) => (
-          <div key={img.id} onClick={() => openEditModal(img)} className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col cursor-pointer hover:-translate-y-1">
-            <div className="aspect-square overflow-hidden bg-gray-100 relative">
-              <img src={img.url} alt={img.name} className="w-full h-full object-cover transition duration-700 group-hover:scale-110" loading="lazy" />
-              <div className="absolute top-3 right-3 bg-white/90 w-8 h-8 rounded-full flex items-center justify-center shadow-md text-gray-600 group-hover:text-blue-600 transition-colors">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-              </div>
-            </div>
-            <div className="p-4 flex flex-col gap-1.5 flex-1 justify-between">
-              <div>
-                {img.categoriesphotoadmin && (
-                  <span className="text-[10px] text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
-                    {img.categoriesphotoadmin.name}
-                  </span>
-                )}
-                <h3 className="font-bold text-gray-800 text-sm line-clamp-2 mt-2 leading-tight">{img.name}</h3>
-              </div>
-              <p className="text-red-500 font-black text-lg">฿ {img.price?.toLocaleString() || '0'}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <div className="max-w-7xl mx-auto py-20 text-center text-gray-400 font-bold">
+          กำลังโหลดข้อมูลระบบ...
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto">
+          {/* ========================================================================= */}
+          {/* TAB 1: ประเภทร้านค้า (master_store_types) */}
+          {/* ========================================================================= */}
+          {activeTab === 'STORE_TYPES' && (
+            <div>
+              {storeTypes.length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-gray-300">
+                  <div className="text-5xl mb-4">🏪</div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีประเภทร้านค้าในระบบ</h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    เริ่มต้นด้วยการเพิ่มประเภทร้าน เช่น ร้านข้าวมันไก่, ร้านก๋วยเตี๋ยว, ร้านกาแฟ ฯลฯ
+                  </p>
+                  <button
+                    onClick={() => openStoreTypeModal()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl shadow-md transition"
+                  >
+                    + เพิ่มประเภทร้านแรก
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {storeTypes.map((st) => {
+                    const prodCount = products.filter((p) => p.store_type_id === st.id).length
+                    const bannerCount = banners.filter((b) => b.store_type_id === st.id).length
 
-      {/* --- MODAL 1: เพิ่มรูปภาพ --- */}
-      {showImgModal && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h2 className="text-xl font-black text-gray-800 flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>
-                เพิ่มรูปภาพส่วนกลาง
-              </h2>
-              <button onClick={() => setShowImgModal(false)} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500">✕</button>
-            </div>
-            
-            <form onSubmit={handleAddImage} className="p-6 space-y-5">
-              <div className="flex justify-center">
-                <div className="relative group cursor-pointer w-48 h-48" onClick={() => document.getElementById('add-file-input')?.click()}>
-                    <div className={`w-full h-full rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center overflow-hidden relative ${previewUrl ? 'border-transparent bg-gray-900' : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/50'}`}>
-                      {previewUrl ? (
-                          <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
-                      ) : (
-                          <div className="text-gray-400 flex flex-col items-center gap-2 group-hover:text-blue-500">
-                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                              <span className="text-xs font-bold uppercase tracking-wider">อัปโหลดรูป 1:1</span>
+                    return (
+                      <div
+                        key={st.id}
+                        className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0 flex items-center justify-center">
+                              {st.icon_url ? (
+                                <img src={st.icon_url} alt={st.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-2xl">🏪</span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-black text-gray-800 text-lg">{st.name}</h3>
+                              <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                {st.description || 'ไม่มีคำอธิบาย'}
+                              </p>
+                            </div>
                           </div>
-                      )}
-                      <input type="file" id="add-file-input" accept="image/*" onChange={handleFileChange} className="hidden" />
-                    </div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">ชื่อเมนูอาหาร</label>
-                    <input type="text" value={imgName} onChange={(e) => setImgName(e.target.value)} className="w-full bg-gray-50 border border-transparent focus:bg-white focus:border-blue-500 rounded-xl px-4 py-3 mt-1.5 font-bold text-gray-800 outline-none" placeholder="เช่น กะเพรา" required />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">ราคาแนะนำ</label>
-                    <input type="number" value={imgPrice} onChange={(e) => setImgPrice(e.target.value)} className="w-full bg-gray-50 border border-transparent focus:bg-white focus:border-blue-500 rounded-xl px-4 py-3 mt-1.5 font-bold text-gray-800 outline-none" placeholder="0" />
-                </div>
-              </div>
-              
-              <button type="submit" disabled={isImgUploading} className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-blue-700 transition-all">
-                {isImgUploading ? 'กำลังอัปโหลด...' : 'บันทึกเข้าคลังภาพ'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ✅ แก้ไขจุดที่ 4: เพิ่ม UI การเลือกรูปภาพใหม่ใน Modal แก้ไข */}
-      {showEditModal && editingImage && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h2 className="text-xl font-black text-gray-800">แก้ไขข้อมูลรูปภาพ</h2>
-              <button onClick={() => setShowEditModal(false)} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">✕</button>
-            </div>
-
-            <form onSubmit={handleUpdateImage} className="p-6 space-y-5">
-              <div className="flex justify-center mb-6">
-                {/* 🌟 คลิกที่รูปเพื่อเปลี่ยนรูปใหม่ */}
-                <div className="relative group cursor-pointer w-32 h-32" onClick={() => document.getElementById('edit-file-input')?.click()}>
-                    <div className="w-full h-full rounded-2xl overflow-hidden shadow-inner border-4 border-gray-50 bg-gray-900">
-                        <img src={previewUrl || editingImage.url} alt="Preview" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-white text-[10px] font-bold bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm">เปลี่ยนรูป</span>
+                          <div className="flex gap-2 mb-4">
+                            <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg font-bold">
+                              🍲 {prodCount} สินค้า
+                            </span>
+                            <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-bold">
+                              🖼️ {bannerCount} แบนเนอร์
+                            </span>
+                          </div>
                         </div>
-                    </div>
-                    <input type="file" id="edit-file-input" accept="image/*" onChange={handleFileChange} className="hidden" />
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">ชื่อรูปภาพ</label>
-                    <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full bg-gray-50 border border-transparent focus:bg-white focus:border-blue-500 rounded-xl px-4 py-3 mt-1.5 font-bold text-gray-800 outline-none" required />
+                        <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+                          <button
+                            onClick={() => openStoreTypeModal(st)}
+                            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition"
+                          >
+                            แก้ไข
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStoreType(st.id)}
+                            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition"
+                          >
+                            ลบ
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">ราคา (บาท)</label>
-                        <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="w-full bg-gray-50 border border-transparent focus:bg-white focus:border-blue-500 rounded-xl px-4 py-3 mt-1.5 font-bold text-gray-800 outline-none" />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">หมวดหมู่</label>
-                        <select value={editCatId} onChange={(e) => setEditCatId(e.target.value)} className="w-full bg-gray-50 border border-transparent focus:bg-white focus:border-blue-500 rounded-xl px-4 py-3 mt-1.5 font-bold text-gray-800 outline-none">
-                            <option value="">-- ไม่ระบุ --</option>
-                            {categories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
-                        </select>
-                    </div>
-                </div>
-              </div>
+              )}
+            </div>
+          )}
 
-              <div className="pt-4 mt-6 border-t border-gray-100 flex gap-3">
-                <button type="button" onClick={handleDeleteImage} disabled={isUpdating} className="px-5 py-3.5 bg-red-50 text-red-600 font-bold rounded-xl flex items-center justify-center">
-                    ลบทิ้ง
+          {/* ========================================================================= */}
+          {/* TAB 2: สินค้าต้นแบบ (master_products) */}
+          {/* ========================================================================= */}
+          {activeTab === 'PRODUCTS' && (
+            <div>
+              {/* Filter By Store Type */}
+              <div className="flex gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
+                <button
+                  onClick={() => setFilterStoreTypeId('ALL')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                    filterStoreTypeId === 'ALL'
+                      ? 'bg-gray-800 text-white shadow-sm'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  ทั้งหมด ({products.length})
                 </button>
-                <button type="submit" disabled={isUpdating} className="flex-1 bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg">
-                    {isUpdating ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+                {storeTypes.map((st) => (
+                  <button
+                    key={st.id}
+                    onClick={() => setFilterStoreTypeId(st.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                      filterStoreTypeId === st.id
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {st.name} ({products.filter((p) => p.store_type_id === st.id).length})
+                  </button>
+                ))}
+              </div>
+
+              {filteredProducts.length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-gray-300">
+                  <div className="text-5xl mb-4">🍲</div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีสินค้าในหมวดนี้</h3>
+                  <button
+                    onClick={() => openProductModal()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl shadow-md transition"
+                  >
+                    + เพิ่มสินค้าใหม่
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                  {filteredProducts.map((p) => (
+                    <div
+                      key={p.id}
+                      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition overflow-hidden flex flex-col justify-between"
+                    >
+                      <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                        {p.image_url ? (
+                          <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300 text-3xl">🍲</div>
+                        )}
+                        {p.is_recommended && (
+                          <span className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow">
+                            ⭐ แนะนำ
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-bold">
+                              {p.category_name}
+                            </span>
+                            {p.master_store_types && (
+                              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold truncate">
+                                {p.master_store_types.name}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="font-bold text-gray-800 text-sm line-clamp-2 mt-1">{p.name}</h4>
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                          <div>
+                            <span className="text-emerald-700 font-black text-base">฿{p.price}</span>
+                            {p.cost_price && (
+                              <span className="text-gray-400 text-[10px] block">ทุน ฿{p.cost_price}</span>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => openProductModal(p)}
+                              className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(p.id)}
+                              className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 3: แบนเนอร์แนะนำ (master_banners) */}
+          {/* ========================================================================= */}
+          {activeTab === 'BANNERS' && (
+            <div>
+              {/* Filter By Store Type */}
+              <div className="flex gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
+                <button
+                  onClick={() => setFilterStoreTypeId('ALL')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                    filterStoreTypeId === 'ALL'
+                      ? 'bg-gray-800 text-white shadow-sm'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  ทั้งหมด ({banners.length})
+                </button>
+                {storeTypes.map((st) => (
+                  <button
+                    key={st.id}
+                    onClick={() => setFilterStoreTypeId(st.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                      filterStoreTypeId === st.id
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {st.name} ({banners.filter((b) => b.store_type_id === st.id).length})
+                  </button>
+                ))}
+              </div>
+
+              {filteredBanners.length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-gray-300">
+                  <div className="text-5xl mb-4">🖼️</div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">ยังไม่มีแบนเนอร์ในหมวดนี้</h3>
+                  <button
+                    onClick={() => openBannerModal()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl shadow-md transition"
+                  >
+                    + เพิ่มแบนเนอร์ใหม่
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredBanners.map((b) => (
+                    <div
+                      key={b.id}
+                      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition overflow-hidden"
+                    >
+                      <div className="aspect-video bg-gray-100 relative overflow-hidden">
+                        <img src={b.image_url} alt={b.title} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        <div className="absolute bottom-3 left-3 right-3 text-white">
+                          <h4 className="font-bold text-base drop-shadow-sm">{b.title}</h4>
+                          {b.master_store_types && (
+                            <span className="text-[10px] bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded font-bold">
+                              {b.master_store_types.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="p-4 flex justify-end gap-2">
+                        <button
+                          onClick={() => openBannerModal(b)}
+                          className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold"
+                        >
+                          แก้ไข
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBanner(b.id)}
+                          className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold"
+                        >
+                          ลบ
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 4: คลังรูปเดิม (Legacy images) */}
+          {/* ========================================================================= */}
+          {activeTab === 'LEGACY' && (
+            <div>
+              <div className="flex gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
+                <button
+                  onClick={() => setLegacyActiveCategory('ALL')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                    legacyActiveCategory === 'ALL'
+                      ? 'bg-gray-800 text-white shadow-sm'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  ทั้งหมด ({legacyImages.length})
+                </button>
+                {legacyCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setLegacyActiveCategory(cat.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+                      legacyActiveCategory === cat.id
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {filteredLegacyImages.map((img) => (
+                  <div key={img.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+                    <div className="aspect-square bg-gray-100 overflow-hidden">
+                      <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="p-3">
+                      <h4 className="font-bold text-xs text-gray-800 line-clamp-1">{img.name}</h4>
+                      <p className="text-emerald-700 font-black text-sm mt-1">฿{img.price || 0}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1: เพิ่ม/แก้ไข ประเภทร้านค้า */}
+      {/* ========================================================================= */}
+      {showStoreTypeModal && (
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-lg font-black text-gray-800">
+                {editingStoreType ? 'แก้ไขประเภทร้านค้า' : 'เพิ่มประเภทร้านค้าใหม่'}
+              </h2>
+              <button onClick={() => setShowStoreTypeModal(false)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveStoreType} className="p-6 space-y-4">
+              <div className="flex justify-center mb-2">
+                <div
+                  className="relative group cursor-pointer w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center"
+                  onClick={() => document.getElementById('st-file-input')?.click()}
+                >
+                  {stPreview ? (
+                    <img src={stPreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center p-2">
+                      <span className="text-xl block">📷</span>
+                      <span className="text-[10px] text-gray-500 font-bold">เลือกไอคอน</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    id="st-file-input"
+                    accept="image/*"
+                    onChange={(e) => handleFileSelectForCrop(e, 'STORE_TYPE')}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">ชื่อประเภทร้าน *</label>
+                <input
+                  type="text"
+                  placeholder="เช่น ร้านข้าวมันไก่, ร้านก๋วยเตี๋ยว"
+                  value={stName}
+                  onChange={(e) => setStName(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-1 font-bold text-gray-800 text-sm outline-none focus:bg-white focus:border-emerald-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">คำอธิบาย</label>
+                <input
+                  type="text"
+                  placeholder="เช่น ข้าวมันไก่ต้ม, ไก่ทอด, ซุปมะระ"
+                  value={stDescription}
+                  onChange={(e) => setStDescription(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-1 text-sm outline-none focus:bg-white focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">ลำดับแสดงผล</label>
+                  <input
+                    type="number"
+                    value={stSortOrder}
+                    onChange={(e) => setStSortOrder(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-1 text-sm outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">หรือกรอก URL ไอคอน</label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    value={stIconUrl}
+                    onChange={(e) => {
+                      setStIconUrl(e.target.value)
+                      setStPreview(e.target.value)
+                    }}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-1 text-xs outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowStoreTypeModal(false)}
+                  className="px-4 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl text-sm"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={isStLoading}
+                  className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
+                >
+                  {isStLoading ? 'กำลังบันทึก...' : 'บันทึกประเภทร้าน'}
                 </button>
               </div>
             </form>
@@ -483,42 +1032,245 @@ export default function AdminPhotoPage() {
         </div>
       )}
 
-      {/* --- MODAL 3: จัดการหมวดหมู่ --- */}
-      {showCatModal && (
+      {/* ========================================================================= */}
+      {/* MODAL 2: เพิ่ม/แก้ไข สินค้าต้นแบบ (master_products) */}
+      {/* ========================================================================= */}
+      {showProductModal && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h2 className="text-xl font-black text-gray-800">จัดการหมวดหมู่</h2>
-              <button onClick={() => setShowCatModal(false)} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">✕</button>
+              <h2 className="text-lg font-black text-gray-800">
+                {editingProduct ? 'แก้ไขสินค้าต้นแบบ' : 'เพิ่มสินค้าต้นแบบใหม่'}
+              </h2>
+              <button onClick={() => setShowProductModal(false)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
             </div>
-            <div className="p-6">
-                <form onSubmit={handleAddCategory} className="flex gap-3 mb-6">
-                <input type="text" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="ชื่อหมวดหมู่ใหม่..." className="flex-1 bg-gray-50 border-transparent focus:bg-white focus:border-blue-500 rounded-xl px-4 py-3 font-bold outline-none" required />
-                <button type="submit" disabled={isCatLoading} className="bg-gray-800 text-white font-bold px-6 py-3 rounded-xl">เพิ่ม</button>
-                </form>
-                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
-                    {categories.map(c => (<span key={c.id} className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-sm font-bold">{c.name}</span>))}
+
+            <form onSubmit={handleSaveProduct} className="p-6 space-y-4">
+              <div className="flex justify-center mb-2">
+                <div
+                  className="relative group cursor-pointer w-28 h-28 rounded-2xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center"
+                  onClick={() => document.getElementById('prod-file-input')?.click()}
+                >
+                  {prodPreview ? (
+                    <img src={prodPreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center p-2">
+                      <span className="text-2xl block">🍲</span>
+                      <span className="text-[10px] text-gray-500 font-bold">เลือกรูปอาหาร</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    id="prod-file-input"
+                    accept="image/*"
+                    onChange={(e) => handleFileSelectForCrop(e, 'PRODUCT')}
+                    className="hidden"
+                  />
                 </div>
-            </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">ชื่อสินค้า *</label>
+                <input
+                  type="text"
+                  placeholder="เช่น ข้าวมันไก่ตอน (ต้ม), เส้นเล็กต้มยำ"
+                  value={prodName}
+                  onChange={(e) => setProdName(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-1 font-bold text-gray-800 text-sm outline-none focus:bg-white focus:border-emerald-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">ราคาขาย (บาท) *</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={prodPrice}
+                    onChange={(e) => setProdPrice(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-1 font-black text-emerald-700 text-sm outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">ราคาต้นทุน (บาท)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={prodCostPrice}
+                    onChange={(e) => setProdCostPrice(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-1 text-sm outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">หมวดหมู่สินค้า *</label>
+                  <input
+                    type="text"
+                    placeholder="เช่น ข้าวมันไก่, ซุป, เครื่องดื่ม"
+                    value={prodCategory}
+                    onChange={(e) => setProdCategory(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-1 text-sm outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">ผูกกับประเภทร้าน</label>
+                  <select
+                    value={prodStoreTypeId}
+                    onChange={(e) => setProdStoreTypeId(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 mt-1 text-sm outline-none font-bold"
+                  >
+                    <option value="">-- ไม่ระบุ --</option>
+                    {storeTypes.map((st) => (
+                      <option key={st.id} value={st.id}>
+                        {st.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="prod-rec"
+                  checked={prodIsRecommended}
+                  onChange={(e) => setProdIsRecommended(e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-600 accent-emerald-600"
+                />
+                <label htmlFor="prod-rec" className="text-xs font-bold text-gray-700 cursor-pointer">
+                  ⭐ ตั้งเป็นเมนูแนะนำเริ่มต้น
+                </label>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowProductModal(false)}
+                  className="px-4 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl text-sm"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProdLoading}
+                  className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
+                >
+                  {isProdLoading ? 'กำลังบันทึก...' : 'บันทึกสินค้า'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* --- MODAL 4: Crop รูปภาพ --- */}
+      {/* ========================================================================= */}
+      {/* MODAL 3: เพิ่ม/แก้ไข แบนเนอร์แนะนำ (master_banners) */}
+      {/* ========================================================================= */}
+      {showBannerModal && (
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-lg font-black text-gray-800">
+                {editingBanner ? 'แก้ไขแบนเนอร์' : 'เพิ่มแบนเนอร์ใหม่'}
+              </h2>
+              <button onClick={() => setShowBannerModal(false)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveBanner} className="p-6 space-y-4">
+              <div className="flex justify-center mb-2">
+                <div
+                  className="relative group cursor-pointer w-full h-44 rounded-2xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center"
+                  onClick={() => document.getElementById('banner-file-input')?.click()}
+                >
+                  {bannerPreview ? (
+                    <img src={bannerPreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center p-4">
+                      <span className="text-3xl block">🖼️</span>
+                      <span className="text-xs text-gray-500 font-bold mt-1 block">เลือกรูปแบนเนอร์แนวนอน (16:9)</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    id="banner-file-input"
+                    accept="image/*"
+                    onChange={(e) => handleFileSelectForCrop(e, 'BANNER')}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">ชื่อ/หัวข้อแบนเนอร์ *</label>
+                <input
+                  type="text"
+                  placeholder="เช่น ข้าวมันไก่สูตรเด็ดต้นตำรับ"
+                  value={bannerTitle}
+                  onChange={(e) => setBannerTitle(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mt-1 font-bold text-gray-800 text-sm outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">ผูกกับประเภทร้าน</label>
+                <select
+                  value={bannerStoreTypeId}
+                  onChange={(e) => setBannerStoreTypeId(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 mt-1 text-sm outline-none font-bold"
+                >
+                  <option value="">-- แสดงทุกประเภทร้าน --</option>
+                  {storeTypes.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowBannerModal(false)}
+                  className="px-4 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl text-sm"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={isBannerLoading}
+                  className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-sm shadow-md hover:bg-emerald-700"
+                >
+                  {isBannerLoading ? 'กำลังบันทึก...' : 'บันทึกแบนเนอร์'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL CROPPER: ปรับตำแหน่งและตัดรูปภาพ */}
+      {/* ========================================================================= */}
       {isCropModalOpen && imageToCrop && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm" onClick={() => setIsCropModalOpen(false)}></div>
-          <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in zoom-in-95">
+          <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm" onClick={() => setIsCropModalOpen(false)} />
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in zoom-in-95">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-lg font-black text-gray-800">จัดตำแหน่งรูปภาพ</h3>
-              <button onClick={() => setIsCropModalOpen(false)} className="w-8 h-8 rounded-full bg-gray-100 text-gray-500">✕</button>
+              <h3 className="text-base font-black text-gray-800">จัดตำแหน่งรูปภาพ</h3>
+              <button onClick={() => setIsCropModalOpen(false)} className="text-gray-400 text-lg">✕</button>
             </div>
-            <div className="relative w-full h-80 bg-gray-50">
+            <div className="relative w-full h-80 bg-gray-900">
               <Cropper
                 image={imageToCrop}
                 crop={crop}
                 zoom={zoom}
-                aspect={1}
+                aspect={cropAspect}
                 onCropChange={setCrop}
                 onCropComplete={onCropComplete}
                 onZoomChange={setZoom}
@@ -526,18 +1278,28 @@ export default function AdminPhotoPage() {
               />
             </div>
             <div className="p-6 bg-white">
-              <div className="flex items-center gap-4 mb-6">
-                <span className="text-gray-400 text-sm font-bold">Zoom</span>
-                <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+              <div className="flex items-center gap-4 mb-4">
+                <span className="text-gray-400 text-xs font-bold">Zoom</span>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                />
               </div>
-              <button onClick={handleCropSave} className="w-full py-3.5 rounded-xl font-bold text-white bg-blue-600 shadow-lg">
+              <button
+                onClick={handleCropSave}
+                className="w-full py-3 rounded-xl font-bold text-white bg-emerald-600 shadow-md hover:bg-emerald-700"
+              >
                 ยืนยันการตัดรูป
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   )
 }
