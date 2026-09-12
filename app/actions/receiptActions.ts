@@ -40,6 +40,7 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
           id,
           table_label,
           status,
+          created_at,
           order_items (
             product_name,
             quantity,
@@ -109,7 +110,8 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
         order_id: actualOrderId,
         payment_id: receipt.id,
         pai_order_id: receipt.id,
-        created_at: receipt.created_at,
+        created_at: receipt.orders?.[0]?.created_at || receipt.created_at,
+        paid_at: receipt.created_at,
         table_label: tableName,
         total_amount: receipt.total_amount,
         received_amount: receipt.received_amount, // ✅ ได้ค่าจาก pai_orders เป๊ะๆ

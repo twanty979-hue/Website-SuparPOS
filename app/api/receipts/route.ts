@@ -143,7 +143,7 @@ export async function GET(request: Request) {
         brand:brands(name),
         cashier:profiles(full_name),
         orders:orders!orders_payment_id_fkey (
-          id, table_label, status,
+          id, table_label, status, created_at,
           order_items (product_name, quantity, price, variant, promotion_snapshot, status, note)
         )
       `, { count: 'exact' })
@@ -186,7 +186,8 @@ export async function GET(request: Request) {
         payment_id: receipt.id,
         pai_order_id: receipt.id,
         brand_id: receipt.brand_id,
-        created_at: receipt.created_at,
+        created_at: receipt.orders?.[0]?.created_at || receipt.created_at,
+        paid_at: receipt.created_at,
         table_label: tableName,
         total_amount: receipt.total_amount,
         received_amount: receipt.received_amount,
