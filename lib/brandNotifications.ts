@@ -65,7 +65,7 @@ export async function sendBrandNotification(input: NotificationInput) {
     const channel = client.channel(`brand-${brandId}`);
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
-        const payloadData = typeof orderData === 'object' && orderData !== null ? orderData : {};
+        const payloadData = (typeof orderData === 'object' && orderData !== null ? orderData : {}) as Record<string, any>;
         channel
           .send({
             type: 'broadcast',
