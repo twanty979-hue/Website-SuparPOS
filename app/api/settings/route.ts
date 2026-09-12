@@ -135,6 +135,10 @@ export async function POST(request: Request) {
       body.vat !== undefined ||
       body.vat_mode !== undefined ||
       body.notification_sound !== undefined ||
+      body.tax_id !== undefined ||
+      body.company_name !== undefined ||
+      body.branch_type !== undefined ||
+      body.branch_number !== undefined ||
       hasTutorialUpdate;
 
     if (hasConfigUpdate) {
@@ -174,6 +178,12 @@ export async function POST(request: Request) {
         }
         updatedConfig.vat = vat;
         updatedConfig.vat_mode = vatMode;
+      }
+
+      for (const taxKey of ['tax_id', 'company_name', 'branch_type', 'branch_number', 'address']) {
+        if (body[taxKey] !== undefined) {
+          updatedConfig[taxKey] = typeof body[taxKey] === 'string' ? body[taxKey].trim() : body[taxKey];
+        }
       }
 
       if (hasTutorialUpdate) {

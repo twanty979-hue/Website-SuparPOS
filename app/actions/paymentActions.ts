@@ -117,7 +117,7 @@ export async function getPaymentInitialDataAction() {
     const [catsResp, foodProdsResp, retailProdsResp, discsResp] = await Promise.all([
       supabase.from('categories').select('*').eq('brand_id', brandId).order('sort_order'),
       // 🍔 1. ดึงอาหาร
-      supabase.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).order('created_at', { ascending: false }),
+      supabase.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).is('deleted_at', null).order('created_at', { ascending: false }),
       // 🛒 2. ดึงของชำจาก Product Master
       supabase.from('product_master').select('*').eq('brand_id', brandId).eq('is_active', true).order('created_at', { ascending: false }),
       supabase.from('discounts').select(`*, discount_products(product_id)`).eq('brand_id', brandId).eq('is_active', true),

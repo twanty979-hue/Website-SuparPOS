@@ -91,6 +91,25 @@ export default function LandingClient() {
   }, []);
 
   useEffect(() => {
+    // 🔐 ดักจับ Auth Tokens / Recovery จากอีเมลที่วิ่งเข้าหน้าแรก
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      const type = params.get('type') || (hash.includes('recovery') ? 'recovery' : 'verified');
+      
+      if (accessToken) {
+        const appUrl = `posfoodscan://auth-callback?type=${type}&ticket=${accessToken}&access_token=${accessToken}`;
+        const legacyUrl = `com.pos.foodscan://auth-callback?type=${type}&ticket=${accessToken}&access_token=${accessToken}`;
+        
+        // สั่งเด้งเข้าแอปทันที
+        window.location.href = appUrl;
+        setTimeout(() => {
+          window.location.href = legacyUrl;
+        }, 800);
+      }
+    }
+
     const checkUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();

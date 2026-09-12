@@ -8,7 +8,7 @@ export async function OPTIONS() {
     status: 204,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
@@ -104,5 +104,57 @@ export async function POST(request: Request) {
   } catch (error: any) {
     const status = error.message === 'Unauthorized' ? 401 : 500;
     return NextResponse.json({ success: false, error: error.message }, { status, headers: { 'Access-Control-Allow-Origin': '*' } });
+  }
+}
+
+// --- 🗑️ [DELETE] ลบแบนเนอร์ของร้าน ---
+export async function DELETE(request: Request) {
+  try {
+    const { supabase, brandId } = await getSupabaseAndBrandId(request);
+
+    let id: string | null = null;
+    const { searchParams } = new URL(request.url);
+    id = searchParams.get('id');
+
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body?.id;
+      } catch {
+        // ไม่มี body หรือไม่ได้ส่งมาแบบ json
+      }
+    }
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'กรุณาระบุรหัสแบนเนอร์ (id) ที่ต้องการลบ' },
+        { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } }
+      );
+    }
+
+    const { error } = await supabase
+      .from('banners')
+      .delete()
+      .eq('id', id)
+      .eq('brand_id', brandId);
+
+    if (error) throw error;
+
+    return new NextResponse(
+      JSON.stringify({ success: true, message: 'ลบแบนเนอร์สำเร็จ' }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+  } catch (error: any) {
+    const status = error.message === 'Unauthorized' ? 401 : 500;
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status, headers: { 'Access-Control-Allow-Origin': '*' } }
+    );
   }
 }
