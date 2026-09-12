@@ -143,8 +143,13 @@ export async function GET(request: Request) {
         brand:brands(name),
         cashier:profiles(full_name),
         orders:orders!orders_payment_id_fkey (
+<<<<<<< HEAD
           id, table_label, status,
           order_items (*)
+=======
+          id, table_label, status, created_at,
+          order_items (product_name, quantity, price, original_price, discount, variant, promotion_snapshot, toppings_snapshot, status, note)
+>>>>>>> 017e49925c8dc672fb910945ce23a1764679ad8d
         )
       `, { count: 'exact' })
       .eq('brand_id', brandId)
@@ -159,7 +164,11 @@ export async function GET(request: Request) {
       .select(`
         *,
         brand:brands(name),
+<<<<<<< HEAD
         order_items (*)
+=======
+        order_items (product_name, quantity, price, original_price, discount, variant, promotion_snapshot, toppings_snapshot, status, note)
+>>>>>>> 017e49925c8dc672fb910945ce23a1764679ad8d
       `, { count: 'exact' })
       .eq('brand_id', brandId)
       .eq('status', 'cancelled') 
@@ -178,16 +187,31 @@ export async function GET(request: Request) {
       const allItems = receipt.orders?.flatMap((o: any) => o.order_items || []) || [];
       const tableName = receipt.orders?.[0]?.table_label || 'Walk-in';
       const isActuallyCancelled = receipt.orders?.every((o: any) => o.status === 'cancelled');
+      const actualOrderId = receipt.orders?.[0]?.id || receipt.order_id || receipt.id;
 
       return {
+<<<<<<< HEAD
         ...receipt,
         id: receipt.id,
+=======
+        id: actualOrderId,
+        order_id: actualOrderId,
+        payment_id: receipt.id,
+        pai_order_id: receipt.id,
+>>>>>>> 017e49925c8dc672fb910945ce23a1764679ad8d
         brand_id: receipt.brand_id,
-        created_at: receipt.created_at,
+        created_at: receipt.orders?.[0]?.created_at || receipt.created_at,
+        paid_at: receipt.created_at,
         table_label: tableName,
         total_amount: receipt.total_amount,
         received_amount: receipt.received_amount,
         change_amount: receipt.change_amount,
+        subtotal_before_vat: receipt.subtotal_before_vat,
+        vat_rate: receipt.vat_rate,
+        vat_mode: receipt.vat_mode,
+        vat_amount: receipt.vat_amount,
+        total_with_vat: receipt.total_with_vat,
+        vat_snapshot: receipt.vat_snapshot,
         payment_method: isActuallyCancelled ? 'CANCELLED' : receipt.payment_method,
         brand: receipt.brand,
         cashier: receipt.cashier || { full_name: 'System' },
@@ -222,12 +246,19 @@ export async function GET(request: Request) {
 
       return {
         id: order.id, 
+        order_id: order.id,
+        payment_id: null,
         brand_id: order.brand_id,
         created_at: order.created_at,
         table_label: order.table_label,
         total_amount: order.total_price,
         received_amount: 0, 
         change_amount: 0,
+        subtotal_before_vat: order.subtotal_before_vat,
+        vat_rate: order.vat_rate,
+        vat_mode: order.vat_mode,
+        vat_amount: order.vat_amount,
+        total_with_vat: order.total_with_vat,
         payment_method: 'CANCELLED',
         brand: order.brand,
         cashier: { full_name: cashierName }, 
