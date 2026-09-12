@@ -54,19 +54,37 @@ export async function GET(request: NextRequest) {
 
   const brandIds = [profile.brand_id, profile.own_brand_id, profile.invited_brand_id].filter(Boolean)
   const { data: brands } = brandIds.length
-    ? await db.from('brands').select('id,name,logo_url').in('id', brandIds)
-    : { data: [] as { id: string; name: string; logo_url?: string }[] }
+    ? await db.from('brands').select('id,name,logo_url,config').in('id', brandIds)
+    : { data: [] as { id: string; name: string; logo_url?: string; config?: any }[] }
   const brandMap = new Map((brands || []).map(brand => [brand.id, brand]))
   const { data: invitation } = profile.invited_brand_id
     ? await db.from('invitation_logs').select('role,created_at').eq('employee_id', user.id).eq('from_brand_id', profile.invited_brand_id).eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle()
     : { data: null }
+
+  const currentBrand = brandMap.get(profile.brand_id) as any || null
+  let onboardingCompleted = true
+  if (currentBrand) {
+    if (typeof currentBrand.config?.onboarding_completed === 'boolean') {
+      onboardingCompleted = currentBrand.config.onboarding_completed
+    } else {
+      const { count } = await db
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_id', profile.brand_id)
+        .is('deleted_at', null)
+      onboardingCompleted = (count || 0) > 0
+    }
+  }
 
   return NextResponse.json({
     success: true,
     profile: {
       ...profile,
       email: user.email,
-      current_brand: brandMap.get(profile.brand_id) || null,
+      onboarding_completed: onboardingCompleted,
+      current_brand: currentBrand
+        ? { ...currentBrand, onboarding_completed: onboardingCompleted }
+        : null,
       own_brand: brandMap.get(profile.own_brand_id) || null,
       invited_brand: brandMap.get(profile.invited_brand_id) || null,
       invited_role: invitation?.role || 'staff',

@@ -5,7 +5,7 @@ import { Download, Monitor, Smartphone, CheckCircle, ShieldCheck } from 'lucide-
 
 export default function DownloadPage() {
   const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.pos.foodscan';
-  const windowsDownloadUrl = 'https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe';
+  const windowsDownloadUrl = 'https://img.pos-foodscan.com/downloads/SuparPOS-Setup-v2.1.0.exe';
 
   return (
     <div className="bg-[#F4FBF4] text-slate-800 font-sans antialiased">
@@ -125,11 +125,15 @@ export default function DownloadPage() {
               <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4 mb-6">
                 <div className="flex items-center justify-between text-xs text-slate-700">
                   <span className="text-slate-400">ชื่อไฟล์:</span>
-                  <span className="font-mono font-bold">SuparPOS-Setup.exe</span>
+                  <span className="font-mono font-bold">SuparPOS-Setup-v2.1.0.exe</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">เวอร์ชัน:</span>
+                  <span className="font-bold text-sky-600">2.1.0 (อัปเดตล่าสุด)</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-700">
                   <span className="text-slate-400">ขนาดไฟล์:</span>
-                  <span className="font-bold">83.6 MB</span>
+                  <span className="font-bold">20.8 MB</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-700">
                   <span className="text-slate-400">ความต้องการระบบ:</span>
@@ -142,6 +146,10 @@ export default function DownloadPage() {
               </div>
 
               <div className="space-y-2 text-xs text-slate-600 mb-8">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-sky-500" />
+                  <span>เวอร์ชัน 2.1.0 (อัปเดตล่าสุด)</span>
+                </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-sky-500" />
                   <span>มีระบบแจ้งเตือนเสียงออเดอร์เข้าทะลุลำโพง แม้พับหน้าจอ</span>
@@ -159,7 +167,7 @@ export default function DownloadPage() {
 
             <a
               href={windowsDownloadUrl}
-              download="SuparPOS-Setup.exe"
+              download="SuparPOS-Setup-v2.1.0.exe"
               className="w-full py-4 bg-[#0078D4] hover:bg-[#006cc0] text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5 shadow-md shadow-sky-600/30"
             >
               <Download className="w-5 h-5" />

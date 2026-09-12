@@ -27,8 +27,8 @@ export default function Footer() {
               Google Play
             </a>
             <a 
-              href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe" 
-              download="SuparPOS-Setup.exe"
+              href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup-v2.1.0.exe" 
+              download="SuparPOS-Setup-v2.1.0.exe"
               className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all border border-slate-700"
             >
               <i className="fa-brands fa-windows text-sky-400"></i>
@@ -54,7 +54,7 @@ export default function Footer() {
             <li><Link href="/download" className="hover:text-emerald-400 transition-colors">ดาวน์โหลดแอป</Link></li>
             <li><Link href="/setup-printer" className="hover:text-emerald-400 transition-colors">ตั้งค่าเครื่องพิมพ์บิล (Win)</Link></li>
             <li><a href="https://play.google.com/store/apps/details?id=com.pos.foodscan" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">Play Store (Android)</a></li>
-            <li><a href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe" download="SuparPOS-Setup.exe" className="hover:text-emerald-400 transition-colors">Windows PC Installer</a></li>
+            <li><a href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup-v2.1.0.exe" download="SuparPOS-Setup-v2.1.0.exe" className="hover:text-emerald-400 transition-colors">Windows PC Installer</a></li>
           </ul>
         </div>
 

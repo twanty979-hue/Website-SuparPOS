@@ -145,9 +145,13 @@ export async function POST(request: Request) {
       'maintenance_message',
       'force_update',
       'latest_version',
+      'windows_min_version',
       'android_min_version',
       'ios_min_version',
       'update_url',
+      'windows_update_url',
+      'android_update_url',
+      'ios_update_url',
       'marketplace_enabled',
       'dashboard_permissions',
     ];
@@ -166,13 +170,19 @@ export async function POST(request: Request) {
       .single();
 
     let needsColumnMigration = false;
-    const migrationSql = `ALTER TABLE public.system_settings ADD COLUMN IF NOT EXISTS dashboard_permissions JSONB DEFAULT '{"free":{"max_days":30,"allow_advanced":false},"basic":{"max_days":0,"allow_advanced":false},"pro":{"max_days":0,"allow_advanced":true},"ultimate":{"max_days":0,"allow_advanced":true}}'::jsonb;`;
+    const migrationSql = `ALTER TABLE public.system_settings 
+ADD COLUMN IF NOT EXISTS windows_min_version TEXT DEFAULT '1.0.0',
+ADD COLUMN IF NOT EXISTS windows_update_url TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS android_update_url TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS ios_update_url TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS dashboard_permissions JSONB DEFAULT '{"free":{"max_days":30,"allow_advanced":false},"basic":{"max_days":0,"allow_advanced":false},"pro":{"max_days":0,"allow_advanced":true},"ultimate":{"max_days":0,"allow_advanced":true}}'::jsonb;`;
 
-    // ถ้าเจอบัคยังไม่มีคอลัมน์ dashboard_permissions ให้ fallback บันทึกฟิลด์อื่นๆ ก่อน
-    if (error && (error.code === 'PGRST204' || error.message?.includes('dashboard_permissions'))) {
+    // ตรวจสอบกรณีคอลัมน์ยังไม่มีในฐานข้อมูล Supabase ให้ fallback บันทึกฟิลด์ที่บันทึกได้
+    if (error) {
       needsColumnMigration = true;
       const fallbackData = { ...updateData };
-      delete fallbackData.dashboard_permissions;
+      const potentiallyNewCols = ['windows_min_version', 'windows_update_url', 'android_update_url', 'ios_update_url', 'dashboard_permissions'];
+      potentiallyNewCols.forEach(k => delete fallbackData[k]);
 
       const retry = await supabase
         .from('system_settings')
@@ -184,9 +194,13 @@ export async function POST(request: Request) {
       if (retry.error) {
         return NextResponse.json({ success: false, error: retry.error.message }, { status: 500 });
       }
-      data = retry.data;
-    } else if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      data = {
+        ...retry.data,
+        windows_min_version: updateData.windows_min_version ?? '1.0.0',
+        windows_update_url: updateData.windows_update_url ?? '',
+        android_update_url: updateData.android_update_url ?? '',
+        ios_update_url: updateData.ios_update_url ?? '',
+      };
     }
 
     // ── ยิง FCM ทันทีเมื่อบันทึกสำเร็จ ─────────────────────────────────────

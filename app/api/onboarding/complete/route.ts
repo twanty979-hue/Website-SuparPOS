@@ -63,8 +63,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ไม่มีสิทธิ์ตั้งค่าร้านนี้' }, { status: 403 })
     }
 
-    // 1. อัปเดต Timezone ของร้าน
-    await db.from('brands').update({ timezone }).eq('id', brandId)
+    // 1. อัปเดต Timezone และบันทึกสถานะ Onboarding เสร็จสิ้น
+    const { data: currentBrand } = await db
+      .from('brands')
+      .select('config')
+      .eq('id', brandId)
+      .maybeSingle()
+    const updatedConfig = {
+      ...((currentBrand?.config as Record<string, any>) || {}),
+      onboarding_completed: true,
+    }
+    await db.from('brands').update({ timezone, config: updatedConfig }).eq('id', brandId)
 
     // 2. สร้างโต๊ะตามจำนวนที่กำหนด (ถ้ายังไม่มีโต๊ะ)
     const { count: currentTableCount } = await db

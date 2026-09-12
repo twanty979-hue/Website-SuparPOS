@@ -59,6 +59,46 @@ export async function sendBrandNotification(input: NotificationInput) {
   if (!brandId) throw new Error('Missing brandId');
 
   const client = db();
+
+  // ⚡ Broadcast realtime event to Supabase Realtime (for Windows Desktop POS & Web)
+  try {
+    const channel = client.channel(`brand-${brandId}`);
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        const payloadData = typeof orderData === 'object' && orderData !== null ? orderData : {};
+        channel
+          .send({
+            type: 'broadcast',
+            event: type,
+            payload: {
+              type,
+              title,
+              body: message || 'มีออเดอร์ใหม่เข้ามา',
+              brandId,
+              orderData,
+              table_label:
+                payloadData.table_label ||
+                payloadData.tableName ||
+                payloadData.table ||
+                '',
+              order_id:
+                payloadData.order_id ||
+                payloadData.id ||
+                '',
+            },
+          })
+          .catch((err) => console.error('[Realtime send err]', err))
+          .finally(() => {
+            setTimeout(() => {
+              try { client.removeChannel(channel); } catch (_) {}
+            }, 1000);
+          });
+      }
+    });
+  } catch (realtimeErr) {
+    console.error('[Realtime Broadcast Error]:', realtimeErr);
+  }
+
   const [
     { data: tokenRows, error: tokenError },
     { data: profiles, error: profileError },

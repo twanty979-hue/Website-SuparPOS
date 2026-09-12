@@ -37,6 +37,24 @@ const IconCheck = ({ size = 18 }) => (
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
+const IconWindows = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.95-1.8" />
+  </svg>
+);
+
+const IconAndroid = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4147 13.8533 8.09 12 8.09c-1.8533 0-3.5902.3247-5.1367.8597L4.841 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3433-4.1021-2.689-7.5743-6.1185-9.4396" />
+  </svg>
+);
+
+const IconApple = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.63-.77 1.06-1.85.94-2.93-.91.04-2.02.61-2.67 1.38-.58.67-1.09 1.76-.95 2.82 1.02.08 2.05-.51 2.68-1.27z" />
+  </svg>
+);
+
 const IconCopy = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -81,9 +99,13 @@ export default function AppSettingsPage() {
     maintenance_message: 'ระบบปิดปรับปรุงชั่วคราวเพื่อพัฒนาการบริการ คาดว่าจะเปิดให้บริการได้ปกติเร็วๆ นี้',
     force_update: false,
     latest_version: '1.0.0',
+    windows_min_version: '1.0.0',
     android_min_version: '1.0.0',
     ios_min_version: '1.0.0',
     update_url: '',
+    windows_update_url: '',
+    android_update_url: '',
+    ios_update_url: '',
     marketplace_enabled: true,
   });
 
@@ -106,9 +128,13 @@ export default function AppSettingsPage() {
           maintenance_message: s.maintenance_message ?? '',
           force_update: s.force_update ?? false,
           latest_version: s.latest_version ?? '1.0.0',
+          windows_min_version: s.windows_min_version ?? '1.0.0',
           android_min_version: s.android_min_version ?? '1.0.0',
           ios_min_version: s.ios_min_version ?? '1.0.0',
           update_url: s.update_url ?? '',
+          windows_update_url: s.windows_update_url ?? '',
+          android_update_url: s.android_update_url ?? '',
+          ios_update_url: s.ios_update_url ?? '',
           marketplace_enabled: s.marketplace_enabled ?? true,
         });
 
@@ -149,7 +175,7 @@ export default function AppSettingsPage() {
         setMigrationSql(data.migrationSql || '');
         setStatusMsg({
           type: 'warning',
-          text: 'บันทึกการตั้งค่าทั่วไปแล้ว แต่ต้องรัน SQL ใน Supabase เพื่อให้การตั้งค่าสิทธิ์แดชบอร์ดมีผล'
+          text: 'บันทึกการตั้งค่าทั่วไปแล้ว แต่ต้องรัน SQL ใน Supabase เพื่อให้การตั้งค่าแยกแพลตฟอร์มและสิทธิ์มีผลถาวรในฐานข้อมูล'
         });
       } else if (data.success) {
         setNeedsColumnMigration(false);
@@ -283,7 +309,7 @@ VALUES ('global') ON CONFLICT (id) DO NOTHING;`)}
       {needsColumnMigration && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-amber-900 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold">แจ้งเตือน: ตาราง system_settings ยังไม่มีคอลัมน์ dashboard_permissions</span>
+            <span className="text-sm font-bold">แจ้งเตือน: ตาราง system_settings ยังขาดคอลัมน์ใหม่สำหรับแยกแพลตฟอร์ม</span>
             <button
               type="button"
               onClick={() => copySql(migrationSql || `ALTER TABLE public.system_settings ADD COLUMN IF NOT EXISTS dashboard_permissions JSONB DEFAULT '{"free":{"max_days":30,"allow_advanced":false},"basic":{"max_days":0,"allow_advanced":false},"pro":{"max_days":0,"allow_advanced":true},"ultimate":{"max_days":0,"allow_advanced":true}}'::jsonb;`)}
@@ -823,19 +849,22 @@ VALUES ('global') ON CONFLICT (id) DO NOTHING;`)}
         </div>
 
         {/* ── Version Control ── */}
-        <div className="bg-white border border-[#EFECE6] rounded-2xl overflow-hidden">
+        <div className="bg-white border border-[#EFECE6] rounded-2xl overflow-hidden shadow-sm">
           <div className="flex items-center justify-between px-5 py-4 bg-[#FAF9F5] border-b border-[#EFECE6]">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
                 <IconUpdate size={18} />
               </div>
               <div>
-                <p className="text-sm font-bold text-[#2C4A34]">ควบคุมเวอร์ชันแอป</p>
-                <p className="text-[10px] text-[#869E8D]">บังคับอัปเดตหรือแจ้งเตือนเวอร์ชันใหม่</p>
+                <p className="text-sm font-bold text-[#2C4A34]">ควบคุมเวอร์ชันแอป (Multi-Platform Version Control)</p>
+                <p className="text-[10.5px] text-[#869E8D]">กำหนดเวอร์ชันขั้นต่ำและลิงก์ดาวน์โหลดแยกตาม Windows (EXE), Android, iOS</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#869E8D] font-semibold">Force Update</span>
+            <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-[#EFECE6]">
+              <div className="text-right">
+                <span className="block text-[11px] font-bold text-[#2C4A34]">Force Update</span>
+                <span className="block text-[9px] text-[#869E8D]">บังคับอัปเดต</span>
+              </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" checked={settings.force_update}
                   onChange={e => setSettings({ ...settings, force_update: e.target.checked })}
@@ -844,27 +873,116 @@ VALUES ('global') ON CONFLICT (id) DO NOTHING;`)}
               </label>
             </div>
           </div>
-          <div className="p-5 space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'เวอร์ชันล่าสุด', key: 'latest_version', ph: '1.0.5' },
-                { label: 'ขั้นต่ำ Android', key: 'android_min_version', ph: '1.0.0' },
-                { label: 'ขั้นต่ำ iOS', key: 'ios_min_version', ph: '1.0.0' },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="block text-[10.5px] font-semibold text-[#5F8565] mb-1.5">{f.label}</label>
-                  <input type="text" value={(settings as any)[f.key]} placeholder={f.ph}
-                    onChange={e => setSettings({ ...settings, [f.key]: e.target.value })}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-[#5F8565]" />
-                </div>
-              ))}
+
+          <div className="p-5 space-y-5">
+            {/* Global Latest Version */}
+            <div className="bg-[#F8FAF8] border border-[#E2EBE4] rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <label className="block text-xs font-bold text-[#2C4A34]">เวอร์ชันล่าสุดโดยรวม (Latest App Version)</label>
+                <p className="text-[11px] text-[#869E8D]">เวอร์ชันหลักที่ระบบแนะนำให้ผู้ใช้งานทุกแพลตฟอร์มอัปเดต</p>
+              </div>
+              <div className="w-full sm:w-48">
+                <input type="text" value={settings.latest_version} placeholder="2.0.5"
+                  onChange={e => setSettings({ ...settings, latest_version: e.target.value })}
+                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565]" />
+              </div>
             </div>
-            <div>
-              <label className="block text-[10.5px] font-semibold text-[#5F8565] mb-1.5">ลิงก์ดาวน์โหลด (Play Store / App Store)</label>
+
+            {/* 3 Platform Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Windows EXE */}
+              <div className="border border-blue-100 bg-[#FBFDFF] rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-blue-700 pb-2 border-b border-blue-50">
+                  <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
+                    <IconWindows size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#1E3A8A]">Windows Desktop (EXE)</h4>
+                    <span className="text-[9.5px] text-blue-500 font-medium">โปรแกรมคอมพิวเตอร์ / แคชเชียร์</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10.5px] font-semibold text-[#1E3A8A] mb-1">เวอร์ชันขั้นต่ำ Windows</label>
+                  <input type="text" value={settings.windows_min_version} placeholder="1.0.0"
+                    onChange={e => setSettings({ ...settings, windows_min_version: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-500" />
+                </div>
+
+                <div>
+                  <label className="block text-[10.5px] font-semibold text-[#1E3A8A] mb-1">ลิงก์ดาวน์โหลด EXE (Direct / Drive)</label>
+                  <input type="text" value={settings.windows_update_url} placeholder="https://example.com/pos-installer.exe"
+                    onChange={e => setSettings({ ...settings, windows_update_url: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-500" />
+                  <span className="text-[9.5px] text-slate-400 mt-1 block">ลิงก์สำหรับดาวน์โหลดไฟล์ติดตั้ง .exe</span>
+                </div>
+              </div>
+
+              {/* Android */}
+              <div className="border border-emerald-100 bg-[#FBFEFB] rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-emerald-700 pb-2 border-b border-emerald-50">
+                  <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-600">
+                    <IconAndroid size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#14532D]">Android (Play Store / APK)</h4>
+                    <span className="text-[9.5px] text-emerald-600 font-medium">มือถือและแท็บเล็ต Android</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10.5px] font-semibold text-[#14532D] mb-1">เวอร์ชันขั้นต่ำ Android</label>
+                  <input type="text" value={settings.android_min_version} placeholder="1.0.0"
+                    onChange={e => setSettings({ ...settings, android_min_version: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-emerald-500" />
+                </div>
+
+                <div>
+                  <label className="block text-[10.5px] font-semibold text-[#14532D] mb-1">ลิงก์ Play Store หรือ APK</label>
+                  <input type="text" value={settings.android_update_url} placeholder="https://play.google.com/store/apps/details?id=..."
+                    onChange={e => setSettings({ ...settings, android_update_url: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-emerald-500" />
+                  <span className="text-[9.5px] text-slate-400 mt-1 block">ลิงก์เปิดหน้า Play Store หรือไฟล์ .apk</span>
+                </div>
+              </div>
+
+              {/* iOS */}
+              <div className="border border-slate-200 bg-[#FCFCFD] rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-slate-800 pb-2 border-b border-slate-100">
+                  <div className="p-1.5 rounded-lg bg-slate-100 text-slate-700">
+                    <IconApple size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800">iOS (Apple App Store)</h4>
+                    <span className="text-[9.5px] text-slate-500 font-medium">iPhone และ iPad</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10.5px] font-semibold text-slate-700 mb-1">เวอร์ชันขั้นต่ำ iOS</label>
+                  <input type="text" value={settings.ios_min_version} placeholder="1.0.0"
+                    onChange={e => setSettings({ ...settings, ios_min_version: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-slate-500" />
+                </div>
+
+                <div>
+                  <label className="block text-[10.5px] font-semibold text-slate-700 mb-1">ลิงก์ Apple App Store</label>
+                  <input type="text" value={settings.ios_update_url} placeholder="https://apps.apple.com/app/id..."
+                    onChange={e => setSettings({ ...settings, ios_update_url: e.target.value })}
+                    className="w-full text-xs p-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-slate-500" />
+                  <span className="text-[9.5px] text-slate-400 mt-1 block">ลิงก์เปิดหน้า App Store บน iOS</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Fallback / Default Update URL */}
+            <div className="pt-2 border-t border-slate-100">
+              <label className="block text-[10.5px] font-semibold text-[#5F8565] mb-1">ลิงก์สำรองเริ่มต้น (Default Fallback Link)</label>
               <input type="text" value={settings.update_url}
                 onChange={e => setSettings({ ...settings, update_url: e.target.value })}
-                placeholder="https://play.google.com/store/apps/details?id=..."
+                placeholder="https://yourdomain.com/download"
                 className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-[#5F8565]" />
+              <span className="text-[10px] text-slate-400 mt-1 block">จะถูกนำมาใช้กรณีที่แพลตฟอร์มนั้นไม่ได้ระบุลิงก์เฉพาะไว้</span>
             </div>
           </div>
         </div>

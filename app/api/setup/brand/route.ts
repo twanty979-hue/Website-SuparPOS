@@ -88,6 +88,7 @@ export async function POST(request: Request) {
       // shop sees the same onboarding progress from its first sign-in.
       config: {
         vat: 0,
+        onboarding_completed: false,
         service_charge: 0,
         tutorial_pos: false,
         tutorial_menu: false,

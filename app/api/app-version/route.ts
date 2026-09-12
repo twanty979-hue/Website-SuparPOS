@@ -44,7 +44,11 @@ export async function GET() {
       latest_version: '1.0.0',
       android_min_version: '1.0.0',
       ios_min_version: '1.0.0',
+      windows_min_version: '1.0.0',
       update_url: '',
+      windows_update_url: '',
+      android_update_url: '',
+      ios_update_url: '',
       marketplace_enabled: true,
       modules: {
         pos: true,
@@ -64,6 +68,10 @@ export async function GET() {
     const settings = {
       ...defaultSettings,
       ...(data || {}),
+      windows_min_version: data?.windows_min_version || '1.0.0',
+      windows_update_url: data?.windows_update_url || data?.update_url || '',
+      android_update_url: data?.android_update_url || data?.update_url || '',
+      ios_update_url: data?.ios_update_url || data?.update_url || '',
       modules: {
         ...defaultSettings.modules,
         marketplace: data?.marketplace_enabled !== false,

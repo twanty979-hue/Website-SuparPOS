@@ -337,8 +337,8 @@ export default function LandingClient() {
 
                         {/* 🔵 Windows PC (.exe) (สวย คลีน ขาว ขอบฟ้า ตรงธีม) */}
                         <a 
-                            href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe" 
-                            download="SuparPOS-Setup.exe"
+                            href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup-v2.1.0.exe" 
+                            download="SuparPOS-Setup-v2.1.0.exe"
                             className="group flex items-center gap-3.5 px-4.5 py-3.5 rounded-2xl border border-slate-200/80 hover:border-sky-500 bg-white hover:bg-sky-50/40 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
                         >
                             <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 group-hover:border-sky-200 flex items-center justify-center flex-shrink-0 shadow-sm transition-all group-hover:scale-105 group-hover:bg-white">
@@ -348,11 +348,14 @@ export default function LandingClient() {
                             </div>
                             <div className="text-left flex-1 min-w-0">
                                 <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 leading-tight">DOWNLOAD FOR</div>
-                                <div className="text-base font-black text-slate-900 group-hover:text-sky-600 transition-colors leading-tight mt-0.5">Windows (.exe)</div>
+                                <div className="text-base font-black text-slate-900 group-hover:text-sky-600 transition-colors leading-tight mt-0.5 flex items-center gap-1.5">
+                                    <span>Windows (.exe)</span>
+                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-sky-100 text-sky-700 border border-sky-200">v2.1.0</span>
+                                </div>
                                 <div className="text-[11px] text-sky-600 font-semibold mt-0.5 flex items-center gap-1">
                                     <span>PC 64-bit</span>
                                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                    <span className="text-slate-400 font-normal">83 MB</span>
+                                    <span className="text-slate-400 font-normal">ฟรี v2.1.0 • 20.8 MB</span>
                                 </div>
                             </div>
                             <i className="fa-solid fa-download text-xs text-slate-300 group-hover:text-sky-500 transition-colors pr-1"></i>
@@ -673,14 +676,14 @@ export default function LandingClient() {
                                         <span className="group-hover:text-emerald-600 transition-colors">Google Play (Android)</span>
                                     </a>
                                     <a 
-                                        href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe"
-                                        download="SuparPOS-Setup.exe"
+                                        href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup-v2.1.0.exe"
+                                        download="SuparPOS-Setup-v2.1.0.exe"
                                         className="group inline-flex items-center gap-2.5 px-4.5 py-2.5 bg-white hover:bg-sky-50/50 text-slate-800 rounded-2xl text-xs font-bold shadow-sm hover:shadow-md border border-slate-200 hover:border-sky-500 transition-all hover:-translate-y-0.5 active:scale-95"
                                     >
                                         <svg className="w-4 h-4 fill-current text-[#0078D4]" viewBox="0 0 24 24">
                                             <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.606L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.8" />
                                         </svg>
-                                        <span className="group-hover:text-sky-600 transition-colors">Windows (.exe)</span>
+                                        <span className="group-hover:text-sky-600 transition-colors">Windows (.exe) v2.1.0</span>
                                     </a>
                                 </div>
                             </div>
