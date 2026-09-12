@@ -203,7 +203,9 @@ export async function GET(request: Request) {
       totalOrders: 0,
       totalCustomers: 0,
       totalCash: 0,
-      totalTransfer: 0
+      totalTransfer: 0,
+      vatAmount: 0,
+      subtotalBeforeVat: 0
     };
 
     dailySales.forEach(day => {
@@ -212,7 +214,37 @@ export async function GET(request: Request) {
       summary.totalCustomers += Number(day.customer_count || 0);
       summary.totalCash += Number(day.total_cash || 0);
       summary.totalTransfer += Number(day.total_transfer || 0);
+      summary.vatAmount += Number(day.vat_amount || 0);
+      summary.subtotalBeforeVat += Number(day.subtotal_before_vat || 0);
     });
+
+    // 🛡️ หากในตารางสรุปรายวันยังไม่มี vat_amount (เช่น ข้อมูลเก่าหรือยังไม่ได้ backfill)
+    // ให้คำนวณจากตาราง pai_orders โดยตรงเพื่อความถูกต้อง 100%
+    if (summary.vatAmount === 0 && summary.totalRevenue > 0) {
+      try {
+        const { data: paiVatData } = await supabase
+          .from('pai_orders')
+          .select('subtotal_before_vat, vat_amount, total_amount')
+          .eq('brand_id', brandId)
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+
+        if (paiVatData && paiVatData.length > 0) {
+          let sumVat = 0;
+          let sumBeforeVat = 0;
+          paiVatData.forEach((p: any) => {
+            sumVat += Number(p.vat_amount || 0);
+            sumBeforeVat += Number(p.subtotal_before_vat || 0);
+          });
+          if (sumVat > 0) {
+            summary.vatAmount = sumVat;
+            summary.subtotalBeforeVat = sumBeforeVat;
+          }
+        }
+      } catch (err) {
+        console.warn('[Dashboard] Fallback pai_orders VAT query error:', err);
+      }
+    }
 
     // 🏆 2. จัดอันดับสินค้าขายดี Top 10
     const productMap: Record<string, { name: string, qty: number, revenue: number }> = {};
