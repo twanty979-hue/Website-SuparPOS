@@ -45,8 +45,11 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
             product_name,
             quantity,
             price,
+            original_price,
+            discount,
             variant,
             promotion_snapshot,
+            toppings_snapshot,
             status,
             note
           )
@@ -71,8 +74,11 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
             product_name,
             quantity,
             price,
+            original_price,
+            discount,
             variant,
             promotion_snapshot,
+            toppings_snapshot,
             status,
             note
         )
@@ -116,6 +122,12 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
         total_amount: receipt.total_amount,
         received_amount: receipt.received_amount, // ✅ ได้ค่าจาก pai_orders เป๊ะๆ
         change_amount: receipt.change_amount,     // ✅ ได้ค่าจาก pai_orders เป๊ะๆ
+        subtotal_before_vat: receipt.subtotal_before_vat,
+        vat_rate: receipt.vat_rate,
+        vat_mode: receipt.vat_mode,
+        vat_amount: receipt.vat_amount,
+        total_with_vat: receipt.total_with_vat,
+        vat_snapshot: receipt.vat_snapshot,
         payment_method: isActuallyCancelled ? 'CANCELLED' : receipt.payment_method,
         brand: receipt.brand,
         cashier: receipt.cashier || { full_name: 'System' },
@@ -134,6 +146,11 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
         total_amount: order.total_price,
         received_amount: 0, // ยกเลิก = ไม่ได้รับเงิน
         change_amount: 0,
+        subtotal_before_vat: order.subtotal_before_vat,
+        vat_rate: order.vat_rate,
+        vat_mode: order.vat_mode,
+        vat_amount: order.vat_amount,
+        total_with_vat: order.total_with_vat,
         payment_method: 'CANCELLED', // ✅ บังคับเป็น CANCELLED ให้ตัวหนังสือเป็นสีแดง
         brand: order.brand,
         cashier: { full_name: 'System (Void)' }, // ไม่มี cashier_id ใน orders เลยใช้ System แทน

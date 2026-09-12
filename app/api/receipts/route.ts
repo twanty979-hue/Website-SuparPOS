@@ -144,7 +144,7 @@ export async function GET(request: Request) {
         cashier:profiles(full_name),
         orders:orders!orders_payment_id_fkey (
           id, table_label, status, created_at,
-          order_items (product_name, quantity, price, variant, promotion_snapshot, status, note)
+          order_items (product_name, quantity, price, original_price, discount, variant, promotion_snapshot, toppings_snapshot, status, note)
         )
       `, { count: 'exact' })
       .eq('brand_id', brandId)
@@ -159,7 +159,7 @@ export async function GET(request: Request) {
       .select(`
         *,
         brand:brands(name),
-        order_items (product_name, quantity, price, variant, promotion_snapshot, status, note)
+        order_items (product_name, quantity, price, original_price, discount, variant, promotion_snapshot, toppings_snapshot, status, note)
       `, { count: 'exact' })
       .eq('brand_id', brandId)
       .eq('status', 'cancelled') 
@@ -192,6 +192,12 @@ export async function GET(request: Request) {
         total_amount: receipt.total_amount,
         received_amount: receipt.received_amount,
         change_amount: receipt.change_amount,
+        subtotal_before_vat: receipt.subtotal_before_vat,
+        vat_rate: receipt.vat_rate,
+        vat_mode: receipt.vat_mode,
+        vat_amount: receipt.vat_amount,
+        total_with_vat: receipt.total_with_vat,
+        vat_snapshot: receipt.vat_snapshot,
         payment_method: isActuallyCancelled ? 'CANCELLED' : receipt.payment_method,
         brand: receipt.brand,
         cashier: receipt.cashier || { full_name: 'System' },
@@ -234,6 +240,11 @@ export async function GET(request: Request) {
         total_amount: order.total_price,
         received_amount: 0, 
         change_amount: 0,
+        subtotal_before_vat: order.subtotal_before_vat,
+        vat_rate: order.vat_rate,
+        vat_mode: order.vat_mode,
+        vat_amount: order.vat_amount,
+        total_with_vat: order.total_with_vat,
         payment_method: 'CANCELLED',
         brand: order.brand,
         cashier: { full_name: cashierName }, 
