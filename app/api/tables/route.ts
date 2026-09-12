@@ -24,6 +24,20 @@ const makeTokenBatch = (count: number) => {
   return Array.from(tokens);
 };
 
+function calculateEffectivePlan(brand: any) {
+  const now = new Date();
+  const isActive = (val: string | null) => {
+    if (!val) return false;
+    const d = new Date(val.replace(' ', 'T'));
+    return !isNaN(d.getTime()) && d > now;
+  };
+
+  if (brand?.plan === 'ultimate' && isActive(brand.expiry_ultimate)) return 'ultimate';
+  if (brand?.plan === 'pro' && isActive(brand.expiry_pro)) return 'pro';
+  if (brand?.plan === 'basic' && isActive(brand.expiry_basic)) return 'basic';
+  return 'free';
+}
+
 const getSupabaseAndBrandId = async (request: Request) => {
   const authHeader = request.headers.get('authorization');
   const supabase = createClient(
@@ -37,18 +51,20 @@ const getSupabaseAndBrandId = async (request: Request) => {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('brand_id')
+    .select('brand_id, brands(timezone, plan, expiry_basic, expiry_pro, expiry_ultimate)')
     .eq('id', user.id)
     .single();
 
   if (!profile?.brand_id) throw new Error('No brand assigned');
-  return { supabase, brandId: profile.brand_id };
+  const brand = (profile as any).brands;
+  const effectivePlan = calculateEffectivePlan(brand);
+  return { supabase, brandId: profile.brand_id, effectivePlan };
 };
 
 // --- 📥 [GET] ดึงข้อมูลโต๊ะของร้านตัวเอง ---
 export async function GET(request: Request) {
   try {
-    const { supabase, brandId } = await getSupabaseAndBrandId(request);
+    const { supabase, brandId, effectivePlan } = await getSupabaseAndBrandId(request);
 
     const { data: tables, error } = await supabase
       .from('tables')
@@ -59,7 +75,26 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, data: tables || [] }, {
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: sysSettings } = await adminClient
+      .from('system_settings')
+      .select('dashboard_permissions')
+      .eq('id', 'global')
+      .maybeSingle();
+
+    const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
+    const maxTables = Number(rawPerms.max_tables ?? (effectivePlan === 'free' ? 10 : 0));
+
+    return NextResponse.json({ 
+      success: true, 
+      data: tables || [],
+      max_tables: maxTables,
+      total_count: tables?.length || 0,
+      effective_plan: effectivePlan
+    }, {
       status: 200, headers: { 'Access-Control-Allow-Origin': '*' },
     });
   } catch (error: any) {
@@ -71,9 +106,44 @@ export async function GET(request: Request) {
 // --- 📤 [POST] สร้างโต๊ะใหม่ หรือ อัปเดตข้อมูล (เปลี่ยน Passcode) ---
 export async function POST(request: Request) {
   try {
-    const { supabase, brandId } = await getSupabaseAndBrandId(request);
+    const { supabase, brandId, effectivePlan } = await getSupabaseAndBrandId(request);
     const body = await request.json();
     const { id, label, capacity, status, access_token, action, count } = body;
+
+    if (!id && action !== 'generate_tokens') {
+      // ตรวจสอบโควตาจำนวนโต๊ะสูงสุดตามแพ็กเกจ
+      const adminClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const { data: sysSettings } = await adminClient
+        .from('system_settings')
+        .select('dashboard_permissions')
+        .eq('id', 'global')
+        .maybeSingle();
+
+      const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
+      const maxTables = Number(rawPerms.max_tables ?? (effectivePlan === 'free' ? 10 : 0));
+
+      if (maxTables > 0) {
+        const { count: tableCount, error: countError } = await adminClient
+          .from('tables')
+          .select('id', { count: 'exact', head: true })
+          .eq('brand_id', brandId)
+          .eq('is_active', true);
+
+        if (!countError && (tableCount ?? 0) >= maxTables) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `จำนวนโต๊ะเกินขีดจำกัดของแพ็กเกจ (สูงสุด ${maxTables} โต๊ะ) กรุณาอัปเกรดแพ็กเกจ`,
+            },
+            { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } }
+          );
+        }
+      }
+    }
 
     if (action === 'generate_tokens') {
       if (!id) return NextResponse.json({ success: false, error: 'Missing table id' }, { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });

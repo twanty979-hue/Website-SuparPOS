@@ -79,18 +79,53 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: 'กรุณาระบุ start_date และ end_date' }, { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
-    let limitWarning = false;
-    const maxDays = effectivePlan === 'free' ? 6 : 29;
-    const allowedStartDate = dayjs()
-      .tz(brandTimezone)
-      .subtract(maxDays, 'day')
-      .startOf('day')
-      .utc()
-      .toISOString();
+    // 🛡️ โหลดการตั้งค่าสิทธิ์จาก system_settings
+    const DEFAULT_DASHBOARD_PERMISSIONS: Record<string, { max_days: number; allow_advanced: boolean; receipt_max_days: number }> = {
+      free: { max_days: 30, allow_advanced: false, receipt_max_days: 7 },
+      basic: { max_days: 0, allow_advanced: false, receipt_max_days: 0 },
+      pro: { max_days: 0, allow_advanced: true, receipt_max_days: 0 },
+      ultimate: { max_days: 0, allow_advanced: true, receipt_max_days: 0 }
+    };
 
-    if (dayjs(startDate).isBefore(dayjs(allowedStartDate))) {
-      startDate = allowedStartDate;
-      limitWarning = true;
+    let dashboardPerms = DEFAULT_DASHBOARD_PERMISSIONS;
+    try {
+      const adminClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      );
+      const { data: sysSettings } = await adminClient
+        .from('system_settings')
+        .select('dashboard_permissions')
+        .eq('id', 'global')
+        .maybeSingle();
+
+      if (sysSettings?.dashboard_permissions) {
+        dashboardPerms = {
+          ...DEFAULT_DASHBOARD_PERMISSIONS,
+          ...sysSettings.dashboard_permissions,
+        };
+      }
+    } catch (err) {
+      console.warn('[Receipts] Could not load custom dashboard_permissions:', err);
+    }
+
+    const currentPlanPerm = dashboardPerms[effectivePlan] || dashboardPerms.free;
+    const maxDaysAllowed = currentPlanPerm.receipt_max_days ?? (effectivePlan === 'free' ? 7 : 0);
+
+    let limitWarning = false;
+    if (maxDaysAllowed > 0) {
+      const allowedStartDate = dayjs()
+        .tz(brandTimezone)
+        .subtract(maxDaysAllowed - 1, 'day')
+        .startOf('day')
+        .utc()
+        .toISOString();
+
+      if (dayjs(startDate).isBefore(dayjs(allowedStartDate))) {
+        startDate = allowedStartDate;
+        limitWarning = true;
+      }
     }
     const nowIso = new Date().toISOString();
     const endDate = dayjs(requestedEndDate).isAfter(dayjs(nowIso))
@@ -212,6 +247,7 @@ export async function GET(request: Request) {
       data: combinedData,
       hasMore,
       effectivePlan,
+      maxDaysAllowed,
       limitWarning,
     }), {
       status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }

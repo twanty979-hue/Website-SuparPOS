@@ -25,25 +25,49 @@ export async function GET(request: Request) {
   try {
     const supabase = getSupabase(request);
 
+    const fetchAllProducts = async () => {
+      let allProducts: any[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('admin_product_master')
+          .select('*')
+          .order('import_count', { ascending: false })
+          .order('created_at', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allProducts = allProducts.concat(data);
+          if (data.length < pageSize) {
+            hasMore = false;
+          } else {
+            from += pageSize;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+      return allProducts;
+    };
+
     // เรียงตามความนิยม (import_count สูงสุดขึ้นก่อน) ตามด้วยสินค้าใหม่ล่าสุด
-    const [productsRes, categoriesRes] = await Promise.all([
-      supabase
-        .from('admin_product_master')
-        .select('*')
-        .order('import_count', { ascending: false })
-        .order('created_at', { ascending: false }),
+    const [allProducts, categoriesRes] = await Promise.all([
+      fetchAllProducts(),
       supabase
         .from('admin_master_categories')
         .select('*')
         .order('sort_order', { ascending: true })
     ]);
 
-    if (productsRes.error) throw productsRes.error;
     if (categoriesRes.error) throw categoriesRes.error;
 
     const response = NextResponse.json({
       success: true,
-      products: productsRes.data || [],
+      products: allProducts,
       categories: categoriesRes.data || [],
     });
 

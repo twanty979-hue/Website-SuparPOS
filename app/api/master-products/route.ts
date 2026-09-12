@@ -15,6 +15,20 @@ export async function OPTIONS() {
 }
 
 // 🔐 Helper: ฟังก์ชันแกะ Token และหา brand_id จากผู้ใช้งานจริง
+function calculateEffectivePlan(brand: any) {
+  const now = new Date();
+  const isActive = (val: string | null) => {
+    if (!val) return false;
+    const d = new Date(val.replace(' ', 'T'));
+    return !isNaN(d.getTime()) && d > now;
+  };
+
+  if (brand?.plan === 'ultimate' && isActive(brand.expiry_ultimate)) return 'ultimate';
+  if (brand?.plan === 'pro' && isActive(brand.expiry_pro)) return 'pro';
+  if (brand?.plan === 'basic' && isActive(brand.expiry_basic)) return 'basic';
+  return 'free';
+}
+
 const getSupabaseAndBrandId = async (request: Request) => {
   const authHeader = request.headers.get('authorization');
   const supabase = createClient(
@@ -28,19 +42,21 @@ const getSupabaseAndBrandId = async (request: Request) => {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('brand_id')
+    .select('brand_id, brands(timezone, plan, expiry_basic, expiry_pro, expiry_ultimate)')
     .eq('id', user.id)
     .single();
 
   if (!profile?.brand_id) throw new Error('No brand assigned');
-  return { supabase, brandId: profile.brand_id };
+  const brand = (profile as any).brands;
+  const effectivePlan = calculateEffectivePlan(brand);
+  return { supabase, brandId: profile.brand_id, effectivePlan };
 };
 
 // --- 📥 [GET] ดึงข้อมูลสินค้า + หมวดหมู่ + สต็อกปัจจุบัน มัดรวมในเส้นเดียว ---
 export async function GET(request: Request) {
   try {
     // 🚀 แกะหา brand_id จากสิทธิ์ Token บนหลังบ้านทันที ป้องกันการแอบอ้างข้ามร้าน
-    const { supabase, brandId } = await getSupabaseAndBrandId(request);
+    const { supabase, brandId, effectivePlan } = await getSupabaseAndBrandId(request);
 
     // ยิงคิวรีขนานพร้อมกัน 2 ตาราง
     const [masterProductsRes, masterCategoriesRes] = await Promise.all([
@@ -67,10 +83,26 @@ export async function GET(request: Request) {
       stock: p.stock?.quantity || 0 
     }));
 
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: sysSettings } = await adminClient
+      .from('system_settings')
+      .select('dashboard_permissions')
+      .eq('id', 'global')
+      .maybeSingle();
+
+    const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
+    const maxProducts = Number(rawPerms.max_products ?? (effectivePlan === 'free' ? 50 : 0));
+
     return new NextResponse(JSON.stringify({ 
       success: true, 
       products: formattedProducts || [], 
-      categories: masterCategoriesRes.data || []
+      categories: masterCategoriesRes.data || [],
+      max_products: maxProducts,
+      total_count: formattedProducts?.length || 0,
+      effective_plan: effectivePlan
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -89,7 +121,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     // 🚀 ตรวจจับแบรนด์ด้วยสิทธิ์ระบบล็อกอิน
-    const { supabase, brandId } = await getSupabaseAndBrandId(request);
+    const { supabase, brandId, effectivePlan } = await getSupabaseAndBrandId(request);
     
     const body = await request.json();
     const { 
@@ -117,6 +149,41 @@ export async function POST(request: Request) {
       is_active: is_active ?? true,
       updated_at: new Date().toISOString()
     };
+
+    if (!id) {
+      // ตรวจสอบโควตาจำนวนสินค้าทั่วไป/คลังสินค้า สูงสุดตามแพ็กเกจ
+      const adminClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const { data: sysSettings } = await adminClient
+        .from('system_settings')
+        .select('dashboard_permissions')
+        .eq('id', 'global')
+        .maybeSingle();
+
+      const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
+      const maxProducts = Number(rawPerms.max_products ?? (effectivePlan === 'free' ? 50 : 0));
+
+      if (maxProducts > 0) {
+        const { count: productCount, error: countError } = await adminClient
+          .from('product_master')
+          .select('id', { count: 'exact', head: true })
+          .eq('brand_id', brandId)
+          .eq('is_active', true);
+
+        if (!countError && (productCount ?? 0) >= maxProducts) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `จำนวนสินค้าเกินขีดจำกัดของแพ็กเกจ (สูงสุด ${maxProducts} รายการ) กรุณาอัปเกรดแพ็กเกจ`,
+            },
+            { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } }
+          );
+        }
+      }
+    }
 
     if (id) {
       // 🔄 อัปเดตข้อมูลสินค้าหลักเซฟทับตัวเดิม

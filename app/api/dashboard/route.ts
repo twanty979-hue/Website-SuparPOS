@@ -87,11 +87,51 @@ export async function GET(request: Request) {
     let startDate = startDateInput ? dayjs.tz(startDateInput, brandTimezone).startOf('day') : nowLocal.subtract(30, 'day').startOf('day');
     let endDate = endDateInput ? dayjs.tz(endDateInput, brandTimezone).endOf('day') : nowLocal.endOf('day');
 
-    // 🛡️ Limit Guard: ล็อกข้อมูลถ้าร้านค้าเป็น Free Plan ให้ดึงดูรายงานได้แค่ 30 วัน
+    // 🛡️ โหลดการตั้งค่าสิทธิ์ Dashboard จาก system_settings
+    const DEFAULT_DASHBOARD_PERMISSIONS: Record<string, { max_days: number; allow_advanced: boolean }> = {
+      free: { max_days: 30, allow_advanced: false },
+      basic: { max_days: 0, allow_advanced: false },
+      pro: { max_days: 0, allow_advanced: true },
+      ultimate: { max_days: 0, allow_advanced: true }
+    };
+
+    let dashboardPerms = DEFAULT_DASHBOARD_PERMISSIONS;
+    try {
+      // 🛡️ ใช้ Service Role เพื่ออ่าน system_settings เสมอ ป้องกันติด RLS ของผู้ใช้ทั่วไป
+      const adminClient = createClient(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      );
+      const { data: sysSettings, error: sysErr } = await adminClient
+        .from('system_settings')
+        .select('dashboard_permissions')
+        .eq('id', 'global')
+        .maybeSingle();
+
+      if (sysErr) {
+        console.error('[Dashboard] sysSettings query error:', sysErr);
+      }
+
+      if (sysSettings?.dashboard_permissions) {
+        dashboardPerms = {
+          ...DEFAULT_DASHBOARD_PERMISSIONS,
+          ...sysSettings.dashboard_permissions,
+        };
+      }
+    } catch (err) {
+      console.warn('[Dashboard] Could not load custom dashboard_permissions:', err);
+    }
+
+    const currentPlanPerm = dashboardPerms[effectivePlan] || dashboardPerms.free;
+    const maxDaysAllowed = currentPlanPerm.max_days ?? (effectivePlan === 'free' ? 30 : 0);
+    const canAccessAdvanced = Boolean(currentPlanPerm.allow_advanced);
+
+    // 🛡️ Limit Guard: ล็อกข้อมูลตามจำนวนวันที่อนุญาตในสิทธิ์ของแพ็กเกจ
     let limitWarning = false;
-    if (effectivePlan === 'free') {
-      // Inclusive of today: today + previous 29 days = 30 calendar days.
-      const limitDate = nowLocal.subtract(29, 'day').startOf('day');
+    if (maxDaysAllowed > 0) {
+      // Inclusive of today: today + previous (maxDaysAllowed - 1) days = maxDaysAllowed calendar days.
+      const limitDate = nowLocal.subtract(maxDaysAllowed - 1, 'day').startOf('day');
       if (startDate.isBefore(limitDate)) {
         startDate = limitDate;
         if (endDate.isBefore(limitDate)) endDate = limitDate;
@@ -213,7 +253,7 @@ export async function GET(request: Request) {
     let tableStats: any[] = [];
     let cashierStats: any[] = [];
 
-    if (effectivePlan === 'pro' || effectivePlan === 'ultimate') {
+    if (canAccessAdvanced) {
       const [hourlyRes, paymentRes, tableRes, cashierRes] = await Promise.all([
         supabase
           .from('dashboard_hourly_sales')
@@ -334,6 +374,8 @@ export async function GET(request: Request) {
         topToppings,
         effectivePlan,
         limitWarning,
+        canAccessAdvanced,
+        maxDaysAllowed,
         hourlySales,
         paymentStats,
         tableStats,

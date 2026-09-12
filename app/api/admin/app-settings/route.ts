@@ -2,6 +2,23 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getFirebaseAdmin } from '@/lib/firebaseAdmin';
 
+const DEFAULT_DASHBOARD_PERMISSIONS = {
+  free: { max_days: 30, allow_advanced: false, receipt_max_days: 7, max_food_items: 50, max_products: 50, max_tables: 10 },
+  basic: { max_days: 0, allow_advanced: false, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0 },
+  pro: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0 },
+  ultimate: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0 }
+};
+
+const mergePermissions = (saved: any) => {
+  if (!saved) return DEFAULT_DASHBOARD_PERMISSIONS;
+  return {
+    free: { ...DEFAULT_DASHBOARD_PERMISSIONS.free, ...(saved.free || {}) },
+    basic: { ...DEFAULT_DASHBOARD_PERMISSIONS.basic, ...(saved.basic || {}) },
+    pro: { ...DEFAULT_DASHBOARD_PERMISSIONS.pro, ...(saved.pro || {}) },
+    ultimate: { ...DEFAULT_DASHBOARD_PERMISSIONS.ultimate, ...(saved.ultimate || {}) },
+  };
+};
+
 const getSupabaseAdmin = () => {
   return createClient(
     process.env.SUPABASE_URL!,
@@ -57,7 +74,6 @@ async function broadcastSystemStatus(settings: {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-
 export async function GET() {
   try {
     const supabase = getSupabaseAdmin();
@@ -85,6 +101,7 @@ export async function GET() {
           ios_min_version: '1.0.0',
           update_url: '',
           marketplace_enabled: true,
+          dashboard_permissions: DEFAULT_DASHBOARD_PERMISSIONS,
         })
         .select('*')
         .single();
@@ -96,10 +113,22 @@ export async function GET() {
           error: 'Table system_settings does not exist. Please run the SQL migration script in your Supabase SQL Editor.',
         }, { status: 404 });
       }
-      return NextResponse.json({ success: true, settings: inserted });
+      return NextResponse.json({
+        success: true,
+        settings: {
+          ...inserted,
+          dashboard_permissions: inserted?.dashboard_permissions || DEFAULT_DASHBOARD_PERMISSIONS,
+        }
+      });
     }
 
-    return NextResponse.json({ success: true, settings: data });
+    return NextResponse.json({
+      success: true,
+      settings: {
+        ...data,
+        dashboard_permissions: mergePermissions(data?.dashboard_permissions),
+      }
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -120,6 +149,7 @@ export async function POST(request: Request) {
       'ios_min_version',
       'update_url',
       'marketplace_enabled',
+      'dashboard_permissions',
     ];
 
     allowedKeys.forEach(key => {
@@ -128,14 +158,34 @@ export async function POST(request: Request) {
       }
     });
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('system_settings')
       .update(updateData)
       .eq('id', 'global')
       .select('*')
       .single();
 
-    if (error) {
+    let needsColumnMigration = false;
+    const migrationSql = `ALTER TABLE public.system_settings ADD COLUMN IF NOT EXISTS dashboard_permissions JSONB DEFAULT '{"free":{"max_days":30,"allow_advanced":false},"basic":{"max_days":0,"allow_advanced":false},"pro":{"max_days":0,"allow_advanced":true},"ultimate":{"max_days":0,"allow_advanced":true}}'::jsonb;`;
+
+    // ถ้าเจอบัคยังไม่มีคอลัมน์ dashboard_permissions ให้ fallback บันทึกฟิลด์อื่นๆ ก่อน
+    if (error && (error.code === 'PGRST204' || error.message?.includes('dashboard_permissions'))) {
+      needsColumnMigration = true;
+      const fallbackData = { ...updateData };
+      delete fallbackData.dashboard_permissions;
+
+      const retry = await supabase
+        .from('system_settings')
+        .update(fallbackData)
+        .eq('id', 'global')
+        .select('*')
+        .single();
+
+      if (retry.error) {
+        return NextResponse.json({ success: false, error: retry.error.message }, { status: 500 });
+      }
+      data = retry.data;
+    } else if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
@@ -151,7 +201,15 @@ export async function POST(request: Request) {
     }).catch(e => console.error('[FCM system_status] broadcast error:', e));
     // ─────────────────────────────────────────────────────────────────────────
 
-    return NextResponse.json({ success: true, settings: data });
+    return NextResponse.json({
+      success: true,
+      needsColumnMigration,
+      migrationSql: needsColumnMigration ? migrationSql : undefined,
+      settings: {
+        ...data,
+        dashboard_permissions: mergePermissions(data?.dashboard_permissions || body.dashboard_permissions),
+      }
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

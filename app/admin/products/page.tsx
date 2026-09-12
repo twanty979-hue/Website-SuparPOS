@@ -83,6 +83,35 @@ const IconLayers = () => (
   </svg>
 );
 
+const IconCloud = () => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z" />
+  </svg>
+);
+
+const IconCloudCheck = ({ size = 13 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+    <path d="m9 13 2 2 4-4" />
+  </svg>
+);
+
+const IconCloudUpload = ({ size = 13 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+    <path d="M12 12v6" />
+    <path d="m15 15-3-3-3 3" />
+  </svg>
+);
+
+const IconExternalLink = ({ size = 11 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
 export default function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -98,6 +127,14 @@ export default function AdminProductsPage() {
   const [filterPackType, setFilterPackType] = useState<'ALL' | 'PACK' | 'SINGLE'>('ALL');
   const [sortBy, setSortBy] = useState<'POPULAR' | 'NEWEST' | 'NAME_ASC' | 'PRICE_ASC' | 'PRICE_DESC'>('POPULAR');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Image Migration States
+  const [filterImageFilter, setFilterImageFilter] = useState<'ALL' | 'EXTERNAL' | 'R2' | 'NO_IMAGE'>('ALL');
+  const [migratingIds, setMigratingIds] = useState<Set<string>>(new Set());
+  const [showBatchMigrateModal, setShowBatchMigrateModal] = useState(false);
+  const [batchMigrateRunning, setBatchMigrateRunning] = useState(false);
+  const [batchMigrateProgress, setBatchMigrateProgress] = useState({ current: 0, total: 0, failed: 0 });
+  const [stopBatchRequested, setStopBatchRequested] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
@@ -323,14 +360,42 @@ export default function AdminProductsPage() {
     is_active: true
   });
 
+  const fetchAllAdminProducts = async () => {
+    let allProducts: Product[] = [];
+    const pageSize = 1000;
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('admin_product_master')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        allProducts = allProducts.concat(data);
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          from += pageSize;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+    return allProducts;
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [prodRes, catRes] = await Promise.all([
-        supabase.from('admin_product_master').select('*').order('created_at', { ascending: false }),
+      const [allProds, catRes] = await Promise.all([
+        fetchAllAdminProducts(),
         supabase.from('admin_master_categories').select('*').order('sort_order', { ascending: true })
       ]);
-      setProducts(prodRes.data || []);
+      setProducts(allProds);
       setCategories(catRes.data || []);
     } catch (e) {
       console.error(e);
@@ -641,7 +706,7 @@ export default function AdminProductsPage() {
   // Filtered & Paginated Products calculation
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterCategoryId, filterStatus, filterPackType, sortBy]);
+  }, [searchTerm, filterCategoryId, filterStatus, filterPackType, filterImageFilter, sortBy]);
 
   const filteredProducts = useMemo(() => {
     return products
@@ -662,6 +727,9 @@ export default function AdminProductsPage() {
         if (filterStatus === 'INACTIVE' && p.is_active) return false;
         if (filterPackType === 'PACK' && !p.is_pack) return false;
         if (filterPackType === 'SINGLE' && p.is_pack) return false;
+        if (filterImageFilter === 'EXTERNAL' && (!p.image_url || isR2Image(p.image_url))) return false;
+        if (filterImageFilter === 'R2' && (!p.image_url || !isR2Image(p.image_url))) return false;
+        if (filterImageFilter === 'NO_IMAGE' && p.image_url) return false;
         return true;
       })
       .sort((a, b) => {
@@ -687,6 +755,134 @@ export default function AdminProductsPage() {
 
   const packCount = useMemo(() => products.filter(p => Boolean(p.is_pack)).length, [products]);
   const singleCount = useMemo(() => products.filter(p => !Boolean(p.is_pack)).length, [products]);
+
+  const isR2Image = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    return url.includes('img.pos-foodscan.com') || (Boolean(process.env.NEXT_PUBLIC_R2_PUBLIC_URL) && url.includes(process.env.NEXT_PUBLIC_R2_PUBLIC_URL!));
+  };
+
+  const r2ImageCount = useMemo(() => products.filter(p => isR2Image(p.image_url)).length, [products]);
+  const externalImageCount = useMemo(() => products.filter(p => p.image_url && !isR2Image(p.image_url)).length, [products]);
+  const noImageCount = useMemo(() => products.filter(p => !p.image_url).length, [products]);
+
+  const handleMigrateSingle = async (productId: string) => {
+    try {
+      setMigratingIds(prev => new Set(prev).add(productId));
+      const res = await fetch('/api/admin/products/migrate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId }),
+      });
+      const data = await res.json();
+      if (data.success && data.results?.[0]?.new_url) {
+        const newUrl = data.results[0].new_url;
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, image_url: newUrl } : p));
+      } else {
+        alert(data.results?.[0]?.error || data.error || 'ย้ายรูปภาพไม่สำเร็จ');
+      }
+    } catch (err: any) {
+      alert(err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      setMigratingIds(prev => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
+    }
+  };
+
+  const handleBulkMigrateImages = async () => {
+    const targets = products.filter(p => selectedProductIds.includes(p.id) && p.image_url && !isR2Image(p.image_url));
+    if (targets.length === 0) {
+      alert('ไม่มีรายการที่มีรูปภาพภายนอกในสินค้าที่เลือก');
+      return;
+    }
+    if (!confirm(`ยืนยันย้ายรูปภาพของสินค้าที่เลือกจำนวน ${targets.length} รายการ ขึ้น Cloudflare R2 ใช่หรือไม่?`)) return;
+
+    setIsBulkOperating(true);
+    try {
+      const res = await fetch('/api/admin/products/migrate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_ids: targets.map(p => p.id) }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const updatedMap = new Map<string, string>();
+        data.results?.forEach((r: any) => {
+          if (r.status === 'success' && r.new_url) {
+            updatedMap.set(r.id, r.new_url);
+          }
+        });
+        setProducts(prev => prev.map(p => updatedMap.has(p.id) ? { ...p, image_url: updatedMap.get(p.id)! } : p));
+        setSelectedProductIds([]);
+        alert(`ย้ายรูปภาพสำเร็จ ${data.summary?.migrated || 0} รายการ!`);
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการย้ายรูปภาพ');
+      }
+    } catch (err: any) {
+      alert(err.message || 'เกิดข้อผิดพลาด');
+    } finally {
+      setIsBulkOperating(false);
+    }
+  };
+
+  const handleStartBatchMigration = async () => {
+    try {
+      setBatchMigrateRunning(true);
+      setStopBatchRequested(false);
+
+      const res = await fetch('/api/admin/products/migrate-image');
+      const data = await res.json();
+      const ids: string[] = data.external_ids || [];
+
+      setBatchMigrateProgress({ current: 0, total: ids.length, failed: 0 });
+
+      if (ids.length === 0) {
+        alert('รูปภาพสินค้าทั้งหมดอยู่บน Cloudflare R2 เรียบร้อยแล้ว!');
+        setBatchMigrateRunning(false);
+        return;
+      }
+
+      const chunkSize = 5;
+      let processed = 0;
+      let failed = 0;
+
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        if (stopBatchRequested) break;
+
+        const chunk = ids.slice(i, i + chunkSize);
+        try {
+          const postRes = await fetch('/api/admin/products/migrate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product_ids: chunk }),
+          });
+          const postData = await postRes.json();
+          if (postData.success) {
+            const updatedMap = new Map<string, string>();
+            postData.results?.forEach((r: any) => {
+              if (r.status === 'success' && r.new_url) {
+                updatedMap.set(r.id, r.new_url);
+              } else if (r.status === 'failed') {
+                failed++;
+              }
+            });
+            setProducts(prev => prev.map(p => updatedMap.has(p.id) ? { ...p, image_url: updatedMap.get(p.id)! } : p));
+          }
+        } catch (_) {
+          failed += chunk.length;
+        }
+
+        processed = Math.min(ids.length, i + chunk.length);
+        setBatchMigrateProgress({ current: processed, total: ids.length, failed });
+      }
+    } catch (err: any) {
+      alert('เกิดข้อผิดพลาด: ' + err.message);
+    } finally {
+      setBatchMigrateRunning(false);
+    }
+  };
 
   // Category search state
   const [categorySearch, setCategorySearch] = useState('');
@@ -715,6 +911,19 @@ export default function AdminProductsPage() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={() => setShowBatchMigrateModal(true)}
+              className="px-3.5 py-2.5 bg-sky-50 border border-sky-200 hover:bg-sky-100 text-sky-800 rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5"
+              title="ตรวจสอบและย้ายรูปภาพสินค้าจากลิงก์ภายนอกขึ้น Cloudflare R2 ของเรา"
+            >
+              <IconCloud />
+              <span>ย้ายรูปไป Cloudflare</span>
+              {externalImageCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-extrabold">
+                  {externalImageCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={handleAutoDetectPack}
               className="px-3.5 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5"
@@ -905,6 +1114,20 @@ export default function AdminProductsPage() {
                       </select>
                     </div>
 
+                    {/* Image Status Filter */}
+                    <div className="lg:col-span-2">
+                      <select
+                        value={filterImageFilter}
+                        onChange={(e) => setFilterImageFilter(e.target.value as any)}
+                        className="w-full px-3 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-[#2C4A34] font-medium text-slate-700 transition-all"
+                      >
+                        <option value="ALL">รูปภาพ: ทั้งหมด</option>
+                        <option value="EXTERNAL">เฉพาะลิงก์นอก ({externalImageCount})</option>
+                        <option value="R2">คลาวด์เราแล้ว ({r2ImageCount})</option>
+                        <option value="NO_IMAGE">ไม่มีรูป ({noImageCount})</option>
+                      </select>
+                    </div>
+
                     {/* Sort Order */}
                     <div className="lg:col-span-2">
                       <select
@@ -1004,6 +1227,17 @@ export default function AdminProductsPage() {
                         title="เปลี่ยนรายการที่เลือกทั้งหมดให้เป็นสินค้าปกติ"
                       >
                         <span>ตั้งเป็นสินค้าเดี่ยว ({selectedProductIds.length})</span>
+                      </button>
+
+                      {/* ปุ่มย้ายรูปขึ้น Cloudflare R2 */}
+                      <button
+                        onClick={handleBulkMigrateImages}
+                        disabled={isBulkOperating}
+                        className="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5"
+                        title="อัปโหลดรูปภาพของรายการที่เลือกขึ้น Cloudflare R2"
+                      >
+                        <IconCloud />
+                        <span>อัปโหลดรูปไป Cloudflare ({selectedProductIds.length})</span>
                       </button>
 
                       {/* ปุ่มลบ */}
@@ -1119,25 +1353,74 @@ export default function AdminProductsPage() {
                                 </td>
 
                                 {/* Thumbnail */}
-                                <td className="px-4 py-3 text-center">
+                                <td className="px-3 py-3 text-center min-w-[78px]">
                                   {p.image_url ? (
-                                    <div
-                                      onClick={() => setPreviewImage({ url: p.image_url!, title: p.name })}
-                                      className="w-11 h-11 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-white p-0.5 cursor-pointer shadow-xs group-hover:scale-105 transition-transform"
-                                      title="คลิกเพื่อดูรูปขนาดใหญ่"
-                                    >
-                                      <img
-                                        src={p.image_url}
-                                        alt={p.name}
-                                        className="w-full h-full object-cover rounded-lg"
-                                        onError={(e) => {
-                                          (e.target as HTMLElement).style.display = 'none';
-                                        }}
-                                      />
+                                    <div className="flex flex-col items-center">
+                                      {/* Image container with corner icon badge */}
+                                      <div className="relative inline-block">
+                                        <div
+                                          onClick={() => setPreviewImage({ url: p.image_url!, title: p.name })}
+                                          className="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-white p-0.5 cursor-pointer shadow-xs group-hover:scale-105 transition-transform"
+                                          title="คลิกเพื่อดูรูปขนาดใหญ่"
+                                        >
+                                          <img
+                                            src={p.image_url}
+                                            alt={p.name}
+                                            className="w-full h-full object-cover rounded-lg"
+                                            onError={(e) => {
+                                              (e.target as HTMLElement).style.display = 'none';
+                                            }}
+                                          />
+                                        </div>
+
+                                        {/* Corner status icon badge */}
+                                        {isR2Image(p.image_url) ? (
+                                          <div
+                                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md border-2 border-white"
+                                            title="คลาวด์ของเรา (Cloudflare R2)"
+                                          >
+                                            <IconCloudCheck size={11} />
+                                          </div>
+                                        ) : (
+                                          <div
+                                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-md border-2 border-white"
+                                            title="รูปภาพลิงก์ภายนอก"
+                                          >
+                                            <IconExternalLink size={10} />
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Sub-label / Action under image */}
+                                      {isR2Image(p.image_url) ? (
+                                        <span
+                                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-extrabold whitespace-nowrap shadow-2xs"
+                                          title="รูปภาพอยู่บน Cloudflare R2 ของเราแล้ว (ปลอดภัย ไม่โดนบล็อก)"
+                                        >
+                                          <IconCloudCheck size={11} />
+                                          <span>R2</span>
+                                        </span>
+                                      ) : (
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); handleMigrateSingle(p.id); }}
+                                          disabled={migratingIds.has(p.id)}
+                                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-600 hover:bg-sky-700 active:scale-95 text-white text-[10px] font-bold whitespace-nowrap transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                                          title="รูปภาพลิงก์ภายนอก - คลิกเพื่อย้ายขึ้น Cloudflare R2 ของเรา"
+                                        >
+                                          {migratingIds.has(p.id) ? (
+                                            <span className="animate-spin text-[10px] leading-none">↻</span>
+                                          ) : (
+                                            <IconCloudUpload size={11} />
+                                          )}
+                                          <span>อัป R2</span>
+                                        </button>
+                                      )}
                                     </div>
                                   ) : (
-                                    <div className="w-11 h-11 mx-auto bg-slate-50 border border-slate-200 border-dashed rounded-xl flex items-center justify-center text-[10px] text-slate-400 font-medium">
-                                      ไม่มีรูป
+                                    <div className="flex flex-col items-center">
+                                      <div className="w-12 h-12 mx-auto bg-slate-50 border border-slate-200 border-dashed rounded-xl flex items-center justify-center text-[10px] text-slate-400 font-medium">
+                                        ไม่มีรูป
+                                      </div>
                                     </div>
                                   )}
                                 </td>
@@ -1726,6 +2009,128 @@ export default function AdminProductsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Image Migration Modal */}
+      {showBatchMigrateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
+                  <IconCloud />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-800">ย้ายรูปภาพขึ้น Cloudflare R2</h3>
+                  <p className="text-xs text-slate-500">ป้องกันรูปภาพภายนอกโดนบล็อกหรือลิงก์เสีย</p>
+                </div>
+              </div>
+              {!batchMigrateRunning && (
+                <button
+                  onClick={() => setShowBatchMigrateModal(false)}
+                  className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Stats Overview */}
+            <div className="grid grid-cols-3 gap-2 py-1 text-center">
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div className="text-[11px] font-bold text-slate-500">สินค้าทั้งหมด</div>
+                <div className="text-lg font-black text-slate-800 mt-0.5">{products.length}</div>
+              </div>
+              <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
+                <div className="text-[11px] font-bold text-emerald-800">คลาวด์เราแล้ว</div>
+                <div className="text-lg font-black text-emerald-800 mt-0.5">{r2ImageCount}</div>
+              </div>
+              <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100">
+                <div className="text-[11px] font-bold text-amber-800">ต้องย้าย (ลิงก์นอก)</div>
+                <div className="text-lg font-black text-amber-800 mt-0.5">{externalImageCount}</div>
+              </div>
+            </div>
+
+            {/* Progress Bar (เมื่อกำลังทำงาน) */}
+            {batchMigrateRunning ? (
+              <div className="space-y-2 py-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span>กำลังดาวน์โหลดและอัปโหลดขึ้น R2...</span>
+                  <span className="text-sky-700">
+                    {batchMigrateProgress.current} / {batchMigrateProgress.total} (
+                    {batchMigrateProgress.total > 0
+                      ? Math.round((batchMigrateProgress.current / batchMigrateProgress.total) * 100)
+                      : 0}
+                    %)
+                  </span>
+                </div>
+                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                  <div
+                    className="h-full bg-sky-600 transition-all duration-300 rounded-full"
+                    style={{
+                      width: `${
+                        batchMigrateProgress.total > 0
+                          ? (batchMigrateProgress.current / batchMigrateProgress.total) * 100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+                {batchMigrateProgress.failed > 0 && (
+                  <p className="text-xs text-rose-600">มีข้อผิดพลาดบางรายการ: {batchMigrateProgress.failed} รายการ</p>
+                )}
+              </div>
+            ) : externalImageCount === 0 ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-1">
+                <p className="text-sm font-bold text-emerald-900">รูปภาพทั้งหมดอยู่บน Cloudflare เรียบร้อยแล้ว</p>
+                <p className="text-xs text-emerald-700">ไม่มีรูปภาพลิงก์ภายนอกที่ต้องย้ายแล้วครับ</p>
+              </div>
+            ) : (
+              <div className="p-4 bg-sky-50 border border-sky-200 rounded-2xl text-xs text-sky-900 space-y-1.5">
+                <p className="font-bold">คำแนะนำก่อนเริ่มการทำงาน:</p>
+                <p className="text-sky-800 leading-relaxed">
+                  ระบบจะดาวน์โหลดรูปภาพจากลิงก์ภายนอกทีละชุด (ชุดละ 5 รายการ) แล้วส่งเข้าเก็บใน Cloudflare R2
+                  ของร้านพร้อมเปลี่ยน URL ในฐานข้อมูลให้อัตโนมัติ โดยไม่กระทบการทำงานของระบบ
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+              {batchMigrateRunning ? (
+                <button
+                  onClick={() => setStopBatchRequested(true)}
+                  className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-bold text-sm shadow-md transition-all"
+                >
+                  หยุดชั่วคราว
+                </button>
+              ) : externalImageCount > 0 ? (
+                <>
+                  <button
+                    onClick={() => setShowBatchMigrateModal(false)}
+                    className="flex-1 py-3 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold text-sm"
+                  >
+                    ปิดหน้าต่าง
+                  </button>
+                  <button
+                    onClick={handleStartBatchMigration}
+                    className="flex-2 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl font-bold text-sm shadow-md shadow-sky-600/20 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <IconCloud />
+                    <span>เริ่มย้าย {externalImageCount} รูปไป Cloudflare</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowBatchMigrateModal(false)}
+                  className="w-full py-3 bg-[#2C4A34] hover:bg-[#1E3A27] text-white rounded-2xl font-bold text-sm shadow-md"
+                >
+                  เสร็จสิ้นและปิดหน้าต่าง
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

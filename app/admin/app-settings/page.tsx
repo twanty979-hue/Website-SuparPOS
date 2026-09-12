@@ -26,6 +26,12 @@ const IconMarketplace = ({ size = 24 }) => (
     <path d="M3 10c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2c0 1.1.9 2 2 2s2-.9 2-2" />
   </svg>
 );
+const IconChart = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3v18h18" />
+    <path d="m19 9-5 5-4-4-3 3" />
+  </svg>
+);
 const IconCheck = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="20 6 9 17 4 12" />
@@ -38,12 +44,37 @@ const IconCopy = ({ size = 14 }) => (
   </svg>
 );
 
+interface PlanDashboardPerm {
+  max_days: number;
+  allow_advanced: boolean;
+  receipt_max_days?: number;
+  max_food_items?: number;
+  max_products?: number;
+  max_tables?: number;
+}
+
+interface DashboardPermissions {
+  free: PlanDashboardPerm;
+  basic: PlanDashboardPerm;
+  pro: PlanDashboardPerm;
+  ultimate: PlanDashboardPerm;
+}
+
+const DEFAULT_DASHBOARD_PERMISSIONS: DashboardPermissions = {
+  free: { max_days: 30, allow_advanced: false, receipt_max_days: 7, max_food_items: 50, max_products: 50, max_tables: 10 },
+  basic: { max_days: 0, allow_advanced: false, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0 },
+  pro: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0 },
+  ultimate: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0 },
+};
+
 export default function AppSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [needsMigration, setNeedsMigration] = useState(false);
-  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [needsColumnMigration, setNeedsColumnMigration] = useState(false);
+  const [migrationSql, setMigrationSql] = useState('');
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null);
 
   const [settings, setSettings] = useState({
     maintenance_mode: false,
@@ -56,6 +87,7 @@ export default function AppSettingsPage() {
     marketplace_enabled: true,
   });
 
+  const [dashboardPermissions, setDashboardPermissions] = useState<DashboardPermissions>(DEFAULT_DASHBOARD_PERMISSIONS);
   const [notif, setNotif] = useState({ title: '', body: '' });
 
   useEffect(() => { fetchSettings(); }, []);
@@ -79,6 +111,15 @@ export default function AppSettingsPage() {
           update_url: s.update_url ?? '',
           marketplace_enabled: s.marketplace_enabled ?? true,
         });
+
+        if (s.dashboard_permissions) {
+          setDashboardPermissions({
+            free: { ...DEFAULT_DASHBOARD_PERMISSIONS.free, ...s.dashboard_permissions.free },
+            basic: { ...DEFAULT_DASHBOARD_PERMISSIONS.basic, ...s.dashboard_permissions.basic },
+            pro: { ...DEFAULT_DASHBOARD_PERMISSIONS.pro, ...s.dashboard_permissions.pro },
+            ultimate: { ...DEFAULT_DASHBOARD_PERMISSIONS.ultimate, ...s.dashboard_permissions.ultimate },
+          });
+        }
       } else {
         setStatusMsg({ type: 'error', text: data.error || 'โหลดข้อมูลตั้งค่าล้มเหลว' });
       }
@@ -97,11 +138,22 @@ export default function AppSettingsPage() {
       const res = await fetch('/api/admin/app-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
+        body: JSON.stringify({
+          ...settings,
+          dashboard_permissions: dashboardPermissions,
+        })
       });
       const data = await res.json();
-      if (data.success) {
-        setStatusMsg({ type: 'success', text: 'บันทึกการตั้งค่าเรียบร้อยแล้ว' });
+      if (data.needsColumnMigration) {
+        setNeedsColumnMigration(true);
+        setMigrationSql(data.migrationSql || '');
+        setStatusMsg({
+          type: 'warning',
+          text: 'บันทึกการตั้งค่าทั่วไปแล้ว แต่ต้องรัน SQL ใน Supabase เพื่อให้การตั้งค่าสิทธิ์แดชบอร์ดมีผล'
+        });
+      } else if (data.success) {
+        setNeedsColumnMigration(false);
+        setStatusMsg({ type: 'success', text: 'บันทึกการตั้งค่าทั้งหมดเรียบร้อยแล้ว' });
       } else {
         setStatusMsg({ type: 'error', text: data.error || 'บันทึกข้อมูลล้มเหลว' });
       }
@@ -139,24 +191,19 @@ export default function AppSettingsPage() {
     }
   };
 
-  const copySql = () => {
-    navigator.clipboard.writeText(`CREATE TABLE IF NOT EXISTS public.system_settings (
-  id TEXT PRIMARY KEY DEFAULT 'global',
-  maintenance_mode BOOLEAN DEFAULT FALSE,
-  maintenance_message TEXT DEFAULT 'ระบบปิดปรับปรุงชั่วคราวเพื่อพัฒนาการบริการ คาดว่าจะเปิดให้บริการได้ปกติเร็วๆ นี้',
-  force_update BOOLEAN DEFAULT FALSE,
-  latest_version TEXT DEFAULT '1.0.0',
-  android_min_version TEXT DEFAULT '1.0.0',
-  ios_min_version TEXT DEFAULT '1.0.0',
-  update_url TEXT DEFAULT '',
-  marketplace_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+  const copySql = (sqlText: string) => {
+    navigator.clipboard.writeText(sqlText);
+    alert('คัดลอก SQL แล้ว');
+  };
 
-INSERT INTO public.system_settings (id)
-VALUES ('global')
-ON CONFLICT (id) DO NOTHING;`);
-    alert('คัดลอก SQL แล้ว!');
+  const updatePlanPerm = (plan: keyof DashboardPermissions, field: keyof PlanDashboardPerm, value: any) => {
+    setDashboardPermissions(prev => ({
+      ...prev,
+      [plan]: {
+        ...prev[plan],
+        [field]: value
+      }
+    }));
   };
 
   if (loading) return (
@@ -167,7 +214,7 @@ ON CONFLICT (id) DO NOTHING;`);
 
   if (needsMigration) return (
     <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-[#7F1D1D]">
-      <h2 className="font-bold text-base mb-2">⚠️ ต้องสร้างตาราง system_settings ก่อน</h2>
+      <h2 className="font-bold text-base mb-2">ต้องสร้างตาราง system_settings ก่อน</h2>
       <p className="text-sm mb-4">เปิด Supabase SQL Editor แล้วรันคำสั่งด้านล่าง:</p>
       <div className="relative">
         <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs font-mono overflow-x-auto">
@@ -181,12 +228,27 @@ ON CONFLICT (id) DO NOTHING;`);
   ios_min_version TEXT DEFAULT '1.0.0',
   update_url TEXT DEFAULT '',
   marketplace_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  dashboard_permissions JSONB DEFAULT '{"free":{"max_days":30,"allow_advanced":false},"basic":{"max_days":0,"allow_advanced":false},"pro":{"max_days":0,"allow_advanced":true},"ultimate":{"max_days":0,"allow_advanced":true}}'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 INSERT INTO public.system_settings (id)
 VALUES ('global') ON CONFLICT (id) DO NOTHING;`}
         </pre>
-        <button onClick={copySql}
+        <button onClick={() => copySql(`CREATE TABLE IF NOT EXISTS public.system_settings (
+  id TEXT PRIMARY KEY DEFAULT 'global',
+  maintenance_mode BOOLEAN DEFAULT FALSE,
+  maintenance_message TEXT DEFAULT '...',
+  force_update BOOLEAN DEFAULT FALSE,
+  latest_version TEXT DEFAULT '1.0.0',
+  android_min_version TEXT DEFAULT '1.0.0',
+  ios_min_version TEXT DEFAULT '1.0.0',
+  update_url TEXT DEFAULT '',
+  marketplace_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  dashboard_permissions JSONB DEFAULT '{"free":{"max_days":30,"allow_advanced":false},"basic":{"max_days":0,"allow_advanced":false},"pro":{"max_days":0,"allow_advanced":true},"ultimate":{"max_days":0,"allow_advanced":true}}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+INSERT INTO public.system_settings (id)
+VALUES ('global') ON CONFLICT (id) DO NOTHING;`)}
           className="absolute top-3 right-3 bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5">
           <IconCopy /> คัดลอก SQL
         </button>
@@ -202,21 +264,510 @@ VALUES ('global') ON CONFLICT (id) DO NOTHING;`}
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-extrabold text-[#2C4A34]">ตั้งค่าและควบคุมแอปมือถือ</h2>
-        <p className="text-xs text-[#608367] mt-1">จัดการโหมดปิดปรับปรุง, เวอร์ชันแอป และส่งข้อความบรอดแคสต์</p>
+        <p className="text-xs text-[#608367] mt-1">จัดการโหมดปิดปรับปรุง, สิทธิ์หน้าแดชบอร์ด, เวอร์ชันแอป และส่งข้อความบรอดแคสต์</p>
       </div>
 
       {statusMsg && (
         <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium ${
           statusMsg.type === 'success'
             ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : statusMsg.type === 'warning'
+            ? 'bg-amber-50 border-amber-200 text-amber-800'
             : 'bg-red-50 border-red-200 text-red-800'
         }`}>
-          {statusMsg.type === 'success' ? <IconCheck /> : <span>⚠️</span>}
+          {statusMsg.type === 'success' ? <IconCheck /> : <span className="font-bold text-base">!</span>}
           {statusMsg.text}
         </div>
       )}
 
+      {needsColumnMigration && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-amber-900 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold">แจ้งเตือน: ตาราง system_settings ยังไม่มีคอลัมน์ dashboard_permissions</span>
+            <button
+              type="button"
+              onClick={() => copySql(migrationSql || `ALTER TABLE public.system_settings ADD COLUMN IF NOT EXISTS dashboard_permissions JSONB DEFAULT '{"free":{"max_days":30,"allow_advanced":false},"basic":{"max_days":0,"allow_advanced":false},"pro":{"max_days":0,"allow_advanced":true},"ultimate":{"max_days":0,"allow_advanced":true}}'::jsonb;`)}
+              className="bg-amber-700 hover:bg-amber-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+            >
+              <IconCopy size={13} /> คัดลอก SQL ไปรันใน Supabase
+            </button>
+          </div>
+          <pre className="bg-slate-900 text-slate-100 rounded-xl p-3 text-[11px] font-mono overflow-x-auto">
+            {migrationSql || `ALTER TABLE public.system_settings ADD COLUMN IF NOT EXISTS dashboard_permissions JSONB DEFAULT '{"free":{"max_days":30,"allow_advanced":false},"basic":{"max_days":0,"allow_advanced":false},"pro":{"max_days":0,"allow_advanced":true},"ultimate":{"max_days":0,"allow_advanced":true}}'::jsonb;`}
+          </pre>
+        </div>
+      )}
+
       <form onSubmit={handleSave} className="space-y-5">
+
+        {/* ── Dashboard & Reports Access Control ── */}
+        <div className="bg-white border border-[#EFECE6] rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-5 py-4 bg-[#FAF9F5] border-b border-[#EFECE6]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                <IconChart size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#2C4A34]">สิทธิ์หน้าแดชบอร์ดและรายงาน (Dashboard & Reports)</p>
+                <p className="text-[10px] text-[#869E8D]">กำหนดจำนวนวันที่ดูย้อนหลังได้ และสิทธิ์เข้าถึงรายงานขั้นสูงด้านล่างแยกตามแผน</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Free Plan */}
+              <div className="border border-slate-200 rounded-2xl p-4 bg-[#FAFAFA] space-y-3.5">
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                    <span className="text-sm font-extrabold text-slate-800">แผน Free</span>
+                  </div>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold">ฟรี</span>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">ดูข้อมูลย้อนหลังได้ (วัน)</label>
+                    <span className="text-[11px] text-slate-500 font-medium">{dashboardPermissions.free.max_days === 0 ? 'ตลอดไป' : `${dashboardPermissions.free.max_days} วัน`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.free.max_days}
+                      onChange={e => updatePlanPerm('free', 'max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">รายงานขั้นสูง (ส่วนล่าง)</p>
+                    <p className="text-[10px] text-slate-500">ยอดขายรายชั่วโมง, วิธีชำระเงิน, โต๊ะ, ยอดขายพนักงาน</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={dashboardPermissions.free.allow_advanced}
+                      onChange={e => updatePlanPerm('free', 'allow_advanced', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-[#5F8565] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+                  </label>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">ประวัติการขายดูย้อนหลังได้ (วัน)</label>
+                    <span className="text-[11px] text-slate-500 font-medium">{(dashboardPermissions.free.receipt_max_days ?? 7) === 0 ? 'ตลอดไป' : `${dashboardPermissions.free.receipt_max_days ?? 7} วัน`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.free.receipt_max_days ?? 7}
+                      onChange={e => updatePlanPerm('free', 'receipt_max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนอาหาร / เมนู สูงสุด (รายการ)</label>
+                    <span className="text-[11px] text-slate-500 font-medium">{(dashboardPermissions.free.max_food_items ?? 50) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.free.max_food_items ?? 50} รายการ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.free.max_food_items ?? 50}
+                      onChange={e => updatePlanPerm('free', 'max_food_items', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนสินค้าทั่วไป สูงสุด (รายการ)</label>
+                    <span className="text-[11px] text-slate-500 font-medium">{(dashboardPermissions.free.max_products ?? 50) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.free.max_products ?? 50} รายการ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.free.max_products ?? 50}
+                      onChange={e => updatePlanPerm('free', 'max_products', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนโต๊ะสูงสุด (โต๊ะ)</label>
+                    <span className="text-[11px] text-slate-500 font-medium">{(dashboardPermissions.free.max_tables ?? 10) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.free.max_tables ?? 10} โต๊ะ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.free.max_tables ?? 10}
+                      onChange={e => updatePlanPerm('free', 'max_tables', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Basic Plan */}
+              <div className="border-2 border-blue-200 rounded-2xl p-4 bg-blue-50/40 space-y-3.5">
+                <div className="flex items-center justify-between border-b border-blue-200/80 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                    <span className="text-sm font-extrabold text-blue-950">แผน Basic</span>
+                  </div>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold">เบสิก</span>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">ดูข้อมูลย้อนหลังได้ (วัน)</label>
+                    <span className="text-[11px] text-blue-700 font-bold">{dashboardPermissions.basic.max_days === 0 ? 'ตลอดไป (ไม่จำกัด)' : `${dashboardPermissions.basic.max_days} วัน`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.basic.max_days}
+                      onChange={e => updatePlanPerm('basic', 'max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(ค่าเริ่มต้น 0 = ตลอดไป)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-blue-950">รายงานขั้นสูง (ส่วนล่าง)</p>
+                    <p className="text-[10px] text-blue-700/80">เปิดสิทธิ์ให้ Basic ดูสถิติรายชั่วโมง, โต๊ะ และพนักงานได้</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={dashboardPermissions.basic.allow_advanced}
+                      onChange={e => updatePlanPerm('basic', 'allow_advanced', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+                  </label>
+                </div>
+
+                <div className="pt-2 border-t border-blue-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">ประวัติการขายดูย้อนหลังได้ (วัน)</label>
+                    <span className="text-[11px] text-blue-700 font-bold">{(dashboardPermissions.basic.receipt_max_days ?? 0) === 0 ? 'ตลอดไป (ไม่จำกัด)' : `${dashboardPermissions.basic.receipt_max_days} วัน`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.basic.receipt_max_days ?? 0}
+                      onChange={e => updatePlanPerm('basic', 'receipt_max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(ค่าเริ่มต้น 0 = ตลอดไป)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-blue-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนอาหาร / เมนู สูงสุด (รายการ)</label>
+                    <span className="text-[11px] text-blue-700 font-bold">{(dashboardPermissions.basic.max_food_items ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.basic.max_food_items} รายการ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.basic.max_food_items ?? 0}
+                      onChange={e => updatePlanPerm('basic', 'max_food_items', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-blue-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนสินค้าทั่วไป สูงสุด (รายการ)</label>
+                    <span className="text-[11px] text-blue-700 font-bold">{(dashboardPermissions.basic.max_products ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.basic.max_products} รายการ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.basic.max_products ?? 0}
+                      onChange={e => updatePlanPerm('basic', 'max_products', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-blue-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนโต๊ะสูงสุด (โต๊ะ)</label>
+                    <span className="text-[11px] text-blue-700 font-bold">{(dashboardPermissions.basic.max_tables ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.basic.max_tables} โต๊ะ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.basic.max_tables ?? 0}
+                      onChange={e => updatePlanPerm('basic', 'max_tables', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pro Plan */}
+              <div className="border border-emerald-200 rounded-2xl p-4 bg-emerald-50/40 space-y-3.5">
+                <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                    <span className="text-sm font-extrabold text-emerald-950">แผน PRO</span>
+                  </div>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">โปร</span>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">ดูข้อมูลย้อนหลังได้ (วัน)</label>
+                    <span className="text-[11px] text-emerald-700 font-bold">{dashboardPermissions.pro.max_days === 0 ? 'ตลอดไป' : `${dashboardPermissions.pro.max_days} วัน`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.pro.max_days}
+                      onChange={e => updatePlanPerm('pro', 'max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-emerald-950">รายงานขั้นสูง (ส่วนล่าง)</p>
+                    <p className="text-[10px] text-emerald-700/80">ยอดขายรายชั่วโมง, วิธีชำระเงิน, โต๊ะ, ยอดขายพนักงาน</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={dashboardPermissions.pro.allow_advanced}
+                      onChange={e => updatePlanPerm('pro', 'allow_advanced', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+                  </label>
+                </div>
+
+                <div className="pt-2 border-t border-emerald-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">ประวัติการขายดูย้อนหลังได้ (วัน)</label>
+                    <span className="text-[11px] text-emerald-700 font-bold">{(dashboardPermissions.pro.receipt_max_days ?? 0) === 0 ? 'ตลอดไป' : `${dashboardPermissions.pro.receipt_max_days} วัน`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.pro.receipt_max_days ?? 0}
+                      onChange={e => updatePlanPerm('pro', 'receipt_max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-emerald-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนอาหาร / เมนู สูงสุด (รายการ)</label>
+                    <span className="text-[11px] text-emerald-700 font-bold">{(dashboardPermissions.pro.max_food_items ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.pro.max_food_items} รายการ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.pro.max_food_items ?? 0}
+                      onChange={e => updatePlanPerm('pro', 'max_food_items', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-emerald-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนสินค้าทั่วไป สูงสุด (รายการ)</label>
+                    <span className="text-[11px] text-emerald-700 font-bold">{(dashboardPermissions.pro.max_products ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.pro.max_products} รายการ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.pro.max_products ?? 0}
+                      onChange={e => updatePlanPerm('pro', 'max_products', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-emerald-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนโต๊ะสูงสุด (โต๊ะ)</label>
+                    <span className="text-[11px] text-emerald-700 font-bold">{(dashboardPermissions.pro.max_tables ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.pro.max_tables} โต๊ะ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.pro.max_tables ?? 0}
+                      onChange={e => updatePlanPerm('pro', 'max_tables', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ultimate Plan */}
+              <div className="border border-purple-200 rounded-2xl p-4 bg-purple-50/40 space-y-3.5">
+                <div className="flex items-center justify-between border-b border-purple-200/80 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
+                    <span className="text-sm font-extrabold text-purple-950">แผน Ultimate</span>
+                  </div>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-bold">อัลติเมท</span>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">ดูข้อมูลย้อนหลังได้ (วัน)</label>
+                    <span className="text-[11px] text-purple-700 font-bold">{dashboardPermissions.ultimate.max_days === 0 ? 'ตลอดไป' : `${dashboardPermissions.ultimate.max_days} วัน`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.ultimate.max_days}
+                      onChange={e => updatePlanPerm('ultimate', 'max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-purple-200/60 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-purple-950">รายงานขั้นสูง (ส่วนล่าง)</p>
+                    <p className="text-[10px] text-purple-700/80">ยอดขายรายชั่วโมง, วิธีชำระเงิน, โต๊ะ, ยอดขายพนักงาน</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={dashboardPermissions.ultimate.allow_advanced}
+                      onChange={e => updatePlanPerm('ultimate', 'allow_advanced', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+                  </label>
+                </div>
+
+                <div className="pt-2 border-t border-purple-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">ประวัติการขายดูย้อนหลังได้ (วัน)</label>
+                    <span className="text-[11px] text-purple-700 font-bold">{(dashboardPermissions.ultimate.receipt_max_days ?? 0) === 0 ? 'ตลอดไป' : `${dashboardPermissions.ultimate.receipt_max_days} วัน`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.ultimate.receipt_max_days ?? 0}
+                      onChange={e => updatePlanPerm('ultimate', 'receipt_max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-purple-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนอาหาร / เมนู สูงสุด (รายการ)</label>
+                    <span className="text-[11px] text-purple-700 font-bold">{(dashboardPermissions.ultimate.max_food_items ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.ultimate.max_food_items} รายการ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.ultimate.max_food_items ?? 0}
+                      onChange={e => updatePlanPerm('ultimate', 'max_food_items', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-purple-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนสินค้าทั่วไป สูงสุด (รายการ)</label>
+                    <span className="text-[11px] text-purple-700 font-bold">{(dashboardPermissions.ultimate.max_products ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.ultimate.max_products} รายการ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.ultimate.max_products ?? 0}
+                      onChange={e => updatePlanPerm('ultimate', 'max_products', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-purple-200/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700">จำนวนโต๊ะสูงสุด (โต๊ะ)</label>
+                    <span className="text-[11px] text-purple-700 font-bold">{(dashboardPermissions.ultimate.max_tables ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.ultimate.max_tables} โต๊ะ`}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={dashboardPermissions.ultimate.max_tables ?? 0}
+                      onChange={e => updatePlanPerm('ultimate', 'max_tables', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
+                    />
+                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
 
         {/* ── Maintenance ── */}
         <div className="bg-white border border-[#EFECE6] rounded-2xl overflow-hidden">
