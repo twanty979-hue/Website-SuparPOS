@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     if (!currentTableCount || currentTableCount === 0) {
       const tables = Array.from({ length: finalTableCount }, (_, index) => ({
         brand_id: brandId,
-        label: T-,
+        label: `T-${index + 1}`,
         capacity: 4,
         status: 'available',
         access_token: generateRandomToken(),
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
       // แปลงข้อมูลสินค้าเพื่อบันทึกลงตาราง products
       const productsToInsert = selectedProducts.map((p: any, index: number) => ({
         brand_id: brandId,
-        name: p.name?.trim() || สินค้า ,
+        name: p.name?.trim() || `สินค้า ${index + 1}`,
         image_name: p.image_url || null,
         price: Number(p.price) || 0,
         category_id: p.category_name ? categoryMap[p.category_name] || null : null,
