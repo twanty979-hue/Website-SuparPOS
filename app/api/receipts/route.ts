@@ -144,7 +144,7 @@ export async function GET(request: Request) {
         cashier:profiles(full_name),
         orders:orders!orders_payment_id_fkey (
           id, table_label, status,
-          order_items (product_name, quantity, price, variant, promotion_snapshot, status, note)
+          order_items (*)
         )
       `, { count: 'exact' })
       .eq('brand_id', brandId)
@@ -159,7 +159,7 @@ export async function GET(request: Request) {
       .select(`
         *,
         brand:brands(name),
-        order_items (product_name, quantity, price, variant, promotion_snapshot, status, note)
+        order_items (*)
       `, { count: 'exact' })
       .eq('brand_id', brandId)
       .eq('status', 'cancelled') 
@@ -180,6 +180,7 @@ export async function GET(request: Request) {
       const isActuallyCancelled = receipt.orders?.every((o: any) => o.status === 'cancelled');
 
       return {
+        ...receipt,
         id: receipt.id,
         brand_id: receipt.brand_id,
         created_at: receipt.created_at,

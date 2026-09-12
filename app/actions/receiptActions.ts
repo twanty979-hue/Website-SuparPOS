@@ -40,15 +40,7 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
           id,
           table_label,
           status,
-          order_items (
-            product_name,
-            quantity,
-            price,
-            variant,
-            promotion_snapshot,
-            status,
-            note
-          )
+          order_items (*)
         )
       `, { count: 'exact' })
       .eq('brand_id', profile.brand_id)
@@ -66,15 +58,7 @@ export async function getReceiptsAction(startDate: string, endDate: string, page
       .select(`
         *,
         brand:brands(name),
-        order_items (
-            product_name,
-            quantity,
-            price,
-            variant,
-            promotion_snapshot,
-            status,
-            note
-        )
+        order_items (*)
       `, { count: 'exact' })
       .eq('brand_id', profile.brand_id)
       .eq('status', 'cancelled') 
