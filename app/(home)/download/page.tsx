@@ -62,7 +62,7 @@ export default function DownloadPage() {
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-700">
                   <span className="text-slate-400">เวอร์ชัน:</span>
-                  <span className="font-bold text-slate-900">1.0.6 (ล่าสุด)</span>
+                  <span className="font-bold text-slate-900">2.1.1 (อัปเดตล่าสุด)</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-700">
                   <span className="text-slate-400">อุปกรณ์:</span>

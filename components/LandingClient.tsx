@@ -324,7 +324,7 @@ export default function LandingClient() {
                                     <div className="text-[9px] uppercase font-bold tracking-wider text-slate-400 leading-tight">DOWNLOAD ON</div>
                                     <div className="text-sm font-black text-slate-900 group-hover:text-slate-800 transition-colors leading-tight mt-0.5 flex items-center gap-1.5">
                                         <span>App Store</span>
-                                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-700 border border-slate-200">v1.0.6</span>
+                                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-700 border border-slate-200">v2.1.1</span>
                                     </div>
                                     <div className="text-[11px] text-slate-500 font-medium mt-0.5 truncate">
                                         iOS • iPhone & iPad
@@ -697,7 +697,7 @@ export default function LandingClient() {
                                         className="group inline-flex items-center gap-2.5 px-4.5 py-2.5 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl text-xs font-bold shadow-sm hover:shadow-md border border-slate-200 hover:border-slate-800 transition-all hover:-translate-y-0.5 active:scale-95"
                                     >
                                         <i className="fa-brands fa-apple text-slate-900 text-base"></i>
-                                        <span className="group-hover:text-slate-900 transition-colors">App Store (iOS) v1.0.6</span>
+                                        <span className="group-hover:text-slate-900 transition-colors">App Store (iOS) v2.1.1</span>
                                     </a>
                                     <a 
                                         href="https://play.google.com/store/apps/details?id=com.pos.foodscan"
