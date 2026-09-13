@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const path = require('path');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
@@ -9,7 +9,6 @@ async function upload() {
     process.exit(1);
   }
 
-  const fileStream = fs.createReadStream(filePath);
   const fileSize = fs.statSync(filePath).size;
   console.log(`Uploading ${filePath} (${(fileSize / 1024 / 1024).toFixed(2)} MB) to Cloudflare R2...`);
 
@@ -22,17 +21,25 @@ async function upload() {
     }
   });
 
-  const cmd = new PutObjectCommand({
-    Bucket: 'foodscan-images',
-    Key: 'downloads/SuparPOS-Setup.exe',
-    Body: fileStream,
-    ContentType: 'application/vnd.microsoft.portable-executable',
-    ContentLength: fileSize
-  });
+  const keys = [
+    'downloads/SuparPOS-Setup.exe',
+    'downloads/SuparPOS-Setup-v2.1.1.exe',
+    'downloads/SuparPOS-Setup-v2.1.0.exe'
+  ];
 
-  await client.send(cmd);
-  console.log('Successfully uploaded SuparPOS-Setup.exe to Cloudflare R2!');
-  console.log('Public URL: https://img.pos-foodscan.com/downloads/SuparPOS-Setup.exe');
+  for (const key of keys) {
+    console.log(`Uploading to key: ${key}...`);
+    const stream = fs.createReadStream(filePath);
+    const cmd = new PutObjectCommand({
+      Bucket: 'foodscan-images',
+      Key: key,
+      Body: stream,
+      ContentType: 'application/vnd.microsoft.portable-executable',
+      ContentLength: fileSize
+    });
+    await client.send(cmd);
+    console.log(`Successfully uploaded to: https://img.pos-foodscan.com/${key}`);
+  }
 }
 
 upload().catch(err => {
