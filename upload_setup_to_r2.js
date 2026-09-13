@@ -22,6 +22,8 @@ async function upload() {
   });
 
   const keys = [
+    'downloads/POS-Foodscan-Setup-v2.1.1.exe',
+    'downloads/POS-Foodscan-Setup.exe',
     'downloads/SuparPOS-Setup.exe',
     'downloads/SuparPOS-Setup-v2.1.1.exe',
     'downloads/SuparPOS-Setup-v2.1.0.exe'
