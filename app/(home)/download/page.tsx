@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Download, Monitor, Smartphone, CheckCircle, ShieldCheck } from 'lucide-react';
 
 export default function DownloadPage() {
+  const appStoreUrl = 'https://apps.apple.com/app/pos-foodscan/id6809176972';
   const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.pos.foodscan';
   const windowsDownloadUrl = 'https://img.pos-foodscan.com/downloads/POS-Foodscan-Setup-v2.1.1.exe';
 
@@ -31,10 +32,85 @@ export default function DownloadPage() {
 
       {/* 2 Big Platform Cards */}
       <section className="pb-24 px-6 lg:px-12">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 items-stretch">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-3 gap-6 items-stretch">
           
+          {/* 🍏 iOS (App Store) */}
+          <div className="p-8 sm:p-9 rounded-3xl bg-white border border-slate-200/80 shadow-xl shadow-slate-200/60 flex flex-col justify-between hover:border-slate-800 transition-all duration-300">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shadow-sm">
+                  <i className="fa-brands fa-apple text-white text-3xl"></i>
+                </div>
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
+                  iOS • iPhone & iPad
+                </span>
+              </div>
+
+              <h3 className="text-2xl font-black text-slate-900 mb-2 flex items-center gap-2">
+                <Smartphone className="w-6 h-6 text-slate-800" />
+                App Store (iOS)
+              </h3>
+              <p className="text-sm text-slate-500 font-light mb-6">
+                สำหรับ iPhone และ iPad ทุกรุ่น ติดตั้งได้ผ่าน App Store อย่างเป็นทางการ
+              </p>
+
+              {/* Highlights Box */}
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-3.5 mb-6">
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">ชื่อแอป:</span>
+                  <span className="font-mono font-bold">POS Foodscan</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">เวอร์ชัน:</span>
+                  <span className="font-bold text-slate-900">1.0.6 (ล่าสุด)</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">อุปกรณ์:</span>
+                  <span className="font-bold">iPhone & iPad</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">ความต้องการ:</span>
+                  <span className="font-bold">iOS 12.0 ขึ้นไป</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">การพิมพ์:</span>
+                  <span className="font-bold text-emerald-600">Bluetooth, Wi-Fi, LAN</span>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs text-slate-600 mb-8">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <span>ผ่านการรับรองจาก Apple App Store</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <span>ใช้งานได้สมบูรณ์ทั้งแนวตั้งและแนวนอนบน iPad</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <span>คิดเงินไว สแกนจ่าย และสั่งอาหารผ่านโต๊ะ</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <span>เชื่อมต่อเครื่องพิมพ์บลูทูธและเน็ตเวิร์กง่ายดาย</span>
+                </div>
+              </div>
+            </div>
+
+            <a
+              href={appStoreUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-4 bg-black hover:bg-slate-800 text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5 shadow-md shadow-slate-900/30 active:scale-95"
+            >
+              <i className="fa-brands fa-apple text-xl"></i>
+              <span>ดาวน์โหลดบน App Store</span>
+            </a>
+          </div>
+
           {/* 🟢 Android (Google Play) */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-white border border-emerald-100 shadow-xl shadow-emerald-500/10 flex flex-col justify-between">
+          <div className="p-8 sm:p-9 rounded-3xl bg-white border border-emerald-100 shadow-xl shadow-emerald-500/10 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-6">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-100 border border-emerald-100 flex items-center justify-center shadow-sm">
@@ -119,7 +195,7 @@ export default function DownloadPage() {
           </div>
 
           {/* 🔵 Windows Desktop (.exe) */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-white border border-sky-100 shadow-xl shadow-sky-500/10 flex flex-col justify-between">
+          <div className="p-8 sm:p-9 rounded-3xl bg-white border border-sky-100 shadow-xl shadow-sky-500/10 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-6">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-50 to-blue-100 border border-sky-100 flex items-center justify-center shadow-sm">

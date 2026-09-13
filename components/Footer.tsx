@@ -18,6 +18,15 @@ export default function Footer() {
           </p>
           <div className="flex items-center gap-3">
             <a 
+              href="https://apps.apple.com/app/pos-foodscan/id6809176972" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all border border-slate-700"
+            >
+              <i className="fa-brands fa-apple text-white text-sm"></i>
+              App Store
+            </a>
+            <a 
               href="https://play.google.com/store/apps/details?id=com.pos.foodscan" 
               target="_blank" 
               rel="noopener noreferrer"
@@ -53,6 +62,7 @@ export default function Footer() {
           <ul className="space-y-2.5 text-sm">
             <li><Link href="/download" className="hover:text-emerald-400 transition-colors">ดาวน์โหลดแอป</Link></li>
             <li><Link href="/setup-printer" className="hover:text-emerald-400 transition-colors">ตั้งค่าเครื่องพิมพ์บิล (Win)</Link></li>
+            <li><a href="https://apps.apple.com/app/pos-foodscan/id6809176972" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">App Store (iOS)</a></li>
             <li><a href="https://play.google.com/store/apps/details?id=com.pos.foodscan" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">Play Store (Android)</a></li>
             <li><a href="https://img.pos-foodscan.com/downloads/POS-Foodscan-Setup-v2.1.1.exe" download="POS-Foodscan-Setup-v2.1.1.exe" className="hover:text-emerald-400 transition-colors">Windows PC Installer</a></li>
           </ul>

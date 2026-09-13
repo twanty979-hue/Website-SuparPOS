@@ -307,7 +307,33 @@ export default function LandingClient() {
                         </span>
                     </div>
 
-                    <div className="grid sm:grid-cols-2 gap-3.5 pt-1">
+                    <div className="grid sm:grid-cols-3 gap-3 pt-1">
+                        {/* 🍏 Apple App Store (iOS) */}
+                        <a 
+                            href="https://apps.apple.com/app/pos-foodscan/id6809176972" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="group flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border border-slate-200/80 hover:border-slate-800 bg-white hover:bg-slate-50/70 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                        >
+                            <div className="w-11 h-11 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center flex-shrink-0 shadow-sm transition-all group-hover:scale-105">
+                                <i className="fa-brands fa-apple text-white text-2xl"></i>
+                            </div>
+                            <div className="text-left flex-1 min-w-0">
+                                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 leading-tight">DOWNLOAD ON</div>
+                                <div className="text-base font-black text-slate-900 group-hover:text-slate-800 transition-colors leading-tight mt-0.5 flex items-center gap-1.5">
+                                    <span>App Store</span>
+                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-700 border border-slate-200">v1.0.6</span>
+                                </div>
+                                <div className="text-[11px] text-slate-600 font-semibold mt-0.5 flex items-center gap-1">
+                                    <span>iOS</span>
+                                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                    <span className="text-slate-400 font-normal">iPhone & iPad</span>
+                                </div>
+                            </div>
+                            <i className="fa-solid fa-arrow-up-right-from-square text-xs text-slate-300 group-hover:text-slate-700 transition-colors pr-1"></i>
+                        </a>
+
+
                         {/* 🟢 Google Play (สวย คลีน ขาว ขอบเขียว ตรงธีม) */}
                         <a 
                             href="https://play.google.com/store/apps/details?id=com.pos.foodscan" 
@@ -664,6 +690,15 @@ export default function LandingClient() {
                                     หรือดาวน์โหลดแอปพลิเคชันไปติดตั้งใช้งาน
                                 </p>
                                 <div className="flex flex-wrap justify-center items-center gap-3">
+                                    <a 
+                                        href="https://apps.apple.com/app/pos-foodscan/id6809176972"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group inline-flex items-center gap-2.5 px-4.5 py-2.5 bg-white hover:bg-slate-50 text-slate-800 rounded-2xl text-xs font-bold shadow-sm hover:shadow-md border border-slate-200 hover:border-slate-800 transition-all hover:-translate-y-0.5 active:scale-95"
+                                    >
+                                        <i className="fa-brands fa-apple text-slate-900 text-base"></i>
+                                        <span className="group-hover:text-slate-900 transition-colors">App Store (iOS) v1.0.6</span>
+                                    </a>
                                     <a 
                                         href="https://play.google.com/store/apps/details?id=com.pos.foodscan"
                                         target="_blank"
