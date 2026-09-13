@@ -1,8 +1,7 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 
 const LogoIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <img 
@@ -14,49 +13,7 @@ const LogoIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [profile, setProfile] = useState<{ avatar_url?: string; full_name?: string } | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProduction, setIsProduction] = useState(true);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const isDev = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
-      setIsProduction(!isDev);
-    }
-  }, []);
-
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('avatar_url, full_name')
-            .eq('id', session.user.id)
-            .single();
-            
-          setProfile(profileData as { avatar_url?: string; full_name?: string } | null);
-        }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-      } finally {
-        setIsAuthLoading(false);
-      }
-    };
-
-    checkUser();
-  }, []);
-
-  const getAvatarUrlForNavbar = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${path}`; 
-  };
 
   const navLinks = [
     { href: '/', label: 'หน้าแรก' },
@@ -106,41 +63,6 @@ export default function Navbar() {
               </Link>
             );
           })}
-
-          {/* Auth Button */}
-          {isAuthLoading ? (
-            isProduction ? null : (
-              <div className="w-24 h-10 bg-slate-200 animate-pulse rounded-full"></div>
-            )
-          ) : user ? (
-            <Link
-              href="https://app.suparpos.com"
-              className="flex items-center gap-3 p-1 pr-4 bg-white border border-slate-200 rounded-full hover:border-emerald-500 hover:shadow-md transition-all group"
-            >
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-emerald-100 flex items-center justify-center border border-slate-100">
-                {profile?.avatar_url ? (
-                  <img
-                    src={getAvatarUrlForNavbar(profile.avatar_url)}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <i className="fa-solid fa-user text-emerald-500 text-sm"></i>
-                )}
-              </div>
-              <span className="text-sm font-bold text-slate-700 group-hover:text-emerald-600 transition-colors">
-                {profile?.full_name?.split(' ')[0] || 'แดชบอร์ด'}
-              </span>
-            </Link>
-          ) : isProduction ? null : (
-            <Link
-              href="https://app.suparpos.com"
-              className="relative px-6 py-2 bg-emerald-600 text-white hover:bg-emerald-700 font-bold rounded-full transition-all shadow-md shadow-emerald-600/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 overflow-hidden group text-sm"
-            >
-              <span className="absolute top-0 left-0 w-full h-full bg-white/20 -skew-x-12 -translate-x-full group-hover:animate-shine"></span>
-              <span className="relative z-10">เข้าสู่ระบบ</span>
-            </Link>
-          )}
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -174,37 +96,6 @@ export default function Navbar() {
               </Link>
             );
           })}
-
-          {(!isProduction || user) && (
-            <div className="pt-3 border-t border-slate-100 w-4/5 flex justify-center">
-            {!isAuthLoading && user ? (
-              <Link
-                href="https://app.suparpos.com"
-                className="flex items-center gap-3 text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2.5 rounded-full font-bold shadow-lg shadow-emerald-500/30 w-full justify-center"
-              >
-                <div className="w-6 h-6 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
-                  {profile?.avatar_url ? (
-                    <img
-                      src={getAvatarUrlForNavbar(profile.avatar_url)}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <i className="fa-solid fa-user text-white text-xs"></i>
-                  )}
-                </div>
-                เข้าสู่แดชบอร์ด
-              </Link>
-            ) : (
-              <Link
-                href="https://app.suparpos.com"
-                className="text-white bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-2.5 rounded-full font-bold shadow-lg shadow-emerald-500/30 w-full text-center"
-              >
-                สมัครใช้งานฟรี
-              </Link>
-            )}
-          </div>
-          )}
         </div>
       )}
     </nav>
