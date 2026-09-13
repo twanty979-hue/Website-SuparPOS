@@ -4,16 +4,16 @@ import Link from 'next/link';
 import { JsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  title: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ด | SuparPOS",
+  title: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ด | POS Foodscan",
   description: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ดช่วยจัดการคลังวัตถุดิบร้านอาหารและร้านค้าปลีก ตัดสต๊อกสินค้าอัตโนมัติทันทีเมื่อคิดเงินหน้าร้าน เริ่มใช้งานฟรี",
   alternates: {
     canonical: "https://suparpos.com/stock-barcode"
   },
   openGraph: {
-    title: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ด | SuparPOS",
+    title: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ด | POS Foodscan",
     description: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ดช่วยจัดการคลังวัตถุดิบร้านอาหารและร้านค้าปลีก ตัดสต๊อกสินค้าอัตโนมัติทันทีเมื่อคิดเงินหน้าร้าน เริ่มใช้งานฟรี",
     url: "https://suparpos.com/stock-barcode",
-    siteName: "SuparPOS",
+    siteName: "POS Foodscan",
     locale: "th_TH",
     type: "website",
     images: [
@@ -21,13 +21,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ด | SuparPOS",
+        alt: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ด | POS Foodscan",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ด | SuparPOS",
+    title: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ด | POS Foodscan",
     description: "โปรแกรมสต๊อกสินค้าและระบบบาร์โค้ดช่วยจัดการคลังวัตถุดิบร้านอาหารและร้านค้าปลีก ตัดสต๊อกสินค้าอัตโนมัติทันทีเมื่อคิดเงินหน้าร้าน เริ่มใช้งานฟรี",
     images: ["/opengraph-image.png"],
   }
@@ -103,7 +103,7 @@ export default function StockBarcodePage() {
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-slate-800">ควบคุมอย่างอยู่หมัดด้วย SuparPOS</h2>
+              <h2 className="text-2xl font-bold text-slate-800">ควบคุมอย่างอยู่หมัดด้วย POS Foodscan</h2>
               <div className="space-y-4">
                 {[
                   { title: "ระบบหักสต๊อกหน้าร้านอัตโนมัติ", desc: "หักสินค้าออกทันทีหลังคิดเงิน และแจ้งเตือนเมื่อสินค้าใกล้หมดสต๊อก" },
@@ -153,7 +153,7 @@ export default function StockBarcodePage() {
               <h2 className="text-2xl font-bold text-slate-800 mb-6">3 ขั้นตอนง่ายๆ ในการบริหารสต๊อก</h2>
               <div className="space-y-6">
                 {[
-                  { step: "1", title: "สมัครสมาชิกรับสิทธิ์ฟรี", desc: "ลงทะเบียนบัญชีร้านค้าผ่านหน้าเว็บ SuparPOS พร้อมใช้งานฐานข้อมูลคลังสินค้าส่วนตัว" },
+                  { step: "1", title: "สมัครสมาชิกรับสิทธิ์ฟรี", desc: "ลงทะเบียนบัญชีร้านค้าผ่านหน้าเว็บ POS Foodscan พร้อมใช้งานฐานข้อมูลคลังสินค้าส่วนตัว" },
                   { step: "2", title: "ใส่รายละเอียดรหัสและจํานวนสินค้า", desc: "ป้อนรหัสบาร์โค้ดของสินค้าแต่ละชิ้น และใส่ยอดจำนวนสต๊อกตั้งต้นในหน้าบอร์ด" },
                   { step: "3", title: "คิดเงินหน้าร้านหักลบระบบ", desc: "เริ่มต้นคิดเงินหน้าร้านผ่านเครื่อง POS ระบบจะตัดจำนวนคลังให้ตามจริงเรียลไทม์" }
                 ].map((s, i) => (

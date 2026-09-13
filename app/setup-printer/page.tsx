@@ -13,7 +13,7 @@ export default function SetupPrinterPage() {
     const blob = new Blob([batContent], { type: 'application/octet-stream' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'Setup-SuparPOS-Printer.bat';
+    link.download = 'Setup-POS Foodscan-Printer.bat';
     link.click();
   };
 
@@ -59,13 +59,13 @@ export default function SetupPrinterPage() {
                 {/* File Preview Card with App Icon */}
                 <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl">
                   <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 p-2 flex items-center justify-center relative shrink-0">
-                    <img src="/icon.png" alt="SuparPOS Icon" className="w-full h-full object-contain" />
+                    <img src="/icon.png" alt="POS Foodscan Icon" className="w-full h-full object-contain" />
                     <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full flex items-center justify-center text-[8px] text-white font-black">
                       ✓
                     </div>
                   </div>
                   <div className="text-left">
-                    <div className="text-xs font-bold text-slate-800 leading-tight">Setup-SuparPOS-Printer.bat</div>
+                    <div className="text-xs font-bold text-slate-800 leading-tight">Setup-POS Foodscan-Printer.bat</div>
                     <div className="text-[10px] text-slate-400 font-semibold mt-0.5">ไฟล์สคริปต์ตั้งค่าอัตโนมัติ</div>
                   </div>
                 </div>
@@ -83,7 +83,7 @@ export default function SetupPrinterPage() {
                 เปิดรันไฟล์สคริปต์ในเครื่องคอมพิวเตอร์
               </h3>
               <p className="text-slate-500 mb-4 leading-relaxed">
-                เข้าไปในโฟลเดอร์ดาวน์โหลด แล้วดับเบิ้ลคลิกเปิดไฟล์ที่ชื่อว่า <strong className="text-slate-800">Setup-SuparPOS-Printer.bat</strong>
+                เข้าไปในโฟลเดอร์ดาวน์โหลด แล้วดับเบิ้ลคลิกเปิดไฟล์ที่ชื่อว่า <strong className="text-slate-800">Setup-POS Foodscan-Printer.bat</strong>
               </p>
               
               {/* Alert note about Windows Warning */}
@@ -107,7 +107,7 @@ export default function SetupPrinterPage() {
                 เริ่มต้นใช้งานจากหน้า Desktop
               </h3>
               <p className="text-slate-500 mb-4 leading-relaxed">
-                เมื่อรันเสร็จ จะมีหน้าจอแสดงผลการทำรายการ 1 วินาที จากนั้นจะมีไอคอนรูปทางลัดชื่อว่า <strong className="text-slate-800">SuparPOS Printer</strong> ปรากฏขึ้นบนหน้าจอหลัก (Desktop) ของคุณ
+                เมื่อรันเสร็จ จะมีหน้าจอแสดงผลการทำรายการ 1 วินาที จากนั้นจะมีไอคอนรูปทางลัดชื่อว่า <strong className="text-slate-800">POS Foodscan Printer</strong> ปรากฏขึ้นบนหน้าจอหลัก (Desktop) ของคุณ
               </p>
               
               {/* Shortcut Preview */}
@@ -119,7 +119,7 @@ export default function SetupPrinterPage() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-slate-800 leading-tight">SuparPOS Printer</div>
+                  <div className="text-sm font-bold text-slate-800 leading-tight">POS Foodscan Printer</div>
                   <div className="text-[11px] text-slate-400 font-semibold mt-0.5">ทางลัดบน Desktop</div>
                 </div>
               </div>
@@ -127,7 +127,7 @@ export default function SetupPrinterPage() {
                 <Monitor className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
                 <div>
                   <strong className="font-bold text-slate-800 block mb-1">💻 วิธีเข้าใช้งานทุกวัน:</strong>
-                  ทุกครั้งที่เปิดหน้าร้าน ให้ดับเบิ้ลคลิกเข้าใช้งานผ่านไอคอน <strong className="text-slate-800">SuparPOS Printer</strong> ตัวนี้เท่านั้น เพื่อให้หน้าเว็บทำการพิมพ์ออเดอร์ออกจากเครื่องพิมพ์ทันทีโดยไม่ต้องคลิกคำว่า "พิมพ์" ซ้ำๆ ครับ
+                  ทุกครั้งที่เปิดหน้าร้าน ให้ดับเบิ้ลคลิกเข้าใช้งานผ่านไอคอน <strong className="text-slate-800">POS Foodscan Printer</strong> ตัวนี้เท่านั้น เพื่อให้หน้าเว็บทำการพิมพ์ออเดอร์ออกจากเครื่องพิมพ์ทันทีโดยไม่ต้องคลิกคำว่า "พิมพ์" ซ้ำๆ ครับ
                 </div>
               </div>
             </div>

@@ -4,16 +4,16 @@ import Link from 'next/link';
 import { JsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  title: "โปรแกรม POS ร้านค้าปลีกและร้านโชห่วย | SuparPOS",
+  title: "โปรแกรม POS ร้านค้าปลีกและร้านโชห่วย | POS Foodscan",
   description: "โปรแกรม POS ร้านค้าปลีก และระบบร้านโชห่วย มินิมาร์ท ช่วยจัดการคิดเงินหน้าร้าน ตัดสต๊อกสินค้าอัตโนมัติ และสแกนบาร์โค้ดได้อย่างรวดเร็ว แม่นยำ เริ่มต้นใช้งานฟรี",
   alternates: {
     canonical: "https://suparpos.com/pos-retail"
   },
   openGraph: {
-    title: "โปรแกรม POS ร้านค้าปลีกและร้านโชห่วย | SuparPOS",
+    title: "โปรแกรม POS ร้านค้าปลีกและร้านโชห่วย | POS Foodscan",
     description: "โปรแกรม POS ร้านค้าปลีก และระบบร้านโชห่วย มินิมาร์ท ช่วยจัดการคิดเงินหน้าร้าน ตัดสต๊อกสินค้าอัตโนมัติ และสแกนบาร์โค้ดได้อย่างรวดเร็ว แม่นยำ เริ่มต้นใช้งานฟรี",
     url: "https://suparpos.com/pos-retail",
-    siteName: "SuparPOS",
+    siteName: "POS Foodscan",
     locale: "th_TH",
     type: "website",
     images: [
@@ -21,13 +21,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "โปรแกรม POS ร้านค้าปลีกและร้านโชห่วย | SuparPOS",
+        alt: "โปรแกรม POS ร้านค้าปลีกและร้านโชห่วย | POS Foodscan",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "โปรแกรม POS ร้านค้าปลีกและร้านโชห่วย | SuparPOS",
+    title: "โปรแกรม POS ร้านค้าปลีกและร้านโชห่วย | POS Foodscan",
     description: "โปรแกรม POS ร้านค้าปลีก และระบบร้านโชห่วย มินิมาร์ท ช่วยจัดการคิดเงินหน้าร้าน ตัดสต๊อกสินค้าอัตโนมัติ และสแกนบาร์โค้ดได้อย่างรวดเร็ว แม่นยำ เริ่มต้นใช้งานฟรี",
     images: ["/opengraph-image.png"],
   }
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 
 const RETAIL_FAQS = [
   {
-    question: "ระบบบาร์โค้ดของ SuparPOS ใช้ร่วมกับเครื่องสแกนทั่วไปได้หรือไม่?",
+    question: "ระบบบาร์โค้ดของ POS Foodscan ใช้ร่วมกับเครื่องสแกนทั่วไปได้หรือไม่?",
     answer: "ได้ครับ ระบบของเรารองรับการเชื่อมต่อกับเครื่องสแกนบาร์โค้ดมาตรฐานทั่วไป ทั้งแบบเชื่อมต่อไร้สายผ่าน Bluetooth หรือเชื่อมต่อผ่านสาย USB/OTG เข้ากับมือถือ แท็บเล็ต หรือคอมพิวเตอร์ได้ทันที"
   },
   {
@@ -103,7 +103,7 @@ export default function PosRetailPage() {
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-slate-800">แล้ว SuparPOS เข้ามาช่วยแก้ปัญหาอย่างไร?</h2>
+              <h2 className="text-2xl font-bold text-slate-800">แล้ว POS Foodscan เข้ามาช่วยแก้ปัญหาอย่างไร?</h2>
               <div className="space-y-4">
                 {[
                   { title: "สแกนบาร์โค้ดขายสินค้าในคลิกเดียว", desc: "คิดเงินลูกค้าได้ไวภายในไม่กี่วินาที รองรับเครื่องสแกนบาร์โค้ดเต็มระบบ" },
@@ -153,7 +153,7 @@ export default function PosRetailPage() {
               <h2 className="text-2xl font-bold text-slate-800 mb-6">3 ขั้นตอนง่ายๆ ในการเริ่มใช้งาน</h2>
               <div className="space-y-6">
                 {[
-                  { step: "1", title: "สมัครใช้งานใน 5 นาที", desc: "ลงทะเบียนบัญชีร้านค้าผ่านหน้าเว็บ SuparPOS ได้ทันทีโดยไม่ต้องรออนุมัติ" },
+                  { step: "1", title: "สมัครใช้งานใน 5 นาที", desc: "ลงทะเบียนบัญชีร้านค้าผ่านหน้าเว็บ POS Foodscan ได้ทันทีโดยไม่ต้องรออนุมัติ" },
                   { step: "2", title: "ลงทะเบียนสินค้าและบาร์โค้ด", desc: "เพิ่มรายการสินค้า ยอดสต๊อกเริ่มต้น และระบุรหัสบาร์โค้ด" },
                   { step: "3", title: "เริ่มต้นขายสินค้าหน้าร้าน", desc: "เปิดแอปหรือเข้าเบราว์เซอร์แล้วใช้คิดเงินและตัดสต๊อกได้ทันที" }
                 ].map((s, i) => (

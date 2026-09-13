@@ -8,9 +8,9 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-1">
           <Link href="/" className="flex items-center gap-2 mb-4 group">
-            <img src="/icon.png" alt="SuparPOS" className="w-8 h-8 object-contain" />
+            <img src="/icon.png" alt="POS Foodscan" className="w-8 h-8 object-contain" />
             <span className="text-xl font-black text-white">
-              Supar<span className="text-emerald-500">POS</span>
+              POS <span className="text-emerald-500">Foodscan</span>
             </span>
           </Link>
           <p className="text-sm text-slate-400 leading-relaxed mb-6 font-light">
@@ -71,7 +71,7 @@ export default function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-        <p>© {new Date().getFullYear()} SuparPOS. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} POS Foodscan. All rights reserved.</p>
         <div className="flex gap-6">
           <Link href="/manual" className="hover:text-slate-400 transition-colors">คู่มือการใช้งาน</Link>
           <Link href="/pricing" className="hover:text-slate-400 transition-colors">ราคา</Link>

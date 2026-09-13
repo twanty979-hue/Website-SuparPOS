@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 const LogoIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <img 
     src="/icon.png" 
-    alt="SuparPOS Icon" 
+    alt="POS Foodscan Icon" 
     className={`object-contain ${className}`}
   />
 );
@@ -62,7 +62,7 @@ const BrandPOSArtwork = () => (
     <div className="absolute right-[4%] top-[10%] h-4 w-4 rounded-full bg-emerald-500/80 shadow-[0_0_0_10px_rgba(16,185,129,0.12)]"></div>
     <img
       src="/images/pos-mascot.png"
-      alt="เครื่อง POS SuparPOS"
+      alt="เครื่อง POS Foodscan"
       className="relative z-10 h-full w-full object-contain drop-shadow-[0_28px_32px_rgba(15,82,57,0.24)] transition-transform duration-500 group-hover:scale-[1.025]"
     />
   </div>
@@ -256,7 +256,7 @@ export default function LandingClient() {
                 </div>
                 
                 <h1 className="text-4xl md:text-6xl lg:text-[46px] xl:text-[50px] font-black mb-6 leading-[1.15] text-slate-900">
-                  SuparPOS ระบบ POS สำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร
+                  POS Foodscan ระบบ POS สำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร
                 </h1>
                 <p className="text-slate-600 text-lg md:text-xl mb-10 font-light leading-relaxed max-w-lg">
                   ระบบ POS และโปรแกรมขายหน้าร้านสำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร เปลี่ยนร้านธรรมดาให้เป็นร้านค้าดิจิทัลอย่างครบวงจร ช่วยคิดเงินหน้าร้าน จัดการสต๊อกสินค้า สแกนบาร์โค้ด และสั่งอาหารผ่าน QR Code ได้ง่ายดาย
@@ -518,8 +518,8 @@ export default function LandingClient() {
                 icon: "fa-cloud"
               },
               {
-                title: "FoodScan เปลี่ยนชื่อเป็น SuparPOS",
-                desc: "ข้อมูลสำหรับลูกค้าเดิมของ FoodScan และรายละเอียดการเปลี่ยนชื่อแบรนด์เป็น SuparPOS",
+                title: "FoodScan เปลี่ยนชื่อเป็น POS Foodscan",
+                desc: "ข้อมูลสำหรับลูกค้าเดิมของ FoodScan และรายละเอียดการเปลี่ยนชื่อแบรนด์เป็น POS Foodscan",
                 link: "/foodscan",
                 icon: "fa-circle-info"
               }
@@ -553,8 +553,8 @@ export default function LandingClient() {
           <div className="space-y-6">
             {[
               {
-                q: "ระบบ POS ของ SuparPOS รองรับธุรกิจประเภทใดบ้าง?",
-                a: "SuparPOS รองรับทั้งร้านค้าปลีก ร้านโชห่วย ร้านมินิมาร์ท ร้านของชำ คาเฟ่ ร้านกาแฟ เบเกอรี่ และร้านอาหารทั่วไป โดยมีฟังก์ชันจัดการสต๊อกสินค้า คิดเงิน และสแกนสั่งอาหารอย่างครบครัน"
+                q: "ระบบ POS ของ POS Foodscan รองรับธุรกิจประเภทใดบ้าง?",
+                a: "POS Foodscan รองรับทั้งร้านค้าปลีก ร้านโชห่วย ร้านมินิมาร์ท ร้านของชำ คาเฟ่ ร้านกาแฟ เบเกอรี่ และร้านอาหารทั่วไป โดยมีฟังก์ชันจัดการสต๊อกสินค้า คิดเงิน และสแกนสั่งอาหารอย่างครบครัน"
               },
               {
                 q: "มีค่าบริการรายเดือนหรือไม่?",

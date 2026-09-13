@@ -11,16 +11,16 @@ import {
 
 // 1. Static Metadata for Homepage
 export const metadata: Metadata = {
-  title: "SuparPOS | โปรแกรมขายหน้าร้านและระบบ POS",
-  description: "SuparPOS โปรแกรมขายหน้าร้านและระบบ POS สำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร จัดการยอดขาย สต๊อก บาร์โค้ด และสแกนสั่งอาหารผ่าน QR Code เริ่มต้นใช้งานฟรี",
+  title: "POS Foodscan | โปรแกรมขายหน้าร้านและระบบ POS",
+  description: "POS Foodscan โปรแกรมขายหน้าร้านและระบบ POS สำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร จัดการยอดขาย สต๊อก บาร์โค้ด และสแกนสั่งอาหารผ่าน QR Code เริ่มต้นใช้งานฟรี",
   alternates: {
     canonical: "https://suparpos.com"
   },
   openGraph: {
-    title: "SuparPOS | โปรแกรมขายหน้าร้านและระบบ POS",
-    description: "SuparPOS โปรแกรมขายหน้าร้านและระบบ POS สำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร จัดการยอดขาย สต๊อก บาร์โค้ด และสแกนสั่งอาหารผ่าน QR Code เริ่มต้นใช้งานฟรี",
+    title: "POS Foodscan | โปรแกรมขายหน้าร้านและระบบ POS",
+    description: "POS Foodscan โปรแกรมขายหน้าร้านและระบบ POS สำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร จัดการยอดขาย สต๊อก บาร์โค้ด และสแกนสั่งอาหารผ่าน QR Code เริ่มต้นใช้งานฟรี",
     url: "https://suparpos.com",
-    siteName: "SuparPOS",
+    siteName: "POS Foodscan",
     locale: "th_TH",
     type: "website",
     images: [
@@ -28,14 +28,14 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "SuparPOS Preview",
+        alt: "POS Foodscan Preview",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "SuparPOS | โปรแกรมขายหน้าร้านและระบบ POS",
-    description: "SuparPOS โปรแกรมขายหน้าร้านและระบบ POS สำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร จัดการยอดขาย สต๊อก บาร์โค้ด และสแกนสั่งอาหารผ่าน QR Code เริ่มต้นใช้งานฟรี",
+    title: "POS Foodscan | โปรแกรมขายหน้าร้านและระบบ POS",
+    description: "POS Foodscan โปรแกรมขายหน้าร้านและระบบ POS สำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร จัดการยอดขาย สต๊อก บาร์โค้ด และสแกนสั่งอาหารผ่าน QR Code เริ่มต้นใช้งานฟรี",
     images: ["/opengraph-image.png"],
   }
 };
@@ -43,8 +43,8 @@ export const metadata: Metadata = {
 // FAQ data matching the visible FAQs on the page 100%
 const HOME_FAQS = [
   {
-    question: "ระบบ POS ของ SuparPOS รองรับธุรกิจประเภทใดบ้าง?",
-    answer: "SuparPOS รองรับทั้งร้านค้าปลีก ร้านโชห่วย ร้านมินิมาร์ท ร้านของชำ คาเฟ่ ร้านกาแฟ เบเกอรี่ และร้านอาหารทั่วไป โดยมีฟังก์ชันจัดการสต๊อกสินค้า คิดเงิน และสแกนสั่งอาหารอย่างครบครัน"
+    question: "ระบบ POS ของ POS Foodscan รองรับธุรกิจประเภทใดบ้าง?",
+    answer: "POS Foodscan รองรับทั้งร้านค้าปลีก ร้านโชห่วย ร้านมินิมาร์ท ร้านของชำ คาเฟ่ ร้านกาแฟ เบเกอรี่ และร้านอาหารทั่วไป โดยมีฟังก์ชันจัดการสต๊อกสินค้า คิดเงิน และสแกนสั่งอาหารอย่างครบครัน"
   },
   {
     question: "มีค่าบริการรายเดือนหรือไม่?",

@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 const LogoIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <img 
     src="/icon.png" 
-    alt="SuparPOS Icon" 
+    alt="POS Foodscan Icon" 
     className={`object-contain ${className}`}
   />
 );
@@ -77,7 +77,7 @@ export default function Navbar() {
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-black tracking-tight text-slate-800 leading-none group-hover:text-emerald-600 transition-colors">
-              Supar<span className="text-emerald-500">POS</span>
+              POS <span className="text-emerald-500">Foodscan</span>
             </span>
           </div>
         </Link>

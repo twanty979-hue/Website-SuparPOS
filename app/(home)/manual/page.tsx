@@ -23,7 +23,7 @@ export default function ManualPage() {
             คู่มือการเริ่มต้นใช้งาน
           </h1>
           <p className="text-lg md:text-xl text-slate-500 font-medium max-w-2xl mx-auto">
-            เริ่มต้นใช้งาน <span className="text-emerald-600 font-bold">SuparPOS</span> ง่ายๆ ใน 4 ขั้นตอน เพื่อยกระดับร้านอาหารของคุณสู่อนาคต
+            เริ่มต้นใช้งาน <span className="text-emerald-600 font-bold">POS Foodscan</span> ง่ายๆ ใน 4 ขั้นตอน เพื่อยกระดับร้านอาหารของคุณสู่อนาคต
           </p>
         </div>
 
@@ -132,7 +132,7 @@ export default function ManualPage() {
 
         {/* Copyright */}
         <p className="text-center text-slate-400 text-xs mt-8 opacity-60">
-          © {new Date().getFullYear()} SuparPOS System. All rights reserved.
+          © {new Date().getFullYear()} POS Foodscan System. All rights reserved.
         </p>
 
       </div>

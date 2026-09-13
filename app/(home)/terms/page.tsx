@@ -23,7 +23,7 @@ export default function TermsPage() {
             เงื่อนไขการให้บริการ
           </h1>
           <p className="text-lg text-slate-500 font-medium">
-            ข้อตกลงระหว่างผู้ใช้งานและ <span className="text-emerald-600 font-bold">SuparPOS</span>
+            ข้อตกลงระหว่างผู้ใช้งานและ <span className="text-emerald-600 font-bold">POS Foodscan</span>
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export default function TermsPage() {
             {/* Intro */}
             <div className="bg-emerald-50/50 rounded-2xl p-6 border border-emerald-100/50 text-center md:text-left">
               <p className="leading-relaxed">
-                ยินดีต้อนรับสู่ <strong className="text-emerald-700">SuparPOS</strong> การเข้าใช้งานหรือสมัครสมาชิกเพื่อใช้บริการระบบของเรา 
+                ยินดีต้อนรับสู่ <strong className="text-emerald-700">POS Foodscan</strong> การเข้าใช้งานหรือสมัครสมาชิกเพื่อใช้บริการระบบของเรา 
                 ถือว่าท่านได้อ่าน ทำความเข้าใจ และตกลงยอมรับเงื่อนไขการให้บริการดังต่อไปนี้อย่างครบถ้วน
               </p>
             </div>
@@ -77,7 +77,7 @@ export default function TermsPage() {
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-emerald-600 transition-colors">ทรัพย์สินทางปัญญา</h3>
                   <p className="text-slate-600 text-sm md:text-base leading-relaxed">
-                    ซอร์สโค้ด, การออกแบบ, โลโก้ และระบบทั้งหมดภายในเว็บไซต์ (ยกเว้นข้อมูลเมนูที่ท่านอัปโหลดเอง) เป็นทรัพย์สินทางปัญญาของ <strong>SuparPOS</strong> 
+                    ซอร์สโค้ด, การออกแบบ, โลโก้ และระบบทั้งหมดภายในเว็บไซต์ (ยกเว้นข้อมูลเมนูที่ท่านอัปโหลดเอง) เป็นทรัพย์สินทางปัญญาของ <strong>POS Foodscan</strong> 
                     ห้ามคัดลอก ทำซ้ำ ดัดแปลง หรือนำไปขายต่อโดยไม่ได้รับอนุญาตเป็นลายลักษณ์อักษร
                   </p>
                 </div>
@@ -91,7 +91,7 @@ export default function TermsPage() {
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-emerald-600 transition-colors">การระงับบริการ</h3>
                   <p className="text-slate-600 text-sm md:text-base leading-relaxed">
-                    SuparPOS ขอสงวนสิทธิ์ในการระงับหรือยกเลิกบัญชีผู้ใช้ทันที หากตรวจพบว่ามีการละเมิดเงื่อนไขการให้บริการ หรือมีการใช้งานที่ผิดปกติ 
+                    POS Foodscan ขอสงวนสิทธิ์ในการระงับหรือยกเลิกบัญชีผู้ใช้ทันที หากตรวจพบว่ามีการละเมิดเงื่อนไขการให้บริการ หรือมีการใช้งานที่ผิดปกติ 
                     โดยไม่จำเป็นต้องแจ้งให้ทราบล่วงหน้า
                   </p>
                 </div>
@@ -105,7 +105,7 @@ export default function TermsPage() {
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-emerald-600 transition-colors">ความรับผิดชอบและการคืนเงิน</h3>
                   <ul className="list-disc pl-5 space-y-2 text-slate-600 text-sm md:text-base">
-                    <li>บริการของ SuparPOS ให้บริการในลักษณะ "ตามสภาพ" (As is) เราไม่รับประกันความเสียหายทางธุรกิจที่อาจเกิดขึ้นจากการใช้งานระบบ</li>
+                    <li>บริการของ POS Foodscan ให้บริการในลักษณะ "ตามสภาพ" (As is) เราไม่รับประกันความเสียหายทางธุรกิจที่อาจเกิดขึ้นจากการใช้งานระบบ</li>
                     <li>ทางบริษัทฯ ขอสงวนสิทธิ์ในการไม่คืนเงินค่าบริการ (No Refund Policy) เว้นแต่จะเกิดความผิดพลาดจากระบบของเราโดยตรงเท่านั้น</li>
                   </ul>
                 </div>
@@ -137,7 +137,7 @@ export default function TermsPage() {
         
         {/* Copyright */}
         <p className="text-center text-slate-400 text-xs mt-8 opacity-60">
-          © {new Date().getFullYear()} SuparPOS System. All rights reserved.
+          © {new Date().getFullYear()} POS Foodscan System. All rights reserved.
         </p>
 
       </div>

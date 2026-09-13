@@ -82,12 +82,12 @@ export default function DeleteAccountPage() {
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-white px-4 py-12 text-slate-700">
       <section className="mx-auto max-w-xl">
         <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-emerald-700 hover:underline">
-          <i className="fa-solid fa-arrow-left" /> กลับสู่ SuparPOS
+          <i className="fa-solid fa-arrow-left" /> กลับสู่ POS Foodscan
         </Link>
         <div className="overflow-hidden rounded-[2rem] border border-white bg-white shadow-xl shadow-slate-200/60">
           <div className="bg-gradient-to-r from-rose-500 to-orange-500 p-7 text-white">
             <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-white/20 text-xl"><i className="fa-solid fa-user-xmark" /></div>
-            <h1 className="text-2xl font-black">ขอลบบัญชี SuparPOS</h1>
+            <h1 className="text-2xl font-black">ขอลบบัญชี POS Foodscan</h1>
             <p className="mt-2 text-sm leading-6 text-white/90">หน้านี้ใช้ส่งคำขอลบบัญชีและข้อมูลที่เกี่ยวข้องอย่างปลอดภัย</p>
           </div>
 

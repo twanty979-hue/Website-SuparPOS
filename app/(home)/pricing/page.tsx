@@ -5,16 +5,16 @@ import { JsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo';
 
 // 1. Static Metadata for Pricing Page
 export const metadata: Metadata = {
-  title: "ราคาโปรแกรม POS และแพ็กเกจ SuparPOS",
+  title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan",
   description: "เช็คราคาโปรแกรม POS ที่คุ้มค่า เริ่มต้นใช้งานฟรีแผน Starter หรือเลือกสมัครแผน Basic 250 บาท และแผน Pro 500 บาทต่อเดือนโดยไม่มีสัญญาผูกมัด",
   alternates: {
     canonical: "https://suparpos.com/pricing"
   },
   openGraph: {
-    title: "ราคาโปรแกรม POS และแพ็กเกจ SuparPOS",
+    title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan",
     description: "เช็คราคาโปรแกรม POS ที่คุ้มค่า เริ่มต้นใช้งานฟรีแผน Starter หรือเลือกสมัครแผน Basic 250 บาท และแผน Pro 500 บาทต่อเดือนโดยไม่มีสัญญาผูกมัด",
     url: "https://suparpos.com/pricing",
-    siteName: "SuparPOS",
+    siteName: "POS Foodscan",
     locale: "th_TH",
     type: "website",
     images: [
@@ -22,13 +22,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "ราคาโปรแกรม POS และแพ็กเกจ SuparPOS",
+        alt: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ราคาโปรแกรม POS และแพ็กเกจ SuparPOS",
+    title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan",
     description: "เช็คราคาโปรแกรม POS ที่คุ้มค่า เริ่มต้นใช้งานฟรีแผน Starter หรือเลือกสมัครแผน Basic 250 บาท และแผน Pro 500 บาทต่อเดือนโดยไม่มีสัญญาผูกมัด",
     images: ["/opengraph-image.png"],
   }
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 
 const PRICING_FAQS = [
   {
-    question: "แพ็กเกจแต่ละแผนราคาของ SuparPOS ต่างกันอย่างไร?",
+    question: "แพ็กเกจแต่ละแผนราคาของ POS Foodscan ต่างกันอย่างไร?",
     answer: "แพ็กเกจ Starter ให้บริการฟรีสำหรับการเริ่มต้นคิดเงิน 100 ออเดอร์ต่อเดือน ส่วนแพ็กเกจ Basic (250 บ./เดือน) รองรับยอดขายและออเดอร์ไม่จำกัด และแพ็กเกจ PRO (500 บ./เดือน) เพิ่มระบบพนักงานและการกำหนดสิทธิ์พนักงาน"
   },
   {
@@ -72,10 +72,10 @@ export default function PricingPage() {
           {/* Header Section */}
           <div className="text-center mb-16 pt-10">
             <h1 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-4">
-              ราคาโปรแกรม POS และแพ็กเกจ SuparPOS
+              ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan
             </h1>
             <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              เริ่มต้นใช้งานฟรีได้ทันที หรืออัปเกรดเพื่อฟีเจอร์ระดับโปรที่ช่วยให้ร้านของคุณเติบโตอย่างก้าวกระโดดกับ SuparPOS
+              เริ่มต้นใช้งานฟรีได้ทันที หรืออัปเกรดเพื่อฟีเจอร์ระดับโปรที่ช่วยให้ร้านของคุณเติบโตอย่างก้าวกระโดดกับ POS Foodscan
             </p>
           </div>
 

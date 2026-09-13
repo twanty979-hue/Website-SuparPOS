@@ -11,10 +11,10 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://suparpos.com'),
-  title: "ระบบ POS ร้านค้าและร้านอาหาร จัดการสต๊อก คิดเงิน สแกนสั่งซื้อ | SuparPOS",
-  description: "SuparPOS คือระบบ POS สำหรับร้านค้าปลีก ร้านอาหาร คาเฟ่ และร้านค้าทุกประเภท ช่วยจัดการสต๊อกสินค้า คิดเงินหน้าร้าน และสแกนสั่งซื้อ/สั่งอาหาร ใช้งานง่าย เริ่มต้นฟรี",
+  title: "ระบบ POS ร้านค้าและร้านอาหาร จัดการสต๊อก คิดเงิน สแกนสั่งซื้อ | POS Foodscan",
+  description: "POS Foodscan คือระบบ POS สำหรับร้านค้าปลีก ร้านอาหาร คาเฟ่ และร้านค้าทุกประเภท ช่วยจัดการสต๊อกสินค้า คิดเงินหน้าร้าน และสแกนสั่งซื้อ/สั่งอาหาร ใช้งานง่าย เริ่มต้นฟรี",
   keywords: [
-    "POS", "SuparPOS", "suparpos", "supar pos", "ระบบ POS", "POS System", "ระบบคิดเงิน",
+    "POS", "POS Foodscan", "suparpos", "supar pos", "ระบบ POS", "POS System", "ระบบคิดเงิน",
     "จัดการสต๊อกสินค้า", "ระบบร้านค้าปลีก", "ระบบร้านอาหาร", "ระบบ POS คาเฟ่",
     "เครื่องคิดเงิน", "สแกนสั่งอาหาร", "ระบบจัดการร้านค้า", "FoodScan",
     "โปรแกรมขายหน้าร้าน", "ระบบบาร์โค้ด", "โปรแกรมร้านโชห่วย", "โปรแกรมร้านกาแฟ",
@@ -22,10 +22,10 @@ export const metadata: Metadata = {
     "ระบบสั่งอาหารผ่านมือถือ", "สแกนสั่งอาหาร QR Code"
   ],
   openGraph: {
-    title: "SuparPOS - ระบบจัดการร้านค้า ร้านอาหาร คาเฟ่ และคิดเงินครบวงจร",
-    description: "ระบบ POS สำหรับร้านค้าและร้านอาหารทุกประเภท จัดการสต๊อก ยอดขาย คิดเงินหน้าร้าน สแกนสั่งสินค้า เริ่มต้นใช้งานฟรีกับ SuparPOS",
+    title: "POS Foodscan - ระบบจัดการร้านค้า ร้านอาหาร คาเฟ่ และคิดเงินครบวงจร",
+    description: "ระบบ POS สำหรับร้านค้าและร้านอาหารทุกประเภท จัดการสต๊อก ยอดขาย คิดเงินหน้าร้าน สแกนสั่งสินค้า เริ่มต้นใช้งานฟรีกับ POS Foodscan",
     url: 'https://suparpos.com',
-    siteName: 'SuparPOS',
+    siteName: 'POS Foodscan',
     locale: 'th_TH',
     type: 'website',
     images: [
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
         url: '/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: 'SuparPOS Preview',
+        alt: 'POS Foodscan Preview',
       },
     ],
   },

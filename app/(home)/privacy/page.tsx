@@ -25,7 +25,7 @@ export default function PrivacyPage() {
             นโยบายความเป็นส่วนตัว
           </h1>
           <p className="text-lg text-slate-500 font-medium">
-            SuparPOS Management System
+            POS Foodscan Management System
           </p>
         </div>
 
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
             {/* Intro */}
             <div className="bg-emerald-50/50 rounded-2xl p-6 border border-emerald-100/50">
               <p className="leading-relaxed">
-                <strong className="text-emerald-700">SuparPOS</strong> ("เรา") ให้ความสำคัญกับความเป็นส่วนตัวและความปลอดภัยของข้อมูลผู้ใช้งานอย่างสูงสุด 
+                <strong className="text-emerald-700">POS Foodscan</strong> ("เรา") ให้ความสำคัญกับความเป็นส่วนตัวและความปลอดภัยของข้อมูลผู้ใช้งานอย่างสูงสุด 
                 นโยบายฉบับนี้จัดทำขึ้นเพื่อชี้แจงให้ท่านทราบถึงวิธีการที่เราเก็บรวบรวม ใช้ และปกป้องข้อมูลส่วนบุคคลของท่านเมื่อเข้าใช้งานระบบ POS และบริการของเรา
               </p>
             </div>
@@ -83,7 +83,7 @@ export default function PrivacyPage() {
                 <ul className="list-disc pl-5 space-y-1 text-slate-600 marker:text-green-300">
                   <li>ให้บริการจัดการร้านอาหาร ระบบสั่งอาหาร และสรุปยอดขาย</li>
                   <li>ยืนยันตัวตนและรักษาความปลอดภัยของบัญชีผู้ใช้</li>
-                  <li>พัฒนาและปรับปรุงฟีเจอร์ใหม่ๆ ของ SuparPOS</li>
+                  <li>พัฒนาและปรับปรุงฟีเจอร์ใหม่ๆ ของ POS Foodscan</li>
                   <li>ติดต่อสื่อสาร แจ้งเตือนสถานะระบบ หรือโปรโมชั่นที่เกี่ยวข้อง</li>
                 </ul>
               </div>
@@ -122,7 +122,7 @@ export default function PrivacyPage() {
                 <h2 className="text-xl font-bold text-slate-800">4. การลบบัญชีและข้อมูล</h2>
               </div>
               <div className="pl-14 text-sm md:text-base space-y-3">
-                <p>คุณสามารถขอลบบัญชี SuparPOS และข้อมูลส่วนบุคคลที่เกี่ยวข้องได้ โดยเข้าสู่ระบบเพื่อยืนยันตัวตนก่อนส่งคำขอ</p>
+                <p>คุณสามารถขอลบบัญชี POS Foodscan และข้อมูลส่วนบุคคลที่เกี่ยวข้องได้ โดยเข้าสู่ระบบเพื่อยืนยันตัวตนก่อนส่งคำขอ</p>
                 <Link href="/delete-account" className="inline-flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-2.5 font-bold text-rose-700 transition hover:bg-rose-100">
                   ส่งคำขอลบบัญชี <i className="fa-solid fa-arrow-right"></i>
                 </Link>
@@ -154,7 +154,7 @@ export default function PrivacyPage() {
         
         {/* Copyright */}
         <p className="text-center text-slate-400 text-xs mt-8 opacity-60">
-          © {new Date().getFullYear()} SuparPOS System. All rights reserved.
+          © {new Date().getFullYear()} POS Foodscan System. All rights reserved.
         </p>
 
       </div>

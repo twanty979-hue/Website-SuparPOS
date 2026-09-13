@@ -67,7 +67,7 @@ export default function ContactPage() {
                 <p className="text-slate-700 text-base leading-relaxed font-medium italic relative z-10">
                   "ผมไม่ได้แค่เขียนโปรแกรม... <br/>
                   <span className="text-green-600 font-bold bg-green-50 px-1">แต่ผมเดิมพันด้วยชีวิต!</span> <br/>
-                  SuparPOS คือจิตวิญญาณของผม ผมทุ่มเทสร้างมันขึ้นมาเพื่อให้เป็น <span className="text-emerald-600 font-bold">The Best POS</span> ที่จะเปลี่ยนโลกธุรกิจร้านอาหารของคุณไปตลอดกาล!"
+                  POS Foodscan คือจิตวิญญาณของผม ผมทุ่มเทสร้างมันขึ้นมาเพื่อให้เป็น <span className="text-emerald-600 font-bold">The Best POS</span> ที่จะเปลี่ยนโลกธุรกิจร้านอาหารของคุณไปตลอดกาล!"
                 </p>
               </div>
 

@@ -23,7 +23,7 @@ export default function RefundPage() {
             นโยบายการคืนเงิน
           </h1>
           <p className="text-lg text-slate-500 font-medium">
-            Refund Policy for <span className="text-emerald-600 font-bold">SuparPOS</span>
+            Refund Policy for <span className="text-emerald-600 font-bold">POS Foodscan</span>
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export default function RefundPage() {
             {/* Intro */}
             <div className="bg-emerald-50/50 rounded-2xl p-6 border border-emerald-100/50 text-center md:text-left">
               <p className="leading-relaxed">
-                <strong className="text-emerald-700">SuparPOS</strong> มุ่งมั่นที่จะให้บริการระบบจัดการร้านอาหารที่มีคุณภาพและเสถียรภาพสูงสุด 
+                <strong className="text-emerald-700">POS Foodscan</strong> มุ่งมั่นที่จะให้บริการระบบจัดการร้านอาหารที่มีคุณภาพและเสถียรภาพสูงสุด 
                 อย่างไรก็ตาม เราเข้าใจว่าอาจเกิดเหตุสุดวิสัยหรือข้อผิดพลาดทางเทคนิค นโยบายนี้จึงกำหนดเงื่อนไขการขอคืนเงินไว้อย่างชัดเจน
               </p>
             </div>
@@ -49,7 +49,7 @@ export default function RefundPage() {
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-emerald-600 transition-colors">นโยบายทั่วไป (General Policy)</h3>
                   <p className="text-slate-600 text-sm md:text-base leading-relaxed">
-                    เนื่องจากบริการของ SuparPOS เป็นสินค้าดิจิทัล (Digital Product) และมีการให้ทดลองใช้งานฟรี (Free Tier) อยู่แล้ว 
+                    เนื่องจากบริการของ POS Foodscan เป็นสินค้าดิจิทัล (Digital Product) และมีการให้ทดลองใช้งานฟรี (Free Tier) อยู่แล้ว 
                     ทางบริษัทฯ <strong className="text-red-500">ขอสงวนสิทธิ์ในการไม่คืนเงินทุกกรณี</strong> สำหรับความไม่พึงพอใจส่วนตัว หรือการเปลี่ยนแปลงแผนธุรกิจของผู้ใช้งาน
                   </p>
                 </div>
@@ -127,7 +127,7 @@ export default function RefundPage() {
         
         {/* Copyright */}
         <p className="text-center text-slate-400 text-xs mt-8 opacity-60">
-          © {new Date().getFullYear()} SuparPOS System. All rights reserved.
+          © {new Date().getFullYear()} POS Foodscan System. All rights reserved.
         </p>
 
       </div>

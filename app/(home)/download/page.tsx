@@ -15,10 +15,10 @@ export default function DownloadPage() {
         <div className="max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold mb-5 shadow-sm">
             <Download className="w-3.5 h-3.5 text-emerald-600" />
-            ดาวน์โหลดแอปพลิเคชัน SuparPOS ฟรี
+            ดาวน์โหลดแอปพลิเคชัน POS Foodscan ฟรี
           </div>
           <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight mb-5">
-            ดาวน์โหลด SuparPOS <br />
+            ดาวน์โหลด POS Foodscan <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">
               สำหรับทุกอุปกรณ์ของคุณ
             </span>
@@ -171,7 +171,7 @@ export default function DownloadPage() {
               className="w-full py-4 bg-[#0078D4] hover:bg-[#006cc0] text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5 shadow-md shadow-sky-600/30"
             >
               <Download className="w-5 h-5" />
-              <span>ดาวน์โหลด SuparPOS สำหรับ Windows (.exe)</span>
+              <span>ดาวน์โหลด POS Foodscan สำหรับ Windows (.exe)</span>
             </a>
           </div>
 
@@ -200,7 +200,7 @@ export default function DownloadPage() {
             <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100">
               <span className="text-3xl font-black text-emerald-600 mb-2 block">3</span>
               <h4 className="font-bold text-slate-900 mb-1">เข้าสู่ระบบและเริ่มขาย</h4>
-              <p className="text-xs text-slate-500 leading-relaxed">เปิดไอคอน SuparPOS บนเดสก์ท็อป เข้าสู่ระบบ แล้วเปิดขายได้ทันที</p>
+              <p className="text-xs text-slate-500 leading-relaxed">เปิดไอคอน POS Foodscan บนเดสก์ท็อป เข้าสู่ระบบ แล้วเปิดขายได้ทันที</p>
             </div>
           </div>
         </div>

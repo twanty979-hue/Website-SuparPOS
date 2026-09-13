@@ -4,16 +4,16 @@ import Link from 'next/link';
 import { JsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  title: "ระบบ POS ออนไลน์ ใช้ได้ทั้งแอปและเว็บ | SuparPOS",
+  title: "ระบบ POS ออนไลน์ ใช้ได้ทั้งแอปและเว็บ | POS Foodscan",
   description: "ระบบ POS ออนไลน์ ทำงานผ่านระบบคลาวด์บนมือถือและแท็บเล็ต ปลอดภัย เช็คยอดได้ทุกที่ พร้อมระบบขายออฟไลน์ชั่วคราวหน้าร้านและซิงก์เมื่อต่อเน็ต เริ่มต้นฟรี",
   alternates: {
     canonical: "https://suparpos.com/online-offline-pos"
   },
   openGraph: {
-    title: "ระบบ POS ออนไลน์ ใช้ได้ทั้งแอปและเว็บ | SuparPOS",
+    title: "ระบบ POS ออนไลน์ ใช้ได้ทั้งแอปและเว็บ | POS Foodscan",
     description: "ระบบ POS ออนไลน์ ทำงานผ่านระบบคลาวด์บนมือถือและแท็บเล็ต ปลอดภัย เช็คยอดได้ทุกที่ พร้อมระบบขายออฟไลน์ชั่วคราวหน้าร้านและซิงก์เมื่อต่อเน็ต เริ่มต้นฟรี",
     url: "https://suparpos.com/online-offline-pos",
-    siteName: "SuparPOS",
+    siteName: "POS Foodscan",
     locale: "th_TH",
     type: "website",
     images: [
@@ -21,13 +21,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "ระบบ POS ออนไลน์ ใช้ได้ทั้งแอปและเว็บ | SuparPOS",
+        alt: "ระบบ POS ออนไลน์ ใช้ได้ทั้งแอปและเว็บ | POS Foodscan",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ระบบ POS ออนไลน์ ใช้ได้ทั้งแอปและเว็บ | SuparPOS",
+    title: "ระบบ POS ออนไลน์ ใช้ได้ทั้งแอปและเว็บ | POS Foodscan",
     description: "ระบบ POS ออนไลน์ ทำงานผ่านระบบคลาวด์บนมือถือและแท็บเล็ต ปลอดภัย เช็คยอดได้ทุกที่ พร้อมระบบขายออฟไลน์ชั่วคราวหน้าร้านและซิงก์เมื่อต่อเน็ต เริ่มต้นฟรี",
     images: ["/opengraph-image.png"],
   }
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 
 const ONLINE_FAQS = [
   {
-    question: "ระบบ Cloud POS ของ SuparPOS ปลอดภัยสำหรับข้อมูลการขายขนาดไหน?",
+    question: "ระบบ Cloud POS ของ POS Foodscan ปลอดภัยสำหรับข้อมูลการขายขนาดไหน?",
     answer: "ปลอดภัยครับ ข้อมูลทั้งหมดของร้านค้าจะถูกจัดเก็บและเข้ารหัสบนระบบ Cloud Server มาตรฐานความปลอดภัยสูง (Supabase) ซึ่งได้รับความไว้วางใจในการเก็บข้อมูลและมีระบบสำรองข้อมูลอัตโนมัติ ช่วยลดความเสี่ยงเรื่องยอดขายหรือสต๊อกของร้านสูญหายหากเครื่อง POS หรือแท็บเล็ตหน้าร้านพังเสียหาย"
   },
   {
@@ -44,7 +44,7 @@ const ONLINE_FAQS = [
   },
   {
     question: "จำเป็นต้องใช้เครื่อง POS ราคาแพงในการรันระบบออนไลน์หรือไม่?",
-    answer: "ไม่จำเป็นครับ ระบบของ SuparPOS มีความยืดหยุ่นสูง สามารถทำงานได้บนอุปกรณ์ที่หลากหลาย เช่น สมาร์ทโฟน Android/iOS (POS มือถือ) เครื่องแท็บเล็ต/iPad (POS แท็บเล็ต) หรือคอมพิวเตอร์พกพา เพื่อช่วยลดต้นทุนค่าฮาร์ดแวร์เริ่มต้นในการเปิดร้านใหม่"
+    answer: "ไม่จำเป็นครับ ระบบของ POS Foodscan มีความยืดหยุ่นสูง สามารถทำงานได้บนอุปกรณ์ที่หลากหลาย เช่น สมาร์ทโฟน Android/iOS (POS มือถือ) เครื่องแท็บเล็ต/iPad (POS แท็บเล็ต) หรือคอมพิวเตอร์พกพา เพื่อช่วยลดต้นทุนค่าฮาร์ดแวร์เริ่มต้นในการเปิดร้านใหม่"
   }
 ];
 
@@ -153,7 +153,7 @@ export default function OnlineOfflinePosPage() {
               <h2 className="text-2xl font-bold text-slate-800 mb-6">3 ขั้นตอนง่ายๆ ในการบริหารร้าน</h2>
               <div className="space-y-6">
                 {[
-                  { step: "1", title: "ลงทะเบียนบัญชี SuparPOS", desc: "สร้างโปรไฟล์ร้านค้าผ่านสมาร์ทโฟน แท็บเล็ต หรือคอมพิวเตอร์ของคุณ" },
+                  { step: "1", title: "ลงทะเบียนบัญชี POS Foodscan", desc: "สร้างโปรไฟล์ร้านค้าผ่านสมาร์ทโฟน แท็บเล็ต หรือคอมพิวเตอร์ของคุณ" },
                   { step: "2", title: "ล็อกอินบนเครื่องขายหน้าร้าน", desc: "ใช้งานแอปแคชเชียร์หรือเข้าคิดเงินผ่านเบราว์เซอร์บนโทรศัพท์หรือแท็บเล็ต" },
                   { step: "3", title: "คิดเงินและตัดคลังทันที", desc: "เริ่มต้นขายสินค้าหน้าร้าน ระบบจะซิงก์ข้อมูลยอดขายขึ้นหน้าบอร์ดแบบเรียลไทม์" }
                 ].map((s, i) => (

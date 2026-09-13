@@ -69,7 +69,7 @@ export default async function FeaturesPage() {
             ฟีเจอร์ที่ช่วยให้ร้านคุณ <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-500">&quot;โปร&quot;</span> กว่าใคร
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-            SuparPOS ไม่ใช่แค่เมนูออนไลน์ แต่คือระบบปฏิบัติการร้านอาหารครบวงจร
+            POS Foodscan ไม่ใช่แค่เมนูออนไลน์ แต่คือระบบปฏิบัติการร้านอาหารครบวงจร
           </p>
         </div>
 
@@ -132,7 +132,7 @@ export default async function FeaturesPage() {
               <i className="fa-solid fa-mobile-screen-button text-6xl mb-6 opacity-80"></i>
               <h2 className="text-3xl font-bold mb-4">ใช้งานได้ทุกอุปกรณ์</h2>
               <p className="text-emerald-100 text-lg leading-relaxed">
-                ไม่ต้องลงทุนซื้อเครื่อง POS ราคาแพง! SuparPOS ใช้งานได้บนมือถือ แท็บเล็ต iPad หรือคอมพิวเตอร์เครื่องเดิมของคุณได้ทันที ขอแค่มีอินเทอร์เน็ต
+                ไม่ต้องลงทุนซื้อเครื่อง POS ราคาแพง! POS Foodscan ใช้งานได้บนมือถือ แท็บเล็ต iPad หรือคอมพิวเตอร์เครื่องเดิมของคุณได้ทันที ขอแค่มีอินเทอร์เน็ต
               </p>
             </div>
             <div className="w-full md:w-1/2">
@@ -168,7 +168,7 @@ export default async function FeaturesPage() {
               </p>
             </div>
              <div className="w-full md:w-1/2">
-               <h3 className="text-2xl font-bold text-slate-800 mb-4">ทำไมต้อง SuparPOS?</h3>
+               <h3 className="text-2xl font-bold text-slate-800 mb-4">ทำไมต้อง POS Foodscan?</h3>
               <p className="text-slate-600 mb-6 leading-relaxed">
                 เพราะเราเข้าใจปัญหาของร้านอาหาร ทั้งเรื่องออเดอร์ตกหล่น การทุจริต หรือการสรุปยอดบัญชีที่ยุ่งยาก เราจึงออกแบบระบบมาเพื่อแก้ปัญหาเหล่านี้โดยเฉพาะ
               </p>

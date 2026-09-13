@@ -4,16 +4,16 @@ import Link from 'next/link';
 import { JsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  title: "สแกนสั่งอาหารผ่าน QR Code | SuparPOS",
+  title: "สแกนสั่งอาหารผ่าน QR Code | POS Foodscan",
   description: "ระบบสแกนสั่งอาหารผ่าน QR Code และ QR Menu ช่วยให้ลูกค้าสแกนส่งออเดอร์เข้าครัวตรงจากโต๊ะผ่านสมาร์ทโฟนของตัวเอง ลดงานพนักงานจด เริ่มต้นใช้งานฟรี",
   alternates: {
     canonical: "https://suparpos.com/qr-ordering"
   },
   openGraph: {
-    title: "สแกนสั่งอาหารผ่าน QR Code | SuparPOS",
+    title: "สแกนสั่งอาหารผ่าน QR Code | POS Foodscan",
     description: "ระบบสแกนสั่งอาหารผ่าน QR Code และ QR Menu ช่วยให้ลูกค้าสแกนส่งออเดอร์เข้าครัวตรงจากโต๊ะผ่านสมาร์ทโฟนของตัวเอง ลดงานพนักงานจด เริ่มต้นใช้งานฟรี",
     url: "https://suparpos.com/qr-ordering",
-    siteName: "SuparPOS",
+    siteName: "POS Foodscan",
     locale: "th_TH",
     type: "website",
     images: [
@@ -21,13 +21,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "สแกนสั่งอาหารผ่าน QR Code | SuparPOS",
+        alt: "สแกนสั่งอาหารผ่าน QR Code | POS Foodscan",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "สแกนสั่งอาหารผ่าน QR Code | SuparPOS",
+    title: "สแกนสั่งอาหารผ่าน QR Code | POS Foodscan",
     description: "ระบบสแกนสั่งอาหารผ่าน QR Code และ QR Menu ช่วยให้ลูกค้าสแกนส่งออเดอร์เข้าครัวตรงจากโต๊ะผ่านสมาร์ทโฟนของตัวเอง ลดงานพนักงานจด เริ่มต้นใช้งานฟรี",
     images: ["/opengraph-image.png"],
   }
