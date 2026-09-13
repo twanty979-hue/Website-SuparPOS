@@ -18,6 +18,15 @@ export default function Navbar() {
   const [profile, setProfile] = useState<{ avatar_url?: string; full_name?: string } | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProduction, setIsProduction] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isDev = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
+      setIsProduction(!isDev);
+    }
+  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -100,7 +109,9 @@ export default function Navbar() {
 
           {/* Auth Button */}
           {isAuthLoading ? (
-            <div className="w-24 h-10 bg-slate-200 animate-pulse rounded-full"></div>
+            isProduction ? null : (
+              <div className="w-24 h-10 bg-slate-200 animate-pulse rounded-full"></div>
+            )
           ) : user ? (
             <Link
               href="https://app.suparpos.com"
@@ -121,7 +132,7 @@ export default function Navbar() {
                 {profile?.full_name?.split(' ')[0] || 'แดชบอร์ด'}
               </span>
             </Link>
-          ) : (
+          ) : isProduction ? null : (
             <Link
               href="https://app.suparpos.com"
               className="relative px-6 py-2 bg-emerald-600 text-white hover:bg-emerald-700 font-bold rounded-full transition-all shadow-md shadow-emerald-600/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 overflow-hidden group text-sm"
@@ -164,7 +175,8 @@ export default function Navbar() {
             );
           })}
 
-          <div className="pt-3 border-t border-slate-100 w-4/5 flex justify-center">
+          {(!isProduction || user) && (
+            <div className="pt-3 border-t border-slate-100 w-4/5 flex justify-center">
             {!isAuthLoading && user ? (
               <Link
                 href="https://app.suparpos.com"
@@ -192,6 +204,7 @@ export default function Navbar() {
               </Link>
             )}
           </div>
+          )}
         </div>
       )}
     </nav>
