@@ -307,87 +307,87 @@ export default function LandingClient() {
                         </span>
                     </div>
 
-                    <div className="grid sm:grid-cols-3 gap-3 pt-1">
-                        {/* 🍏 Apple App Store (iOS) */}
-                        <a 
-                            href="https://apps.apple.com/app/pos-foodscan/id6809176972" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="group flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border border-slate-200/80 hover:border-slate-800 bg-white hover:bg-slate-50/70 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
-                        >
-                            <div className="w-11 h-11 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center flex-shrink-0 shadow-sm transition-all group-hover:scale-105">
-                                <i className="fa-brands fa-apple text-white text-2xl"></i>
-                            </div>
-                            <div className="text-left flex-1 min-w-0">
-                                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 leading-tight">DOWNLOAD ON</div>
-                                <div className="text-base font-black text-slate-900 group-hover:text-slate-800 transition-colors leading-tight mt-0.5 flex items-center gap-1.5">
-                                    <span>App Store</span>
-                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-700 border border-slate-200">v1.0.6</span>
+                    <div className="space-y-2.5 pt-1">
+                        {/* 📱 Mobile Apps Row (iOS + Android สองฝั่ง กว้าง สวย สบายตา) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {/* 🍏 Apple App Store */}
+                            <a 
+                                href="https://apps.apple.com/app/pos-foodscan/id6809176972" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-3 px-3.5 py-3 rounded-2xl border border-slate-200/90 hover:border-slate-800 bg-white hover:bg-slate-50/80 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-105">
+                                    <i className="fa-brands fa-apple text-white text-xl"></i>
                                 </div>
-                                <div className="text-[11px] text-slate-600 font-semibold mt-0.5 flex items-center gap-1">
-                                    <span>iOS</span>
-                                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                    <span className="text-slate-400 font-normal">iPhone & iPad</span>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-[9px] uppercase font-bold tracking-wider text-slate-400 leading-tight">DOWNLOAD ON</div>
+                                    <div className="text-sm font-black text-slate-900 group-hover:text-slate-800 transition-colors leading-tight mt-0.5 flex items-center gap-1.5">
+                                        <span>App Store</span>
+                                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-700 border border-slate-200">v1.0.6</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 font-medium mt-0.5 truncate">
+                                        iOS • iPhone & iPad
+                                    </div>
                                 </div>
-                            </div>
-                            <i className="fa-solid fa-arrow-up-right-from-square text-xs text-slate-300 group-hover:text-slate-700 transition-colors pr-1"></i>
-                        </a>
+                                <i className="fa-solid fa-arrow-up-right-from-square text-[11px] text-slate-300 group-hover:text-slate-700 transition-colors pr-1"></i>
+                            </a>
 
-
-                        {/* 🟢 Google Play (สวย คลีน ขาว ขอบเขียว ตรงธีม) */}
-                        <a 
-                            href="https://play.google.com/store/apps/details?id=com.pos.foodscan" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="group flex items-center gap-3.5 px-4.5 py-3.5 rounded-2xl border border-slate-200/80 hover:border-emerald-500 bg-white hover:bg-emerald-50/40 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
-                        >
-                            <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 group-hover:border-emerald-200 flex items-center justify-center flex-shrink-0 shadow-sm transition-all group-hover:scale-105 group-hover:bg-white">
-                                <svg className="w-6 h-6" viewBox="0 0 24 24">
-                                    <path fill="#4285F4" d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.7 2.2l-.1.1z"/>
-                                    <path fill="#FBBC04" d="M16.1 14.8l-3.1-3.1v-.2l3.1-3.1.1.1 3.7 2.1c1 .6 1 1.5 0 2.1l-3.8 2.2z"/>
-                                    <path fill="#EA4335" d="M16.2 14.7L13 11.5 3.6 20.9c.4.4.9.4 1.6 0l11-6.2z"/>
-                                    <path fill="#34A853" d="M16.2 8.3L5.2 2.1C4.5 1.7 4 1.7 3.6 2.1L13 11.5l3.2-3.2z"/>
-                                </svg>
-                            </div>
-                            <div className="text-left flex-1 min-w-0">
-                                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 leading-tight">GET IT ON</div>
-                                <div className="text-base font-black text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight mt-0.5 flex items-center gap-1.5">
-                                    <span>Google Play</span>
-                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-700 border border-emerald-200">v2.1.1</span>
+                            {/* 🟢 Google Play */}
+                            <a 
+                                href="https://play.google.com/store/apps/details?id=com.pos.foodscan" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-3 px-3.5 py-3 rounded-2xl border border-slate-200/90 hover:border-emerald-500 bg-white hover:bg-emerald-50/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 group-hover:border-emerald-200 flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-105 group-hover:bg-white">
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.7 2.2l-.1.1z"/>
+                                        <path fill="#FBBC04" d="M16.1 14.8l-3.1-3.1v-.2l3.1-3.1.1.1 3.7 2.1c1 .6 1 1.5 0 2.1l-3.8 2.2z"/>
+                                        <path fill="#EA4335" d="M16.2 14.7L13 11.5 3.6 20.9c.4.4.9.4 1.6 0l11-6.2z"/>
+                                        <path fill="#34A853" d="M16.2 8.3L5.2 2.1C4.5 1.7 4 1.7 3.6 2.1L13 11.5l3.2-3.2z"/>
+                                    </svg>
                                 </div>
-                                <div className="text-[11px] text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
-                                    <span>Android</span>
-                                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                    <span className="text-slate-400 font-normal">ฟรี v2.1.1 • ~18 MB</span>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-[9px] uppercase font-bold tracking-wider text-slate-400 leading-tight">GET IT ON</div>
+                                    <div className="text-sm font-black text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight mt-0.5 flex items-center gap-1.5">
+                                        <span>Google Play</span>
+                                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-700 border border-emerald-200">v2.1.1</span>
+                                    </div>
+                                    <div className="text-[11px] text-emerald-600 font-medium mt-0.5 truncate">
+                                        Android • มือถือ & POS
+                                    </div>
                                 </div>
-                            </div>
-                            <i className="fa-solid fa-arrow-up-right-from-square text-xs text-slate-300 group-hover:text-emerald-500 transition-colors pr-1"></i>
-                        </a>
+                                <i className="fa-solid fa-arrow-up-right-from-square text-[11px] text-slate-300 group-hover:text-emerald-500 transition-colors pr-1"></i>
+                            </a>
+                        </div>
 
-                        {/* 🔵 Windows PC (.exe) (สวย คลีน ขาว ขอบฟ้า ตรงธีม) */}
+                        {/* 🔵 Windows PC (.exe) - แถวกว้าง พรีเมียม สวยเด่น ไม่เบียด */}
                         <a 
                             href="https://img.pos-foodscan.com/downloads/POS-Foodscan-Setup-v2.1.1.exe" 
                             download="POS-Foodscan-Setup-v2.1.1.exe"
-                            className="group flex items-center gap-3.5 px-4.5 py-3.5 rounded-2xl border border-slate-200/80 hover:border-sky-500 bg-white hover:bg-sky-50/40 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                            className="group flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl border border-sky-200/90 hover:border-sky-500 bg-gradient-to-r from-sky-50/40 via-white to-sky-50/20 hover:bg-sky-50/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
                         >
-                            <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 group-hover:border-sky-200 flex items-center justify-center flex-shrink-0 shadow-sm transition-all group-hover:scale-105 group-hover:bg-white">
-                                <svg className="w-6 h-6 fill-current text-[#0078D4]" viewBox="0 0 24 24">
-                                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.606L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.8" />
-                                </svg>
-                            </div>
-                            <div className="text-left flex-1 min-w-0">
-                                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 leading-tight">DOWNLOAD FOR</div>
-                                <div className="text-base font-black text-slate-900 group-hover:text-sky-600 transition-colors leading-tight mt-0.5 flex items-center gap-1.5">
-                                    <span>Windows (.exe)</span>
-                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-sky-100 text-sky-700 border border-sky-200">v2.1.1</span>
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-xl bg-white border border-sky-200 group-hover:border-sky-400 flex items-center justify-center flex-shrink-0 shadow-sm transition-transform group-hover:scale-105">
+                                    <svg className="w-5 h-5 fill-current text-[#0078D4]" viewBox="0 0 24 24">
+                                        <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.606L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.901-1.8" />
+                                    </svg>
                                 </div>
-                                <div className="text-[11px] text-sky-600 font-semibold mt-0.5 flex items-center gap-1">
-                                    <span>PC 64-bit</span>
-                                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                    <span className="text-slate-400 font-normal">ฟรี v2.1.1 • 20.8 MB</span>
+                                <div className="text-left min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-black text-slate-900 group-hover:text-sky-600 transition-colors">Windows Desktop (.exe)</span>
+                                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-sky-100 text-sky-700 border border-sky-200">v2.1.1</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 font-medium">
+                                        สำหรับคอมพิวเตอร์และโน้ตบุ๊ก • ฟรี 20.8 MB (พิมพ์อัตโนมัติ USB, LAN, BT)
+                                    </div>
                                 </div>
                             </div>
-                            <i className="fa-solid fa-download text-xs text-slate-300 group-hover:text-sky-500 transition-colors pr-1"></i>
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500 text-white group-hover:bg-sky-600 text-xs font-bold transition-all shadow-sm flex-shrink-0">
+                                <span className="hidden sm:inline">ดาวน์โหลด</span>
+                                <i className="fa-solid fa-download text-xs group-hover:translate-y-0.5 transition-transform"></i>
+                            </div>
                         </a>
                     </div>
 
