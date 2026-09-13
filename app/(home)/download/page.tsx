@@ -5,7 +5,7 @@ import { Download, Monitor, Smartphone, CheckCircle, ShieldCheck } from 'lucide-
 
 export default function DownloadPage() {
   const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.pos.foodscan';
-  const windowsDownloadUrl = 'https://img.pos-foodscan.com/downloads/SuparPOS-Setup-v2.1.1.exe';
+  const windowsDownloadUrl = 'https://img.pos-foodscan.com/downloads/POS-Foodscan-Setup-v2.1.1.exe';
 
   return (
     <div className="bg-[#F4FBF4] text-slate-800 font-sans antialiased">
@@ -58,27 +58,46 @@ export default function DownloadPage() {
                 สำหรับมือถือและแท็บเล็ต Android ทุกยี่ห้อ (Samsung, Xiaomi, Vivo, OPPO, ขาตั้ง POS Android)
               </p>
 
-              {/* QR Code */}
-              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center justify-center mb-6 text-center">
-                <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-200 mb-3">
-                  <QRCodeSVG value={playStoreUrl} size={150} level="M" />
+              {/* Highlights Box for Android */}
+              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4 mb-6">
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">ชื่อแพ็กเกจ:</span>
+                  <span className="font-mono font-bold">com.pos.foodscan</span>
                 </div>
-                <p className="text-xs font-bold text-slate-700">สแกนด้วยกล้องมือถือ</p>
-                <p className="text-[11px] text-slate-400">เพื่อเปิดหน้าดาวน์โหลดบน Google Play ทันที</p>
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">เวอร์ชัน:</span>
+                  <span className="font-bold text-emerald-600">2.1.1 (อัปเดตล่าสุด)</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">ขนาดไฟล์:</span>
+                  <span className="font-bold">~18 MB</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">ความต้องการระบบ:</span>
+                  <span className="font-bold">Android 8.0 ขึ้นไป (API 26+)</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-700">
+                  <span className="text-slate-400">การพิมพ์:</span>
+                  <span className="font-bold text-emerald-600">Bluetooth, Wi-Fi, LAN, USB</span>
+                </div>
               </div>
 
               <div className="space-y-2 text-xs text-slate-600 mb-8">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  <span>รองรับ Android 8.0 ขึ้นไป</span>
+                  <span>เวอร์ชัน 2.1.1 (อัปเดตล่าสุด)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  <span>เวอร์ชัน 1.0.6 (อัปเดตล่าสุด)</span>
+                  <span>รองรับทั้งมือถือ แท็บเล็ต และเครื่อง POS Sunmi / iMin ทุกรุ่น</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  <span>พิมพ์บิลผ่านบลูทูธและ Wi-Fi ได้ทันที</span>
+                  <span>ระบบเสียงแจ้งเตือนออเดอร์เข้าทันทีแม้ล็อกหรือพับหน้าจอ</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <span>พิมพ์บิลและใบส่งครัวผ่าน Bluetooth และ Wi-Fi LAN อัตโนมัติ</span>
                 </div>
               </div>
             </div>
@@ -125,7 +144,7 @@ export default function DownloadPage() {
               <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4 mb-6">
                 <div className="flex items-center justify-between text-xs text-slate-700">
                   <span className="text-slate-400">ชื่อไฟล์:</span>
-                  <span className="font-mono font-bold">SuparPOS-Setup-v2.1.1.exe</span>
+                  <span className="font-mono font-bold">POS-Foodscan-Setup-v2.1.1.exe</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-700">
                   <span className="text-slate-400">เวอร์ชัน:</span>
@@ -167,7 +186,7 @@ export default function DownloadPage() {
 
             <a
               href={windowsDownloadUrl}
-              download="SuparPOS-Setup-v2.1.1.exe"
+              download="POS-Foodscan-Setup-v2.1.1.exe"
               className="w-full py-4 bg-[#0078D4] hover:bg-[#006cc0] text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5 shadow-md shadow-sky-600/30"
             >
               <Download className="w-5 h-5" />

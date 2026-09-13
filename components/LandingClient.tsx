@@ -337,8 +337,8 @@ export default function LandingClient() {
 
                         {/* 🔵 Windows PC (.exe) (สวย คลีน ขาว ขอบฟ้า ตรงธีม) */}
                         <a 
-                            href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup-v2.1.1.exe" 
-                            download="SuparPOS-Setup-v2.1.1.exe"
+                            href="https://img.pos-foodscan.com/downloads/POS-Foodscan-Setup-v2.1.1.exe" 
+                            download="POS-Foodscan-Setup-v2.1.1.exe"
                             className="group flex items-center gap-3.5 px-4.5 py-3.5 rounded-2xl border border-slate-200/80 hover:border-sky-500 bg-white hover:bg-sky-50/40 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
                         >
                             <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-100 group-hover:border-sky-200 flex items-center justify-center flex-shrink-0 shadow-sm transition-all group-hover:scale-105 group-hover:bg-white">
@@ -676,8 +676,8 @@ export default function LandingClient() {
                                         <span className="group-hover:text-emerald-600 transition-colors">Google Play (Android)</span>
                                     </a>
                                     <a 
-                                        href="https://img.pos-foodscan.com/downloads/SuparPOS-Setup-v2.1.1.exe"
-                                        download="SuparPOS-Setup-v2.1.1.exe"
+                                        href="https://img.pos-foodscan.com/downloads/POS-Foodscan-Setup-v2.1.1.exe"
+                                        download="POS-Foodscan-Setup-v2.1.1.exe"
                                         className="group inline-flex items-center gap-2.5 px-4.5 py-2.5 bg-white hover:bg-sky-50/50 text-slate-800 rounded-2xl text-xs font-bold shadow-sm hover:shadow-md border border-slate-200 hover:border-sky-500 transition-all hover:-translate-y-0.5 active:scale-95"
                                     >
                                         <svg className="w-4 h-4 fill-current text-[#0078D4]" viewBox="0 0 24 24">
