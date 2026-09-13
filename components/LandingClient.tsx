@@ -277,10 +277,10 @@ export default function LandingClient() {
                     ))}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <Link href={user ? "https://app.suparpos.com" : "https://app.suparpos.com"} className="relative px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 rounded-full text-white font-bold text-lg transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 group transform hover:-translate-y-1 hover:shadow-emerald-500/50 overflow-hidden active:scale-95 duration-100">
+                    <Link href="#download" className="relative px-8 py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 rounded-full text-white font-bold text-lg transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 group transform hover:-translate-y-1 hover:shadow-emerald-500/50 overflow-hidden active:scale-95 duration-100">
                         <span className="absolute top-0 left-0 w-full h-full bg-white/20 -skew-x-12 -translate-x-full group-hover:animate-shine"></span>
-                        <i className={`fa-solid ${user ? 'fa-arrow-right-to-bracket' : 'fa-rocket'} group-hover:rotate-12 transition-transform`}></i> 
-                        {user ? 'เข้าสู่แดชบอร์ด' : 'สมัครใช้งานฟรี'}
+                        <i className="fa-solid fa-cloud-arrow-down group-hover:translate-y-0.5 transition-transform"></i> 
+                        ดาวน์โหลดใช้งานฟรี
                     </Link>
                     <Link href="/setup-printer" className="px-8 py-4 bg-white/80 border border-slate-200 hover:bg-white text-slate-700 rounded-full font-medium transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-lg backdrop-blur-sm hover:-translate-y-1 active:scale-95 duration-100">
                         <i className="fa-solid fa-print text-emerald-500 text-xl"></i> คู่มือตั้งค่าเครื่องพิมพ์
@@ -325,11 +325,14 @@ export default function LandingClient() {
                             </div>
                             <div className="text-left flex-1 min-w-0">
                                 <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 leading-tight">GET IT ON</div>
-                                <div className="text-base font-black text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight mt-0.5">Google Play</div>
+                                <div className="text-base font-black text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight mt-0.5 flex items-center gap-1.5">
+                                    <span>Google Play</span>
+                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-700 border border-emerald-200">v2.1.1</span>
+                                </div>
                                 <div className="text-[11px] text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
                                     <span>Android</span>
                                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                    <span className="text-slate-400 font-normal">ฟรี v1.0.6</span>
+                                    <span className="text-slate-400 font-normal">ฟรี v2.1.1 • ~18 MB</span>
                                 </div>
                             </div>
                             <i className="fa-solid fa-arrow-up-right-from-square text-xs text-slate-300 group-hover:text-emerald-500 transition-colors pr-1"></i>
@@ -638,10 +641,10 @@ export default function LandingClient() {
                             <p className="text-slate-500 mb-10">กดปุ่มด้านล่างเพื่อทดลองใช้งานระบบได้ทันที</p>
 
                             <Link 
-                                href={user ? "https://app.suparpos.com" : "https://app.suparpos.com"}
+                                href="#download"
                                 className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-black py-6 rounded-2xl text-2xl shadow-2xl shadow-emerald-500/40 transform transition-all hover:scale-[1.03] active:scale-95 duration-200 flex items-center justify-center gap-4 relative overflow-hidden group/btn">
                                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover/btn:animate-shine"></span>
-                                {user ? 'ไปที่แดชบอร์ด' : 'สมัครใช้งานฟรี'}
+                                ดาวน์โหลดใช้งานฟรี
                                 <i className="fa-solid fa-chevron-right text-lg group-hover/btn:translate-x-2 transition-transform"></i>
                             </Link>
                             
