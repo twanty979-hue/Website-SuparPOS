@@ -1,4 +1,4 @@
-﻿import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 const admin = () =>
@@ -63,6 +63,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ไม่มีสิทธิ์ตั้งค่าร้านนี้' }, { status: 403 })
     }
 
+    // 🛡️ โหลดโควตาแพ็กเกจ Free จาก system_settings
+    const { data: sysSettings } = await db
+      .from('system_settings')
+      .select('dashboard_permissions')
+      .eq('id', 'global')
+      .maybeSingle()
+
+    const freePerms = sysSettings?.dashboard_permissions?.free || {}
+    const maxAllowedFood = Number(freePerms.max_food_items ?? freePerms.max_products ?? 50)
+    const maxAllowedTables = Number(freePerms.max_tables ?? 10)
+
     // 1. อัปเดต Timezone และบันทึกสถานะ Onboarding เสร็จสิ้น
     const { data: currentBrand } = await db
       .from('brands')
@@ -75,13 +86,17 @@ export async function POST(request: Request) {
     }
     await db.from('brands').update({ timezone, config: updatedConfig }).eq('id', brandId)
 
-    // 2. สร้างโต๊ะตามจำนวนที่กำหนด (ถ้ายังไม่มีโต๊ะ)
+    // 2. สร้างโต๊ะตามจำนวนที่กำหนด (จำกัดไม่เกินโควตาของแผน)
     const { count: currentTableCount } = await db
       .from('tables')
       .select('id', { count: 'exact', head: true })
       .eq('brand_id', brandId)
 
-    const finalTableCount = Math.max(1, Math.min(Number(tableCount) || 10, 100))
+    const requestedTableCount = Number(tableCount) || 10
+    const finalTableCount = Math.max(
+      1,
+      maxAllowedTables > 0 ? Math.min(requestedTableCount, maxAllowedTables) : Math.min(requestedTableCount, 100)
+    )
     if (!currentTableCount || currentTableCount === 0) {
       const tables = Array.from({ length: finalTableCount }, (_, index) => ({
         brand_id: brandId,
@@ -115,13 +130,17 @@ export async function POST(request: Request) {
       if (bannerError) console.error('Banner creation error:', bannerError)
     }
 
-    // 4. สร้างหมวดหมู่และสินค้าเฉพาะที่เลือก
+    // 4. สร้างหมวดหมู่และสินค้าเฉพาะที่เลือก (จำกัดสูงสุดตามโควตาของแผน ไม่ให้ Error)
+    const clampedProducts = Array.isArray(selectedProducts)
+      ? (maxAllowedFood > 0 ? selectedProducts.slice(0, maxAllowedFood) : selectedProducts)
+      : []
+
     let insertedProductsCount = 0
-    if (Array.isArray(selectedProducts) && selectedProducts.length > 0) {
+    if (clampedProducts.length > 0) {
       // รวมหมวดหมู่ที่ไม่ซ้ำกัน
       const categoryNames = Array.from(
         new Set(
-          selectedProducts
+          clampedProducts
             .map((p: any) => p.category_name?.trim())
             .filter((name: string) => name && name.length > 0)
         )
@@ -153,7 +172,7 @@ export async function POST(request: Request) {
       }
 
       // แปลงข้อมูลสินค้าเพื่อบันทึกลงตาราง products
-      const productsToInsert = selectedProducts.map((p: any, index: number) => ({
+      const productsToInsert = clampedProducts.map((p: any, index: number) => ({
         brand_id: brandId,
         name: p.name?.trim() || `สินค้า ${index + 1}`,
         image_name: p.image_url || null,

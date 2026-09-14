@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const admin = () =>
@@ -23,16 +23,21 @@ export async function GET() {
   try {
     const db = admin()
 
-    // ดึงเฉพาะข้อมูลจริงจากตาราง Supabase เท่านั้น (ไม่มี Mockup)
-    const [typeRes, prodRes, bannerRes] = await Promise.all([
+    // ดึงเฉพาะข้อมูลจริงจากตาราง Supabase เท่านั้น (ไม่มี Mockup) พร้อมโควตาแพ็กเกจ Free จาก system_settings
+    const [typeRes, prodRes, bannerRes, sysSettingsRes] = await Promise.all([
       db.from('master_store_types').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
       db.from('master_products').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
       db.from('master_banners').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
+      db.from('system_settings').select('dashboard_permissions').eq('id', 'global').maybeSingle(),
     ])
 
     if (typeRes.error) throw typeRes.error
     if (prodRes.error) throw prodRes.error
     if (bannerRes.error) throw bannerRes.error
+
+    const freePerms = sysSettingsRes.data?.dashboard_permissions?.free || {}
+    const maxFoodItems = Number(freePerms.max_food_items ?? freePerms.max_products ?? 50)
+    const maxTables = Number(freePerms.max_tables ?? 10)
 
     return NextResponse.json(
       {
@@ -40,6 +45,10 @@ export async function GET() {
         store_types: typeRes.data || [],
         products: prodRes.data || [],
         banners: bannerRes.data || [],
+        limits: {
+          max_food_items: maxFoodItems > 0 ? maxFoodItems : 50,
+          max_tables: maxTables > 0 ? maxTables : 10,
+        },
       },
       {
         status: 200,
@@ -58,6 +67,10 @@ export async function GET() {
         store_types: [],
         products: [],
         banners: [],
+        limits: {
+          max_food_items: 50,
+          max_tables: 10,
+        },
       },
       {
         status: 500,

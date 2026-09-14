@@ -62,6 +62,16 @@ export default function AdminLayout({
       )
     },
     {
+      name: 'รายงานข้อผิดพลาด (Error Logs)',
+      href: '/admin/error-logs',
+      icon: (
+        <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <rect width="8" height="14" x="8" y="6" rx="4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 7-3 2m-11-2 3 2m11 10-3-2m-11 2 3-2M20 13h-4M4 13h4m2-9 1 2m3-2-1 2" />
+        </svg>
+      )
+    },
+    {
       name: 'ธีมร้านค้า (Themes)',
       href: '/admin/marketplace-themes',
       icon: (
