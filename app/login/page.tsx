@@ -9,7 +9,6 @@ import { clearBrowserData } from '@/lib/clearBrowserData';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirectTo') || searchParams.get('redirect') || '';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +17,21 @@ function LoginForm() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [resettingSession, setResettingSession] = useState(false);
   const resetStarted = useRef(false);
-  const [isRecovery, setIsRecovery] = useState(false);
+
+  // Recovery State: 'none' | 'request' | 'verify'
+  const [recoveryStep, setRecoveryStep] = useState<'none' | 'request' | 'verify'>('none');
+  const [otpCode, setOtpCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    let timer: any;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -47,10 +60,6 @@ function LoginForm() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        if (redirectTo) {
-          router.replace(redirectTo);
-          return;
-        }
         const { data: profile } = await supabase
           .from('profiles')
           .select('brand_id, role')
@@ -58,14 +67,14 @@ function LoginForm() {
           .single();
 
         if (profile?.brand_id) {
-          router.replace('/dashboard/pai_order');
+          router.replace('/success');
         } else {
-          router.replace('/setup');
+          router.replace('/register');
         }
       }
     };
     checkSession();
-  }, [router, searchParams, redirectTo]);
+  }, [router, searchParams]);
 
   const addGmailSuffix = () => {
     if (!email.includes('@')) setEmail((prev) => prev + '@gmail.com');
@@ -78,7 +87,7 @@ function LoginForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo || '/dashboard')}`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/register')}`,
         },
       });
       if (error) throw error;
@@ -113,32 +122,109 @@ function LoginForm() {
 
       if (sessionError) throw sessionError;
 
-      if (redirectTo) {
-        router.push(redirectTo);
-      } else {
-        router.push(result.redirectTo || '/dashboard');
-      }
+      router.push('/success');
     } catch (error: any) {
       setErrorMsg(error.message);
       setLoading(false);
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  // 1. ส่งรหัส OTP ไปที่อีเมล
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setErrorMsg('กรุณากรอกอีเมลให้ถูกต้อง');
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password&type=recovery`,
+      const response = await fetch('/api/auth/recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, source: 'web' }),
       });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'ส่งรหัส OTP ไม่สำเร็จ');
+      }
 
-      if (error) throw error;
-      setSuccessMsg('ส่งลิงก์เปลี่ยนรหัสผ่านไปที่อีเมลแล้ว!');
+      setSuccessMsg(`ระบบส่งรหัส OTP 8 หลักไปที่อีเมล ${cleanEmail} เรียบร้อยแล้ว`);
+      setRecoveryStep('verify');
+      setResendCooldown(60);
     } catch (error: any) {
-      setErrorMsg(error.message);
+      setErrorMsg(error.message || 'ส่งรหัส OTP ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. ยืนยันรหัส OTP และตั้งรหัสผ่านใหม่ทันที
+  const handleVerifyOtpAndReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = email.trim();
+    const cleanOtp = otpCode.trim();
+
+    if (cleanOtp.length < 6) {
+      setErrorMsg('กรุณากรอกรหัส OTP ให้ครบถ้วน');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setErrorMsg('รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const verifyResponse = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          token: cleanOtp,
+          type: 'recovery',
+        }),
+      });
+      const verifyResult = await verifyResponse.json();
+      if (!verifyResponse.ok) {
+        throw new Error(verifyResult.error || 'รหัส OTP ไม่ถูกต้องหรือหมดอายุ');
+      }
+      if (!verifyResult.ticket) {
+        throw new Error('ไม่พบรหัสยืนยันความปลอดภัย กรุณาขอ OTP ใหม่');
+      }
+
+      const passwordResponse = await fetch('/api/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: newPassword,
+          ticket: verifyResult.ticket,
+        }),
+      });
+      const passwordResult = await passwordResponse.json();
+      if (!passwordResponse.ok) {
+        throw new Error(passwordResult.error || 'ตั้งรหัสผ่านใหม่ไม่สำเร็จ');
+      }
+
+      setSuccessMsg('🎉 เปลี่ยนรหัสผ่านใหม่สำเร็จแล้ว! กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่');
+      setRecoveryStep('none');
+      setPassword('');
+      setOtpCode('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      setErrorMsg(error.message || 'เกิดข้อผิดพลาดในการตรวจสอบ OTP');
     } finally {
       setLoading(false);
     }
@@ -159,137 +245,239 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-50/50 relative overflow-hidden p-4">
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-brand-200 rounded-full blur-[120px] opacity-30 pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-200 rounded-full blur-[120px] opacity-30 pointer-events-none"></div>
+    <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6] relative overflow-hidden p-4">
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-green-200/50 rounded-full blur-[120px] opacity-40 pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-emerald-200/40 rounded-full blur-[120px] opacity-40 pointer-events-none"></div>
 
-      <div className="bg-white w-full max-w-md p-8 rounded-[2rem] shadow-2xl shadow-brand-500/10 border border-white/50 backdrop-blur-sm relative z-10">
+      <div className="bg-white w-full max-w-md p-8 rounded-[2rem] shadow-2xl shadow-slate-900/5 border border-slate-100 backdrop-blur-sm relative z-10">
         <div className="text-center mb-8">
-          <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/20 mx-auto mb-4 p-2 border border-slate-100 relative overflow-hidden">
-            <Image
-              src="/icon.png"
-              alt="Shop Logo"
-              fill
-              className="object-contain p-2"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement?.classList.add('fallback-icon');
-              }}
-            />
-            <i className="fa-solid fa-store text-4xl text-brand-500 hidden fallback-icon:block absolute"></i>
+          <div className="w-[82px] h-[82px] bg-gradient-to-br from-[#E8F8EC] to-[#D1F3D9] rounded-3xl flex items-center justify-center shadow-lg shadow-green-700/20 mx-auto mb-4 p-2 border border-[#B7E7C3] relative overflow-hidden">
+            <Image src="/icon.png" alt="POS FoodScan" fill className="object-contain p-2" priority />
           </div>
 
-          <h1 className="text-3xl font-bold text-slate-800">
-            {isRecovery ? 'กู้คืนรหัสผ่าน' : 'ยินดีต้อนรับกลับ!'}
+          <p className="mb-1 text-sm font-black tracking-[0.12em] text-[#15803D]">POS FoodScan</p>
+
+          <h1 className="text-2xl font-black text-slate-900">
+            {recoveryStep === 'verify'
+              ? 'กรอกรหัส OTP ยืนยัน'
+              : recoveryStep === 'request'
+              ? 'ลืมรหัสผ่าน'
+              : 'ยินดีต้อนรับกลับ!'}
           </h1>
-          <p className="text-slate-500 mt-2">
-            {isRecovery ? 'กรอกอีเมลเพื่อรับลิงก์ตั้งรหัสใหม่' : 'FoodScan Management System'}
+          <p className="text-slate-500 text-xs mt-1.5 font-medium">
+            {recoveryStep === 'verify'
+              ? `กรอกรหัส OTP 8 หลักที่ส่งไปที่ ${email}`
+              : recoveryStep === 'request'
+              ? 'ระบุอีเมลเพื่อรับรหัส OTP 8 หลักในการตั้งรหัสผ่านใหม่'
+              : 'เข้าสู่ระบบ POS FoodScan'}
           </p>
         </div>
 
         {errorMsg && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-500 text-sm rounded-xl flex items-center gap-3 animate-pulse">
-            <i className="fa-solid fa-circle-exclamation"></i>
-            {errorMsg}
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 text-xs font-bold rounded-2xl flex items-center gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-100 text-green-600 text-sm rounded-xl flex items-center gap-3">
-            <i className="fa-solid fa-circle-check"></i>
-            {successMsg}
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-2xl flex items-center gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            <span>{successMsg}</span>
           </div>
         )}
 
-        <form onSubmit={isRecovery ? handleResetPassword : handleLogin} className="space-y-5">
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">อีเมล</label>
-            <div className="relative group">
-              <i className="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors"></i>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium text-slate-700"
-                placeholder="ชื่อบัญชีของคุณ"
-              />
-              {email.length > 0 && !email.includes('@') && (
-                <button type="button" onClick={addGmailSuffix} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold bg-brand-100 text-brand-600 px-2 py-1.5 rounded-lg hover:bg-brand-200 transition-colors">
-                  + @gmail.com
-                </button>
-              )}
-            </div>
-          </div>
-
-          {!isRecovery && (
+        {/* 1. หน้าล็อกอินปกติ */}
+        {recoveryStep === 'none' && (
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">รหัสผ่าน</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">อีเมล</label>
               <div className="relative group">
-                <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors"></i>
                 <input
-                  type="password"
+                  type="email"
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium text-slate-700"
-                  placeholder="••••••••"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-600/30 focus:border-green-600 transition-all font-medium text-slate-800 text-sm"
+                  placeholder="ชื่ออีเมลของคุณ"
                 />
+                {email.length > 0 && !email.includes('@') && (
+                  <button type="button" onClick={addGmailSuffix} className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold bg-green-100 text-green-800 px-2.5 py-1 rounded-xl hover:bg-green-200 transition-colors">
+                    + @gmail.com
+                  </button>
+                )}
               </div>
             </div>
-          )}
 
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => {
-                setIsRecovery(!isRecovery);
-                setErrorMsg(null);
-                setSuccessMsg(null);
-              }}
-              className="text-sm font-bold text-brand-500 hover:text-brand-600"
-            >
-              {isRecovery ? 'กลับไปหน้าเข้าสู่ระบบ' : 'ลืมรหัสผ่าน?'}
-            </button>
-          </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">รหัสผ่าน</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-600/30 focus:border-green-600 transition-all font-medium text-slate-800 text-sm"
+                placeholder="••••••••"
+              />
+            </div>
 
-          <div className="relative flex py-2 items-center mt-6">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-medium uppercase">หรือเข้าสู่ระบบด้วย Google</span>
-            <div className="flex-grow border-t border-slate-200"></div>
-          </div>
-
-          {!isRecovery && (
-            <div className="mb-6">
+            <div className="flex justify-end pt-1">
               <button
-                onClick={handleGoogleLogin}
                 type="button"
-                className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-3.5 rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-3 active:scale-95 group"
+                onClick={() => {
+                  setRecoveryStep('request');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className="text-xs font-bold text-green-700 hover:text-green-800 transition-colors cursor-pointer"
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                  <path d="M23.766 12.2764C23.766 11.4607 23.6999 10.6406 23.5588 9.83807H12.24V14.4591H18.7217C18.4528 15.9494 17.5885 17.2678 16.323 18.1056V21.1039H20.19C22.4608 19.0139 23.766 15.9274 23.766 12.2764Z" fill="#4285F4"/>
-                  <path d="M12.2401 24.0008C15.4766 24.0008 18.2059 22.9382 20.1945 21.1039L16.3275 18.1055C15.2517 18.8375 13.8627 19.252 12.2445 19.252C9.11388 19.252 6.45946 17.1399 5.50705 14.3003H1.5166V17.3912C3.55371 21.4434 7.7029 24.0008 12.2401 24.0008Z" fill="#34A853"/>
-                  <path d="M5.50253 14.3003C5.00236 12.8099 5.00236 11.1961 5.50253 9.70575V6.61481H1.51649C-0.18551 10.0056 -0.18551 14.0004 1.51649 17.3912L5.50253 14.3003Z" fill="#FBBC05"/>
-                  <path d="M12.2401 4.74966C13.9509 4.7232 15.6044 5.36697 16.8434 6.54867L20.2695 3.12262C18.1001 1.0855 15.2208 -0.0344664 12.2401 0.000808666C7.7029 0.000808666 3.55371 2.55822 1.5166 6.61481L5.50264 9.70575C6.45064 6.86173 9.10947 4.74966 12.2401 4.74966Z" fill="#EA4335"/>
-                </svg>
-                เข้าสู่ระบบด้วย Google
+                ลืมรหัสผ่าน?
               </button>
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-500/30 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {loading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : (isRecovery ? 'ส่งลิงก์รีเซ็ตรหัสผ่าน' : 'เข้าสู่ระบบ')}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#15803D] hover:bg-[#166534] text-white text-sm font-black transition-all shadow-md shadow-green-800/20 active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+            </button>
 
-        <div className="mt-8 text-center text-sm text-slate-500">
-          ยังไม่มีบัญชีร้านค้า? 
-          <Link href="/register" className="text-brand-600 font-bold ml-1 hover:underline">สมัครสมาชิกฟรี</Link>
-        </div>
+            <div className="text-center pt-4">
+              <span className="text-xs text-slate-500">ยังไม่มีบัญชีร้านค้า? </span>
+              <Link href="/register" className="text-xs font-bold text-green-700 hover:text-green-800 underline">
+                สมัครเปิดร้านใหม่
+              </Link>
+            </div>
+          </form>
+        )}
+
+        {/* 2. หน้าขอยื่น OTP ลืมรหัสผ่าน (Step 1) */}
+        {recoveryStep === 'request' && (
+          <form onSubmit={handleRequestOtp} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">อีเมลของคุณ</label>
+              <div className="relative group">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-600/30 focus:border-green-600 transition-all font-medium text-slate-800 text-sm"
+                  placeholder="กรอกอีเมลที่ใช้สมัคร"
+                />
+                {email.length > 0 && !email.includes('@') && (
+                  <button type="button" onClick={addGmailSuffix} className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold bg-green-100 text-green-800 px-2.5 py-1 rounded-xl hover:bg-green-200 transition-colors">
+                    + @gmail.com
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 rounded-2xl bg-[#15803D] hover:bg-[#166534] text-white text-sm font-black transition-all shadow-md shadow-green-800/20 active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? 'กำลังส่งรหัส OTP...' : 'ส่งรหัสยืนยัน OTP 8 หลัก'}
+            </button>
+
+            <div className="text-center pt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setRecoveryStep('none');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                ← ย้อนกลับไปหน้าเข้าสู่ระบบ
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* 3. หน้ายืนยันรหัส OTP 6 หลัก + ตั้งรหัสผ่านใหม่ (Step 2 - ที่นายขอมา!) */}
+        {recoveryStep === 'verify' && (
+          <form onSubmit={handleVerifyOtpAndReset} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">
+                รหัสยืนยัน OTP 8 หลัก (ส่งไปที่อีเมล {email})
+              </label>
+              <input
+                type="text"
+                required
+                maxLength={8}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                className="w-full px-4 py-3.5 bg-slate-50 border-2 border-green-500 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-600/30 text-center font-black text-2xl tracking-[0.4em] text-slate-900"
+                placeholder="12345678"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">รหัสผ่านใหม่</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-600/30 focus:border-green-600 transition-all font-medium text-slate-800 text-sm"
+                placeholder="อย่างน้อย 6 ตัวอักษร"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 ml-1">ยืนยันรหัสผ่านใหม่</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-600/30 focus:border-green-600 transition-all font-medium text-slate-800 text-sm"
+                placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] text-slate-500">ไม่ได้รับรหัส?</span>
+              <button
+                type="button"
+                disabled={resendCooldown > 0 || loading}
+                onClick={handleRequestOtp}
+                className="text-[11px] font-bold text-green-700 hover:text-green-800 disabled:text-slate-400 cursor-pointer"
+              >
+                {resendCooldown > 0 ? `ส่งรหัสใหม่ได้ใน ${resendCooldown} วินาที` : 'ส่งรหัส OTP ใหม่อีกครั้ง'}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black transition-all shadow-md shadow-emerald-600/20 active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? 'กำลังบันทึกรหัสผ่านใหม่...' : 'ยืนยันรหัส OTP และตั้งรหัสผ่านใหม่'}
+            </button>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRecoveryStep('none');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                ← ยกเลิกและกลับไปหน้าเข้าสู่ระบบ
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
@@ -298,8 +486,8 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-brand-50/50">
-        <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
+        <div className="w-10 h-10 border-4 border-green-700 border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>
       <LoginForm />

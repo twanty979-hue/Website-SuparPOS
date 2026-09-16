@@ -2,8 +2,10 @@
 'use server'
 
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { checkOrderLimitOrThrow } from './limitGuard';
+import { exceedsLimit, getBrandPlanPermissions } from '@/lib/planPermissions';
 
 const makeTableToken = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -78,7 +80,14 @@ export async function getTablesAction() {
             .order('label', { ascending: true });
 
         if (error) throw error;
-        return { success: true, data };
+        const { plan, limits } = await getBrandPlanPermissions(getAdminSupabase(), brandId);
+        return {
+            success: true,
+            data,
+            plan,
+            limits: { max_tables: limits.max_tables },
+            usage: data?.filter((table) => table.is_active !== false).length || 0,
+        };
     } catch (err: any) {
         return { success: false, error: err.message };
     }
@@ -89,6 +98,25 @@ export async function addTableAction(label: string) {
     const supabase = await getSupabase();
     try {
         const brandId = await getMyBrandId(supabase); // ✅ หาเองจาก Session ปลอดภัยกว่า
+
+        const admin = getAdminSupabase();
+        const { plan, limits } = await getBrandPlanPermissions(admin, brandId);
+        const { count, error: countError } = await admin
+            .from('tables')
+            .select('id', { count: 'exact', head: true })
+            .eq('brand_id', brandId)
+            .eq('is_active', true);
+        if (countError) throw countError;
+
+        if (exceedsLimit((count || 0) + 1, limits.max_tables)) {
+            return {
+                success: false,
+                code: 'TABLE_LIMIT_EXCEEDED',
+                error: `แพ็กเกจ ${plan.toUpperCase()} เพิ่มโต๊ะได้สูงสุด ${limits.max_tables} โต๊ะ (ขณะนี้มี ${count || 0} โต๊ะ)`,
+                limit: limits.max_tables,
+                usage: count || 0,
+            };
+        }
 
         const token = makeTableToken();
         const { data, error } = await supabase.from('tables').insert({
@@ -161,6 +189,14 @@ export async function getLatestTableDataAction(tableId: string) {
     } catch (err: any) {
         return { success: false, error: err.message };
     }
+}
+
+function getAdminSupabase() {
+    return createClient(
+        process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    );
 }
 
 export async function generateTableQrTokensAction(id: string, count: number) {

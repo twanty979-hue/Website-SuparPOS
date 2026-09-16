@@ -71,6 +71,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
+    // ช่วงปรับปรุงระบบเว็บ ให้ทุกคนไปที่หน้าเลือกระบบดาวน์โหลด 3 ช่องทาง (เว้นแต่เปิดดูด้วย ?preview=true)
+    if (typeof window !== 'undefined' && !window.location.search.includes('preview=true')) {
+      router.replace('/success');
+      return;
+    }
+
     setMounted(true);
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();

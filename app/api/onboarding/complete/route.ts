@@ -1,10 +1,11 @@
 ﻿import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { exceedsLimit, getBrandPlanPermissions } from '@/lib/planPermissions'
 
 const admin = () =>
   createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } },
   )
 
@@ -63,7 +64,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ไม่มีสิทธิ์ตั้งค่าร้านนี้' }, { status: 403 })
     }
 
-    // 1. อัปเดต Timezone และบันทึกสถานะ Onboarding เสร็จสิ้น
+    const { plan, limits } = await getBrandPlanPermissions(db, brandId)
+    const responseLimits = {
+      max_food_items: limits.max_food_items,
+      max_products: limits.max_products,
+      max_tables: limits.max_tables,
+    }
+    const finalTableCount = Math.max(1, Math.min(Number(tableCount) || 10, 100))
+    const selectedProductList = Array.isArray(selectedProducts) ? selectedProducts : []
+
+    if (exceedsLimit(finalTableCount, limits.max_tables)) {
+      return NextResponse.json({
+        error: `แพ็กเกจ ${plan.toUpperCase()} สร้างได้สูงสุด ${limits.max_tables} โต๊ะ`,
+        code: 'TABLE_LIMIT_EXCEEDED',
+        plan,
+        limits: responseLimits,
+      }, { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } })
+    }
+    if (exceedsLimit(selectedProductList.length, limits.max_food_items)) {
+      return NextResponse.json({
+        error: `แพ็กเกจ ${plan.toUpperCase()} เลือกอาหารได้สูงสุด ${limits.max_food_items} รายการ`,
+        code: 'FOOD_LIMIT_EXCEEDED',
+        plan,
+        limits: responseLimits,
+      }, { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } })
+    }
+
+    // เก็บ config เดิมไว้ และค่อยทำเครื่องหมายสำเร็จหลังสร้างข้อมูลครบทุกส่วน
     const { data: currentBrand } = await db
       .from('brands')
       .select('config')
@@ -73,15 +100,31 @@ export async function POST(request: Request) {
       ...((currentBrand?.config as Record<string, any>) || {}),
       onboarding_completed: true,
     }
-    await db.from('brands').update({ timezone, config: updatedConfig }).eq('id', brandId)
 
     // 2. สร้างโต๊ะตามจำนวนที่กำหนด (ถ้ายังไม่มีโต๊ะ)
-    const { count: currentTableCount } = await db
+    const { count: currentTableCount, error: tableCountError } = await db
       .from('tables')
       .select('id', { count: 'exact', head: true })
       .eq('brand_id', brandId)
+    if (tableCountError) throw tableCountError
 
-    const finalTableCount = Math.max(1, Math.min(Number(tableCount) || 10, 100))
+    const { count: currentProductCount, error: productCountError } = await db
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('brand_id', brandId)
+    if (productCountError) throw productCountError
+    if (
+      (!currentProductCount || currentProductCount === 0) &&
+      exceedsLimit(selectedProductList.length, limits.max_food_items)
+    ) {
+      return NextResponse.json({
+        error: `จำนวนอาหารรวมเกินลิมิตแพ็กเกจ ${limits.max_food_items} รายการ`,
+        code: 'FOOD_LIMIT_EXCEEDED',
+        plan,
+        limits: responseLimits,
+      }, { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } })
+    }
+
     if (!currentTableCount || currentTableCount === 0) {
       const tables = Array.from({ length: finalTableCount }, (_, index) => ({
         brand_id: brandId,
@@ -91,7 +134,7 @@ export async function POST(request: Request) {
         access_token: generateRandomToken(),
       }))
       const { error: tableError } = await db.from('tables').insert(tables)
-      if (tableError) console.error('Table creation error:', tableError)
+      if (tableError) throw tableError
     }
 
     // 3. สร้างแบนเนอร์ร้าน
@@ -100,10 +143,11 @@ export async function POST(request: Request) {
         ? selectedBannerUrl.trim()
         : 'https://img.pos-foodscan.com/268dccbf-a568-4a90-b184-d23811937d9f/1772290694984-1772290692774.webp'
 
-    const { count: bannerCount } = await db
+    const { count: bannerCount, error: bannerCountError } = await db
       .from('banners')
       .select('id', { count: 'exact', head: true })
       .eq('brand_id', brandId)
+    if (bannerCountError) throw bannerCountError
 
     if (!bannerCount || bannerCount === 0) {
       const { error: bannerError } = await db.from('banners').insert({
@@ -112,16 +156,16 @@ export async function POST(request: Request) {
         title: 'Welcome',
         sort_order: 1,
       })
-      if (bannerError) console.error('Banner creation error:', bannerError)
+      if (bannerError) throw bannerError
     }
 
     // 4. สร้างหมวดหมู่และสินค้าเฉพาะที่เลือก
     let insertedProductsCount = 0
-    if (Array.isArray(selectedProducts) && selectedProducts.length > 0) {
+    if ((!currentProductCount || currentProductCount === 0) && selectedProductList.length > 0) {
       // รวมหมวดหมู่ที่ไม่ซ้ำกัน
       const categoryNames = Array.from(
         new Set(
-          selectedProducts
+          selectedProductList
             .map((p: any) => p.category_name?.trim())
             .filter((name: string) => name && name.length > 0)
         )
@@ -130,12 +174,13 @@ export async function POST(request: Request) {
       const categoryMap: Record<string, string> = {}
       for (const catName of categoryNames) {
         // เช็คว่ามีหมวดหมู่นี้ในร้านแล้วหรือไม่
-        const { data: existingCat } = await db
+        const { data: existingCat, error: existingCatError } = await db
           .from('categories')
           .select('id')
           .eq('brand_id', brandId)
           .eq('name', catName)
           .maybeSingle()
+        if (existingCatError) throw existingCatError
 
         if (existingCat) {
           categoryMap[catName as string] = existingCat.id
@@ -145,15 +190,13 @@ export async function POST(request: Request) {
             .insert({ brand_id: brandId, name: catName, is_active: true })
             .select('id')
             .single()
-
-          if (!catError && createdCat) {
-            categoryMap[catName as string] = createdCat.id
-          }
+          if (catError) throw catError
+          categoryMap[catName as string] = createdCat.id
         }
       }
 
       // แปลงข้อมูลสินค้าเพื่อบันทึกลงตาราง products
-      const productsToInsert = selectedProducts.map((p: any, index: number) => ({
+      const productsToInsert = selectedProductList.map((p: any, index: number) => ({
         brand_id: brandId,
         name: p.name?.trim() || `สินค้า ${index + 1}`,
         image_name: p.image_url || null,
@@ -169,17 +212,25 @@ export async function POST(request: Request) {
         .select('id')
 
       if (prodError) {
-        console.error('Product insertion error:', prodError)
+        throw prodError
       } else if (insertedProducts) {
         insertedProductsCount = insertedProducts.length
       }
     }
 
+    const { error: completionError } = await db
+      .from('brands')
+      .update({ timezone, config: updatedConfig })
+      .eq('id', brandId)
+    if (completionError) throw completionError
+
     return NextResponse.json(
       {
         success: true,
+        plan,
+        limits: responseLimits,
         seededProductsCount: insertedProductsCount,
-        tableCount: finalTableCount,
+        tableCount: currentTableCount || finalTableCount,
         message: 'Onboarding setup completed successfully',
       },
       {

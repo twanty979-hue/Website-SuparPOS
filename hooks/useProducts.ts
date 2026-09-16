@@ -53,6 +53,7 @@ export function useProducts() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [brandId, setBrandId] = useState<string | null>(null);
+  const [foodLimit, setFoodLimit] = useState<{ plan: string; maxItems: number } | null>(null);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
@@ -90,6 +91,10 @@ export function useProducts() {
         setBrandId(res.brandId!);
         setCategories(res.categories || []);
         setProducts(res.products || []);
+        setFoodLimit({
+          plan: res.plan || 'free',
+          maxItems: res.limits?.max_food_items || 0,
+        });
     }
     setLoading(false);
   };
@@ -301,6 +306,14 @@ export function useProducts() {
   };
 
   const openModal = (product: Product | null = null) => {
+    if (!product && foodLimit && foodLimit.maxItems > 0 && products.length >= foodLimit.maxItems) {
+      showAlert(
+        'warning',
+        'เพิ่มเมนูไม่ได้',
+        `แพ็กเกจ ${foodLimit.plan.toUpperCase()} รองรับสูงสุด ${foodLimit.maxItems} รายการ (ขณะนี้มี ${products.length} รายการ)`
+      );
+      return;
+    }
     setEditId(product ? product.id : null);
     setSelectedFile(null); 
     setFormData({
@@ -326,7 +339,7 @@ export function useProducts() {
   }, [products, searchTerm, selectedCategoryId]);
 
   return {
-    products, categories, loading, brandId,
+    products, categories, loading, brandId, foodLimit,
     selectedCategoryId, setSelectedCategoryId,
     searchTerm, setSearchTerm,
     isModalOpen, setIsModalOpen, isSubmitting, editId, uploading,

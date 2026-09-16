@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getPlanPermissions } from '@/lib/planPermissions'
 
 const admin = () =>
   createClient(
@@ -34,12 +35,20 @@ export async function GET() {
     if (prodRes.error) throw prodRes.error
     if (bannerRes.error) throw bannerRes.error
 
+    const { plan, limits } = await getPlanPermissions(db, 'free')
+
     return NextResponse.json(
       {
         success: true,
         store_types: typeRes.data || [],
         products: prodRes.data || [],
         banners: bannerRes.data || [],
+        plan,
+        limits: {
+          max_food_items: limits.max_food_items,
+          max_products: limits.max_products,
+          max_tables: limits.max_tables,
+        },
       },
       {
         status: 200,

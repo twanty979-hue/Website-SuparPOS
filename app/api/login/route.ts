@@ -49,7 +49,9 @@ export async function POST(request: Request) {
       session: authData.session, // ส่งไปทั้งก้อนเพื่อให้ Flutter เอาไปใช้ต่อ
       brand_id: profile?.brand_id,
       shop_name: profile?.full_name,
-      redirectTo: !profile?.brand_id ? '/setup' : '/dashboard'
+      redirectTo: !profile?.brand_id
+        ? '/register'
+        : '/dashboard'
     };
 
     // ✅ 3. ส่งข้อมูลกลับพร้อมตั้งค่า CORS ให้ Android เรียกใช้ได้ไม่ติดขัด

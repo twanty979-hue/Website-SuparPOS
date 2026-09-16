@@ -19,6 +19,7 @@ export function useTables() {
     const [qrMode, setQrMode] = useState<'rotating' | 'static'>('rotating');
     const [searchTerm, setSearchTerm] = useState('');
     const [limitStatus, setLimitStatus] = useState<any>(null);
+    const [tableLimit, setTableLimit] = useState<{ plan: string; maxTables: number } | null>(null);
 
     useEffect(() => {
         init();
@@ -65,8 +66,28 @@ export function useTables() {
     const fetchTables = async () => { 
         setLoading(true);
         const res = await actions.getTablesAction(); 
-        if (res.success) setTables(res.data || []);
+        if (res.success) {
+            setTables(res.data || []);
+            setTableLimit({
+                plan: res.plan || 'free',
+                maxTables: res.limits?.max_tables || 0,
+            });
+        }
         setLoading(false);
+    };
+
+    const canStartAddingTable = () => {
+        const maxTables = tableLimit?.maxTables || 0;
+        const activeTables = tables.filter((table) => table.is_active !== false).length;
+        if (maxTables > 0 && activeTables >= maxTables) {
+            showAlert(
+                'warning',
+                'เพิ่มโต๊ะไม่ได้',
+                `แพ็กเกจ ${(tableLimit?.plan || 'free').toUpperCase()} รองรับสูงสุด ${maxTables} โต๊ะ (ขณะนี้มี ${activeTables} โต๊ะ)`
+            );
+            return false;
+        }
+        return true;
     };
 
     const addTable = async (label: string) => {
@@ -128,6 +149,6 @@ export function useTables() {
     return {
         tables, filteredTables, loading, brandId, qrLogoUrl, brandSlug, qrMode,
         searchTerm, setSearchTerm, addTable, deleteTable, refreshToken,
-        limitStatus 
+        limitStatus, tableLimit, canStartAddingTable,
     };
 }

@@ -2,7 +2,9 @@
 'use server'
 
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { exceedsLimit, getBrandPlanPermissions } from '@/lib/planPermissions';
 
 // Helper: สร้าง Client
 async function getSupabase() {
@@ -38,11 +40,16 @@ export async function getProductsInitialDataAction() {
     if (categoriesRes.error) throw categoriesRes.error;
     if (productsRes.error) throw productsRes.error;
 
+    const { plan, limits } = await getBrandPlanPermissions(getAdminSupabase(), brandId);
+
     return { 
         success: true, 
         brandId,
         categories: categoriesRes.data || [],
-        products: productsRes.data || []
+        products: productsRes.data || [],
+        plan,
+        limits: { max_food_items: limits.max_food_items },
+        usage: productsRes.data?.length || 0,
     };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -53,6 +60,27 @@ export async function upsertProductAction(payload: any) {
   const supabase = await getSupabase();
   try {
     const brandId = await getMyBrandId(supabase);
+
+    if (!payload.id) {
+      const admin = getAdminSupabase();
+      const { plan, limits } = await getBrandPlanPermissions(admin, brandId);
+      const { count, error: countError } = await admin
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_id', brandId)
+        .is('deleted_at', null);
+      if (countError) throw countError;
+
+      if (exceedsLimit((count || 0) + 1, limits.max_food_items)) {
+        return {
+          success: false,
+          code: 'FOOD_LIMIT_EXCEEDED',
+          error: `แพ็กเกจ ${plan.toUpperCase()} เพิ่มอาหารได้สูงสุด ${limits.max_food_items} รายการ (ขณะนี้มี ${count || 0} รายการ)`,
+          limit: limits.max_food_items,
+          usage: count || 0,
+        };
+      }
+    }
     
    // หาช่วงโค้ดนี้ใน upsertProductAction แล้วเพิ่มบรรทัด options เข้าไปครับ
     const productData = {
@@ -123,4 +151,12 @@ export async function toggleProductStatusAction(id: string, isAvailable: boolean
     } catch (error: any) {
       return { success: false, error: error.message };
     }
+}
+
+function getAdminSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
 }
