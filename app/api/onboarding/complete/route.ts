@@ -1,4 +1,4 @@
-﻿import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { exceedsLimit, getBrandPlanPermissions } from '@/lib/planPermissions'
 
@@ -64,6 +64,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ไม่มีสิทธิ์ตั้งค่าร้านนี้' }, { status: 403 })
     }
 
+<<<<<<< HEAD
     const { plan, limits } = await getBrandPlanPermissions(db, brandId)
     const responseLimits = {
       max_food_items: limits.max_food_items,
@@ -91,6 +92,20 @@ export async function POST(request: Request) {
     }
 
     // เก็บ config เดิมไว้ และค่อยทำเครื่องหมายสำเร็จหลังสร้างข้อมูลครบทุกส่วน
+=======
+    // 🛡️ โหลดโควตาแพ็กเกจ Free จาก system_settings
+    const { data: sysSettings } = await db
+      .from('system_settings')
+      .select('dashboard_permissions')
+      .eq('id', 'global')
+      .maybeSingle()
+
+    const freePerms = sysSettings?.dashboard_permissions?.free || {}
+    const maxAllowedFood = Number(freePerms.max_food_items ?? freePerms.max_products ?? 50)
+    const maxAllowedTables = Number(freePerms.max_tables ?? 10)
+
+    // 1. อัปเดต Timezone และบันทึกสถานะ Onboarding เสร็จสิ้น
+>>>>>>> 6c994807b40fda37d6f01fc0d6f258b5c4415505
     const { data: currentBrand } = await db
       .from('brands')
       .select('config')
@@ -101,8 +116,13 @@ export async function POST(request: Request) {
       onboarding_completed: true,
     }
 
+<<<<<<< HEAD
     // 2. สร้างโต๊ะตามจำนวนที่กำหนด (ถ้ายังไม่มีโต๊ะ)
     const { count: currentTableCount, error: tableCountError } = await db
+=======
+    // 2. สร้างโต๊ะตามจำนวนที่กำหนด (จำกัดไม่เกินโควตาของแผน)
+    const { count: currentTableCount } = await db
+>>>>>>> 6c994807b40fda37d6f01fc0d6f258b5c4415505
       .from('tables')
       .select('id', { count: 'exact', head: true })
       .eq('brand_id', brandId)
@@ -125,6 +145,14 @@ export async function POST(request: Request) {
       }, { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } })
     }
 
+<<<<<<< HEAD
+=======
+    const requestedTableCount = Number(tableCount) || 10
+    const finalTableCount = Math.max(
+      1,
+      maxAllowedTables > 0 ? Math.min(requestedTableCount, maxAllowedTables) : Math.min(requestedTableCount, 100)
+    )
+>>>>>>> 6c994807b40fda37d6f01fc0d6f258b5c4415505
     if (!currentTableCount || currentTableCount === 0) {
       const tables = Array.from({ length: finalTableCount }, (_, index) => ({
         brand_id: brandId,
@@ -159,13 +187,25 @@ export async function POST(request: Request) {
       if (bannerError) throw bannerError
     }
 
-    // 4. สร้างหมวดหมู่และสินค้าเฉพาะที่เลือก
+    // 4. สร้างหมวดหมู่และสินค้าเฉพาะที่เลือก (จำกัดสูงสุดตามโควตาของแผน ไม่ให้ Error)
+    const clampedProducts = Array.isArray(selectedProducts)
+      ? (maxAllowedFood > 0 ? selectedProducts.slice(0, maxAllowedFood) : selectedProducts)
+      : []
+
     let insertedProductsCount = 0
+<<<<<<< HEAD
     if ((!currentProductCount || currentProductCount === 0) && selectedProductList.length > 0) {
       // รวมหมวดหมู่ที่ไม่ซ้ำกัน
       const categoryNames = Array.from(
         new Set(
           selectedProductList
+=======
+    if (clampedProducts.length > 0) {
+      // รวมหมวดหมู่ที่ไม่ซ้ำกัน
+      const categoryNames = Array.from(
+        new Set(
+          clampedProducts
+>>>>>>> 6c994807b40fda37d6f01fc0d6f258b5c4415505
             .map((p: any) => p.category_name?.trim())
             .filter((name: string) => name && name.length > 0)
         )
@@ -196,7 +236,11 @@ export async function POST(request: Request) {
       }
 
       // แปลงข้อมูลสินค้าเพื่อบันทึกลงตาราง products
+<<<<<<< HEAD
       const productsToInsert = selectedProductList.map((p: any, index: number) => ({
+=======
+      const productsToInsert = clampedProducts.map((p: any, index: number) => ({
+>>>>>>> 6c994807b40fda37d6f01fc0d6f258b5c4415505
         brand_id: brandId,
         name: p.name?.trim() || `สินค้า ${index + 1}`,
         image_name: p.image_url || null,

@@ -123,13 +123,14 @@ export async function GET(request: Request) {
       );
     }
 
-    let ingredientsQuery = supabase
-      .from('ingredients')
-      .select(
-        `
+    const { error: testImgErr } = await supabase.from('ingredients').select('image_url').limit(0);
+    const hasImageCol = !testImgErr;
+
+    const selectQuery = `
           id,
           name,
           sku,
+          ${hasImageCol ? 'image_url,' : ''}
           category,
           category_id,
           base_unit,
@@ -170,9 +171,11 @@ export async function GET(request: Request) {
             average_cost,
             updated_at
           )
-        `,
-        { count: 'exact' },
-      )
+        `;
+
+    let ingredientsQuery = (supabase
+      .from('ingredients') as any)
+      .select(selectQuery, { count: 'exact' })
       .eq('brand_id', brandId)
       .eq('is_active', true)
       .order('name')
@@ -479,6 +482,17 @@ export async function POST(request: Request) {
     );
     if (ingredientError) throw ingredientError;
 
+    if (ingredientId && body.image_url) {
+      try {
+        await supabase
+          .from('ingredients')
+          .update({ image_url: String(body.image_url).trim() })
+          .eq('id', ingredientId);
+      } catch (_) {
+        // Safe fallback if column not yet added
+      }
+    }
+
     return NextResponse.json(
       { success: true, ingredient_id: ingredientId },
       { headers: corsHeaders },
@@ -511,6 +525,7 @@ export async function PATCH(request: Request) {
       'minimum_stock',
       'allow_negative',
       'is_active',
+      'image_url',
     ];
     const updates = Object.fromEntries(
       allowedFields
