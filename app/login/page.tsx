@@ -34,14 +34,6 @@ function LoginForm() {
   }, [resendCooldown]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const host = window.location.hostname;
-      if (host === 'suparpos.com' || host === 'www.suparpos.com') {
-        window.location.href = 'https://app.suparpos.com/';
-        return;
-      }
-    }
-
     const checkSession = async () => {
       const resetReason = searchParams.get('reset');
       if (resetReason === 'store_changed') {
