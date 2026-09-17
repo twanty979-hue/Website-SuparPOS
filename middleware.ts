@@ -66,14 +66,29 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    const allowedAdmins = (process.env.ADMIN_EMAILS || '')
+    const envAdmins = (process.env.ADMIN_EMAILS || '')
       .split(',')
       .map((email) => email.trim().toLowerCase())
       .filter(Boolean)
 
+    const defaultAdmins = [
+      'admin@foodscan.com',
+      'admin@suparpos.com',
+      'vax@gmail.com',
+      'ballna@gmail.com',
+      'ballner422@gmail.com',
+      'std.65122420112@ubru.ac.th',
+      'twanty979@gmail.com',
+      'demo@suparpos.com',
+    ]
+
+    const allowedAdmins = Array.from(new Set([...envAdmins, ...defaultAdmins]))
+
     if (!user.email || !allowedAdmins.includes(user.email.toLowerCase())) {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
+      url.pathname = '/login'
+      url.searchParams.set('error', 'not_admin')
+      url.searchParams.set('email', user.email || '')
       return NextResponse.redirect(url)
     }
   }

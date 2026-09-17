@@ -34,6 +34,16 @@ function LoginForm() {
   }, [resendCooldown]);
 
   useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'not_admin') {
+      const targetEmail = searchParams.get('email');
+      setErrorMsg(
+        targetEmail
+          ? `บัญชี (${targetEmail}) ไม่มีสิทธิ์เข้าถึงหน้าผู้ดูแลระบบ (Admin) กรุณาเข้าสู่ระบบด้วยอีเมล Admin`
+          : 'บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้าผู้ดูแลระบบ (Admin) กรุณาเข้าสู่ระบบด้วยอีเมล Admin'
+      );
+    }
+
     const checkSession = async () => {
       const resetReason = searchParams.get('reset');
       if (resetReason === 'store_changed') {
@@ -52,6 +62,12 @@ function LoginForm() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
+        const redirectTo = searchParams.get('redirectTo');
+        if (redirectTo && redirectTo.startsWith('/')) {
+          router.replace(redirectTo);
+          return;
+        }
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('brand_id, role')
@@ -113,6 +129,12 @@ function LoginForm() {
       });
 
       if (sessionError) throw sessionError;
+
+      const redirectTo = searchParams.get('redirectTo');
+      if (redirectTo && redirectTo.startsWith('/')) {
+        router.push(redirectTo);
+        return;
+      }
 
       router.push('/success');
     } catch (error: any) {
