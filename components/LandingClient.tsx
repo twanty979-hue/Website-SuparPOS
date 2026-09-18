@@ -74,6 +74,7 @@ export default function LandingClient() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [currentThemeIndex, setCurrentThemeIndex] = useState(0);
   const [isPhoneExiting, setIsPhoneExiting] = useState(false);
+  const [bannerIndex, setBannerIndex] = useState(0);
 
   useEffect(() => {
       let swapTimer: ReturnType<typeof setTimeout> | undefined;
@@ -470,7 +471,10 @@ export default function LandingClient() {
             </div>
         </div>
       </section>
-      
+
+      {/* 🖼️ GenAI Banner Slider */}
+      <BannerSlider currentIndex={bannerIndex} onChangeIndex={setBannerIndex} />
+
       {/* 3. How It Works */}
       <section id="howitworks" className="py-24 bg-emerald-50/30 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white to-transparent opacity-60 pointer-events-none"></div>
@@ -735,6 +739,85 @@ export default function LandingClient() {
       {/* Shared Footer */}
       <Footer />
 
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   🖼️  GenAI Banner Slider Component
+   ───────────────────────────────────────── */
+const HERO_BANNERS = [
+  { src: '/images/genai-banner-01.png', alt: 'POS All-in-One ขายได้ครบบนอุปกรณ์ที่คุณใช้' },
+  { src: '/images/genai-banner-02.png', alt: 'เครื่อง POS พร้อมระบบจัดการร้าน' },
+  { src: '/images/genai-banner-03.png', alt: 'รับชำระเงินง่าย จบการขายพร้อมใบเสร็จ' },
+  { src: '/images/genai-banner-04.png', alt: 'สแกนสินค้าเพิ่มรายการอย่างรวดเร็ว' },
+  { src: '/images/genai-banner-05.png', alt: 'เพิ่มสินค้าเข้าระบบได้ง่าย' },
+];
+
+function BannerSlider({
+  currentIndex,
+  onChangeIndex,
+}: {
+  currentIndex: number;
+  onChangeIndex: (i: number) => void;
+}) {
+  const total = HERO_BANNERS.length;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      onChangeIndex((currentIndex + 1) % total);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [currentIndex, onChangeIndex, total]);
+
+  const prev = () => onChangeIndex((currentIndex - 1 + total) % total);
+  const next = () => onChangeIndex((currentIndex + 1) % total);
+
+  return (
+    <div className="w-full relative overflow-hidden bg-black" style={{ aspectRatio: '16/5' }}>
+      {/* Slides */}
+      {HERO_BANNERS.map((b, i) => (
+        <div
+          key={i}
+          className="absolute inset-0 transition-opacity duration-700"
+          style={{ opacity: i === currentIndex ? 1 : 0, zIndex: i === currentIndex ? 2 : 1 }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={b.src} alt={b.alt} className="w-full h-full object-cover" />
+        </div>
+      ))}
+
+      {/* Prev / Next */}
+      <button
+        onClick={prev}
+        aria-label="ก่อนหน้า"
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-black/50 hover:bg-emerald-600 backdrop-blur-sm border border-white/20 text-white text-xl flex items-center justify-center transition-all"
+      >
+        ‹
+      </button>
+      <button
+        onClick={next}
+        aria-label="ถัดไป"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-black/50 hover:bg-emerald-600 backdrop-blur-sm border border-white/20 text-white text-xl flex items-center justify-center transition-all"
+      >
+        ›
+      </button>
+
+      {/* Dots */}
+      <div className="absolute bottom-4 right-5 z-10 flex gap-2">
+        {GENAI_BANNERS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => onChangeIndex(i)}
+            aria-label={`สไลด์ ${i + 1}`}
+            className={`rounded-full transition-all ${
+              i === currentIndex
+                ? 'w-6 h-2.5 bg-emerald-400'
+                : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
