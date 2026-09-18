@@ -9,7 +9,7 @@ import {
   generateFAQJsonLd
 } from '@/lib/seo';
 
-// 1. Static Metadata for Homepage
+// 1. Static Metadata for Homepageสา่สา่าส่าส
 export const metadata: Metadata = {
   title: "POS Foodscan | โปรแกรมขายหน้าร้านและระบบ POS",
   description: "POS Foodscan โปรแกรมขายหน้าร้านและระบบ POS สำหรับร้านค้าปลีก คาเฟ่ และร้านอาหาร จัดการยอดขาย สต๊อก บาร์โค้ด และสแกนสั่งอาหารผ่าน QR Code เริ่มต้นใช้งานฟรี",
