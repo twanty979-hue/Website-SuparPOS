@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '',
     '/features',
     '/pricing',
+    '/shop',
     '/manual',
     '/pos-retail',
     '/pos-cafe',
@@ -29,7 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     if (route === '') {
       priority = 1.0
       changeFrequency = 'daily'
-    } else if (['/features', '/pricing', '/pos-retail', '/pos-cafe', '/pos-restaurant', '/qr-ordering', '/stock-barcode', '/online-offline-pos', '/foodscan'].includes(route)) {
+    } else if (['/features', '/pricing', '/shop', '/pos-retail', '/pos-cafe', '/pos-restaurant', '/qr-ordering', '/stock-barcode', '/online-offline-pos', '/foodscan'].includes(route)) {
       priority = 0.9
       changeFrequency = 'weekly'
     } else if (['/terms', '/privacy', '/refund'].includes(route)) {
