@@ -1,18 +1,28 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { JsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo';
+import {
+  JsonLd,
+  generateBreadcrumbJsonLd,
+  generateFAQJsonLd,
+  generateSoftwareApplicationJsonLd,
+  generatePricingProductJsonLd,
+} from '@/lib/seo';
+import { getPublicPricingPlans } from '@/lib/planServer';
+import PricingCards from './PricingCards';
+
+export const revalidate = 60;
 
 // 1. Static Metadata for Pricing Page
 export const metadata: Metadata = {
-  title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan",
-  description: "เช็คราคาโปรแกรม POS ที่คุ้มค่า เริ่มต้นใช้งานฟรีแผน Starter หรือเลือกสมัครแผน Basic 250 บาท และแผน Pro 500 บาทต่อเดือนโดยไม่มีสัญญาผูกมัด",
+  title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan | เริ่มต้นฟรี",
+  description: "เช็คราคาโปรแกรม POS และระบบสแกนสั่งอาหาร POS Foodscan เริ่มต้นใช้งานฟรีแผน Starter (1,000 ออเดอร์/เดือน) หรือเลือกสมัครแผน Basic เริ่มต้น 212.5 บาท และแผน Pro 425 บาทต่อเดือน (ลดพิเศษ 15% ซื้อผ่านเว็บ และลด 25% รายปี) ไม่มีสัญญาผูกมัด",
   alternates: {
     canonical: "https://suparpos.com/pricing"
   },
   openGraph: {
-    title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan",
-    description: "เช็คราคาโปรแกรม POS ที่คุ้มค่า เริ่มต้นใช้งานฟรีแผน Starter หรือเลือกสมัครแผน Basic 250 บาท และแผน Pro 500 บาทต่อเดือนโดยไม่มีสัญญาผูกมัด",
+    title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan | เริ่มต้นฟรี",
+    description: "เช็คราคาโปรแกรม POS และระบบสแกนสั่งอาหาร POS Foodscan เริ่มต้นใช้งานฟรีแผน Starter (1,000 ออเดอร์/เดือน) หรือเลือกสมัครแผน Basic เริ่มต้น 212.5 บาท และแผน Pro 425 บาทต่อเดือน (ลดพิเศษ 15% ซื้อผ่านเว็บ และลด 25% รายปี) ไม่มีสัญญาผูกมัด",
     url: "https://suparpos.com/pricing",
     siteName: "POS Foodscan",
     locale: "th_TH",
@@ -28,8 +38,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan",
-    description: "เช็คราคาโปรแกรม POS ที่คุ้มค่า เริ่มต้นใช้งานฟรีแผน Starter หรือเลือกสมัครแผน Basic 250 บาท และแผน Pro 500 บาทต่อเดือนโดยไม่มีสัญญาผูกมัด",
+    title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan | เริ่มต้นฟรี",
+    description: "เช็คราคาโปรแกรม POS และระบบสแกนสั่งอาหาร POS Foodscan เริ่มต้นใช้งานฟรีแผน Starter (1,000 ออเดอร์/เดือน) หรือเลือกสมัครแผน Basic เริ่มต้น 212.5 บาท และแผน Pro 425 บาทต่อเดือน (ลดพิเศษ 15% ซื้อผ่านเว็บ และลด 25% รายปี) ไม่มีสัญญาผูกมัด",
     images: ["/opengraph-image.png"],
   }
 };
@@ -37,29 +47,39 @@ export const metadata: Metadata = {
 const PRICING_FAQS = [
   {
     question: "แพ็กเกจแต่ละแผนราคาของ POS Foodscan ต่างกันอย่างไร?",
-    answer: "แพ็กเกจ Starter ให้บริการฟรีสำหรับการเริ่มต้นคิดเงิน 100 ออเดอร์ต่อเดือน ส่วนแพ็กเกจ Basic (250 บ./เดือน) รองรับยอดขายและออเดอร์ไม่จำกัด และแพ็กเกจ PRO (500 บ./เดือน) เพิ่มระบบพนักงานและการกำหนดสิทธิ์พนักงาน"
+    answer: "ทุกแพ็กเกจสามารถเลือกใช้งานธีมร้านค้าได้ฟรีทั้งหมด โดยแผน Free ให้บริการฟรีตลอดชีพสำหรับการเริ่มต้น คิดเงินหน้าร้านไม่จำกัด สแกนสั่งอาหาร 1,000 ออเดอร์/เดือน และดู Dashboard ย้อนหลัง 30 วัน, แผน Basic (ปกติ 250 บ. พิเศษซื้อผ่านเว็บลด 15% เหลือ 212.5 บ./เดือน หรือรายปีลด 25% เหลือ 2,250 บ./ปี) ปลดล็อกออเดอร์ไม่จำกัด และ Export Excel, และแผน Pro (ปกติ 500 บ. พิเศษซื้อผ่านเว็บลด 15% เหลือ 425 บ./เดือน หรือรายปีลด 25% เหลือ 4,500 บ./ปี) เพิ่มระบบจัดการพนักงาน 3 คน และ Dashboard ขั้นสูง"
   },
   {
     question: "การทดลองใช้ฟรีจำเป็นต้องใช้บัตรเครดิตหรือไม่?",
-    answer: "ไม่ต้องใช้บัตรเครดิตครับ คุณสามารถสมัครสมาชิกและเริ่มต้นใช้งานแผน Starter ได้ฟรีทันทีโดยไม่มีข้อผูกมัดใดๆ"
+    answer: "ไม่ต้องใช้บัตรเครดิตครับ คุณสามารถสมัครสมาชิกและเริ่มต้นใช้งานแผน Free ได้ฟรีทันทีโดยไม่มีข้อผูกมัดใดๆ"
   },
   {
-    question: "สามารถยกเลิกหรือเปลี่ยนแพ็กเกจภายหลังได้หรือไม่?",
-    answer: "ได้ครับ ระบบแผนราคาของเราเป็นรายเดือน ไม่มีข้อผูกมัดระยะยาว คุณสามารถเลือกอัปเกรดหรือยกเลิกการใช้งานเมื่อใดก็ได้ตามต้องการ"
+    question: "สามารถเปลี่ยนหรือยกเลิกแพ็กเกจภายหลังได้หรือไม่?",
+    answer: "ได้ครับ ระบบแผนราคาของเรามีความยืดหยุ่น ไม่มีข้อผูกมัดระยะยาว คุณสามารถเลือกอัปเกรดหรือยกเลิกการใช้งานเมื่อใดก็ได้ตามต้องการ"
+  },
+  {
+    question: "หากสมัครแบบรายปี มีส่วนลดหรือไม่?",
+    answer: "มีส่วนลดพิเศษสูงสุดถึง 25% สำหรับการชำระแบบรายปี และเมื่อสมัครแพ็กเกจรายเดือนผ่านหน้าเว็บไซต์ รับส่วนลดทันที 15% พร้อมรับ Coins โบนัสพิเศษสำหรับใช้งานในระบบ"
   }
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const { plans, seoOffers } = await getPublicPricingPlans();
+
   const breadcrumbSchema = generateBreadcrumbJsonLd([
     { name: "หน้าแรก", item: "https://suparpos.com" },
     { name: "ราคาแพ็กเกจ", item: "https://suparpos.com/pricing" }
   ]);
   const faqSchema = generateFAQJsonLd(PRICING_FAQS);
+  const softwareSchema = generateSoftwareApplicationJsonLd(seoOffers);
+  const productSchema = generatePricingProductJsonLd(seoOffers);
 
   return (
     <>
       <JsonLd data={breadcrumbSchema} />
       <JsonLd data={faqSchema} />
+      <JsonLd data={softwareSchema} />
+      <JsonLd data={productSchema} />
 
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-white py-20 px-4 sm:px-6 lg:px-8 font-sans">
 
@@ -70,159 +90,20 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto relative z-10">
 
           {/* Header Section */}
-          <div className="text-center mb-16 pt-10">
+          <div className="text-center mb-12 pt-10">
+            <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black tracking-wider uppercase mb-4">
+              PRICING PLANS
+            </span>
             <h1 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-4">
               ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan
             </h1>
             <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              เริ่มต้นใช้งานฟรีได้ทันที หรืออัปเกรดเพื่อฟีเจอร์ระดับโปรที่ช่วยให้ร้านของคุณเติบโตอย่างก้าวกระโดดกับ POS Foodscan
+              เริ่มต้นใช้งานฟรีได้ทันที หรืออัปเกรดเพื่อฟีเจอร์ระดับโปร พิเศษลดทันที 15% เมื่อซื้อผ่านเว็บไซต์ หรือประหยัดสูงสุด 25% เมื่อเลือกแพ็กเกจรายปี
             </p>
           </div>
 
-          {/* Pricing Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch max-w-5xl mx-auto">
-
-            {/* 1. FREE Plan */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-lg shadow-slate-200/50 hover:shadow-xl transition-all duration-300 relative group flex flex-col justify-between">
-              <div>
-                <div className="mb-6 text-center">
-                  <h3 className="text-sm font-bold text-slate-400 tracking-widest uppercase mb-2">STARTER</h3>
-                  <div className="flex items-center justify-center gap-1 mb-2">
-                    <span className="text-4xl font-black text-slate-800">ฟรี</span>
-                  </div>
-                  <p className="text-xs text-slate-500">เริ่มต้นใช้งาน</p>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-slate-400 mt-1"></i>
-                    เลือกได้ 2 ธีม
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-slate-400 mt-1"></i>
-                    รองรับ 100 ออเดอร์/เดือน
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-slate-400 mt-1"></i>
-                    Dashboard ย้อนหลัง 60 วัน
-                  </li>
-                </ul>
-              </div>
-
-              <Link
-                href="https://app.suparpos.com/"
-                className="w-full block text-center py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:border-slate-800 hover:text-slate-800 transition-colors mt-auto"
-              >
-                เริ่มต้นใช้งานฟรี
-              </Link>
-            </div>
-
-            {/* 2. BASIC Plan */}
-            <div className="bg-white rounded-3xl p-6 border border-emerald-200 shadow-lg shadow-emerald-200/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="mb-6 text-center">
-                  <h3 className="text-sm font-bold text-emerald-500 tracking-widest uppercase mb-2">BASIC</h3>
-                  <div className="flex items-baseline justify-center gap-1 mb-2">
-                    <span className="text-4xl font-black text-slate-800">250</span>
-                    <span className="text-sm text-slate-400 font-medium">บ./เดือน</span>
-                  </div>
-                  <p className="text-xs text-slate-500">สำหรับร้านขนาดเล็ก</p>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-500 mt-1"></i>
-                    เลือกได้ 4 ธีม
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-500 mt-1"></i>
-                    ออเดอร์ไม่จำกัด
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-500 mt-1"></i>
-                    สร้าง QR Code ไม่จำกัด
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-500 mt-1"></i>
-                    คิดเงินได้ไม่จำกัด
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-500 mt-1"></i>
-                    Dashboard ไม่จำกัดย้อนหลัง
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-500 mt-1"></i>
-                    Export รายงาน (Excel)
-                  </li>
-                </ul>
-              </div>
-
-              <Link
-                href="https://app.suparpos.com/"
-                className="w-full block text-center py-2.5 rounded-xl bg-emerald-50 text-emerald-600 font-bold hover:bg-emerald-100 transition-colors mt-auto"
-              >
-                เลือกแพ็กเกจนี้
-              </Link>
-            </div>
-
-            {/* 3. PRO Plan */}
-            <div className="bg-white rounded-3xl p-6 border-2 border-emerald-500 shadow-2xl shadow-emerald-500/20 relative transform md:-translate-y-4 flex flex-col justify-between z-10">
-
-              <div>
-                <div className="mb-6 text-center pt-2">
-                  <h3 className="text-sm font-bold text-emerald-600 tracking-widest uppercase mb-2">PRO</h3>
-                  <div className="flex items-baseline justify-center gap-1 mb-2">
-                    <span className="text-4xl font-black text-slate-800">500</span>
-                    <span className="text-sm text-slate-400 font-medium">บ./เดือน</span>
-                  </div>
-                  <p className="text-xs text-slate-500">สำหรับร้านที่ต้องการระบบพนักงาน</p>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                   <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-600 mt-1"></i>
-                    เลือกได้ 7 ธีม
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-600 mt-1"></i>
-                    สร้าง QR Code ไม่จำกัด
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-600 mt-1"></i>
-                    คิดเงินได้ไม่จำกัด
-                  </li>
-                   <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-600 mt-1"></i>
-                     Dashboard ไม่จำกัดย้อนหลัง
-                  </li>
-                  <li className="flex items-start gap-3 text-sm text-slate-600">
-                    <i className="fa-solid fa-check text-emerald-600 mt-1"></i>
-                     Export รายงาน (Excel)
-                  </li>
-                  <li className="flex items-start gap-3 text-sm font-medium text-emerald-700">
-                     <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                        <i className="fa-solid fa-check text-emerald-600 text-xs"></i>
-                     </div>
-                    ระบบพนักงาน
-                  </li>
-                  <li className="flex items-start gap-3 text-sm font-medium text-emerald-700">
-                     <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                        <i className="fa-solid fa-check text-emerald-600 text-xs"></i>
-                     </div>
-                    กำหนดสิทธิ์พนักงาน
-                  </li>
-                </ul>
-              </div>
-
-              <Link
-                href="https://app.suparpos.com/"
-                className="w-full block text-center py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold hover:from-emerald-700 hover:to-teal-600 shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.02] mt-auto"
-              >
-                เลือกแพ็กเกจนี้
-              </Link>
-            </div>
-
-          </div>
+          {/* Dynamic 4 Cards Grid with Monthly / Yearly Toggle */}
+          <PricingCards plans={plans} />
 
           {/* Visual FAQ Section for Pricing Page */}
           <div className="max-w-3xl mx-auto mt-24 border-t border-slate-200/80 pt-16">
@@ -249,7 +130,7 @@ export default function PricingPage() {
           {/* Contact Link */}
           <div className="mt-16 text-center">
             <p className="text-slate-500">
-              มีคำถามเพิ่มเติม? <Link href="/contact" className="text-emerald-600 font-bold hover:underline">ติดต่อทีมขายของเรา</Link>
+              มีคำถามเพิ่มเติมหรือต้องการคำแนะนำ? <Link href="https://app.suparpos.com/" className="text-emerald-600 font-bold hover:underline">ติดต่อเราได้ทันที</Link>
             </p>
           </div>
 

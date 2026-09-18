@@ -48,7 +48,7 @@ const HOME_FAQS = [
   },
   {
     question: "มีค่าบริการรายเดือนหรือไม่?",
-    answer: "มีแผนฟรีสำหรับการเริ่มต้นใช้งาน และแพ็กเกจระดับโปรเริ่มต้นที่ 250 บาทต่อเดือน สำหรับร้านที่ต้องการออเดอร์และหน้าเว็บไม่จำกัด"
+    answer: "มีแผน Free ให้ใช้งานฟรีตลอดชีพ (คิดเงินหน้าร้านไม่จำกัด, 1,000 ออเดอร์สแกนสั่งอาหารต่อเดือน) และมีแพ็กเกจระดับพรีเมียมเริ่มต้นที่ 250 บาทต่อเดือน (แผน Basic) และแผน Pro 500 บาทต่อเดือน สำหรับร้านที่ต้องการฟีเจอร์ระดับสูงและออเดอร์ไม่จำกัด"
   },
   {
     question: "รองรับการพิมพ์ใบเสร็จและบาร์โค้ดอย่างไร?",
@@ -60,10 +60,19 @@ const HOME_FAQS = [
   }
 ];
 
-export default function Page() {
+export default async function Page() {
+  let dynamicOffers;
+  try {
+    const { getPublicPricingPlans } = await import('@/lib/planServer');
+    const { seoOffers } = await getPublicPricingPlans();
+    dynamicOffers = seoOffers;
+  } catch {
+    // Fallback to default offers
+  }
+
   const orgSchema = generateOrganizationJsonLd();
   const websiteSchema = generateWebsiteJsonLd();
-  const softwareSchema = generateSoftwareApplicationJsonLd();
+  const softwareSchema = generateSoftwareApplicationJsonLd(dynamicOffers);
   const faqSchema = generateFAQJsonLd(HOME_FAQS);
 
   return (

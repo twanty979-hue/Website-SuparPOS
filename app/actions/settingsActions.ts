@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import dayjs from 'dayjs';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
+
 import { createPaymentLog, updatePaymentLogStatus } from './logActions'; 
 
 // 🚨 นำเข้า Key และ Merchant ID ของ Beam
@@ -44,10 +45,13 @@ async function calculatePriceFromDB(brandId: string, planKey: string, period: 'm
 
   if (period === 'monthly') {
       if (isFirstTime && plan.first_time_price_monthly !== null && plan.first_time_price_monthly !== undefined) return Number(plan.first_time_price_monthly);
-      return Number(plan.price_monthly);
+      // พิเศษชำระผ่านเว็บลด 15%
+      return Math.round(Number(plan.price_monthly) * 0.85);
   } else {
       if (isFirstTime && plan.first_time_price_yearly !== null && plan.first_time_price_yearly !== undefined) return Number(plan.first_time_price_yearly);
-      return Number(plan.price_yearly);
+      // พิเศษชำระผ่านเว็บรายปีลด 25% (จากราคาปกติ 12 เดือน)
+      const fullYearly = Number(plan.price_monthly) * 12;
+      return Math.round(fullYearly * 0.75);
   }
 }
 

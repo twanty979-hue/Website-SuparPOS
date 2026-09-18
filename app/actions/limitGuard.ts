@@ -5,8 +5,8 @@ import 'server-only';
 import { createClient } from '@supabase/supabase-js';
 import dayjs from 'dayjs';
 
-// 🔧 CONFIG: แพ็กเกจฟรีรองรับ 100 ออเดอร์ต่อรอบ 30 วัน
-const MAX_FREE_ORDERS = 1000;
+// 🔧 CONFIG: กำหนดโควต้าสแกนสั่งอาหารสำหรับแพ็กเกจฟรี (บิล/เดือน) - ปรับเปลี่ยนตัวเลขตรงนี้ได้เลย
+export const MAX_FREE_ORDERS = 1000;
 
 // Helper สร้าง Supabase
 async function getSupabase() {
@@ -69,14 +69,14 @@ export async function checkOrderLimitOrThrow(brandId: string) {
 
     // 4. ตัดสิน: ถ้าเกิน Limit -> ระเบิด Error
     if (usage >= MAX_FREE_ORDERS) {
-        throw new Error(`🚫 แพ็กเกจฟรีจำกัดบิล QR ${MAX_FREE_ORDERS} บิล/เดือน (ใช้ไปแล้ว ${usage}) กรุณาอัปเกรด!`);
+        throw new Error(`🚫 แพ็กเกจฟรีจำกัดสแกนสั่งอาหาร ${MAX_FREE_ORDERS} บิล/เดือน (ใช้ไปแล้ว ${usage}) กรุณาอัปเกรด!`);
     }
 
     return true; 
 }
 
 // ----------------------------------------------------------------------------
-// 📊 ฟังก์ชัน 2: ดึงข้อมูลสถานะไปโชว์ (ใช้แสดงผลที่ปุ่ม QR Code)
+// 📊 ฟังก์ชัน 2: ดึงข้อมูลสถานะไปโชว์ (ใช้แสดงผลที่ปุ่ม QR Code และหน้าตั้งค่าร้านค้า)
 // ----------------------------------------------------------------------------
 export async function getOrderUsage(brandId: string, customSupabase?: any) {
     const supabase = customSupabase || await getSupabase();

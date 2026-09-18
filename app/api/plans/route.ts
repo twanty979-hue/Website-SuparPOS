@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
+import { mergePlanContents, DEFAULT_PLAN_CONTENTS } from '@/lib/planContents';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -35,11 +36,12 @@ export async function GET(request: Request) {
 
     const brandId = profile.brand_id;
 
-    // ข้อมูลทั้งสามชุดไม่ขึ้นต่อกัน จึงดึงพร้อมกันเพื่อลดเวลา response
+    // ข้อมูลทั้งหมดไม่ขึ้นต่อกัน จึงดึงพร้อมกันเพื่อลดเวลา response
     const [
       { data: plans, error: planError },
       { data: successfulPayments, error: paymentError },
       { data: brand, error: brandError },
+      { data: planContentsRows },
     ] = await Promise.all([
       supabaseAdmin
         .from('subscription_plans')
@@ -57,11 +59,53 @@ export async function GET(request: Request) {
         .select('plan, expiry_basic, expiry_pro, expiry_ultimate')
         .eq('id', brandId)
         .single(),
+      supabaseAdmin
+        .from('plan_contents')
+        .select('*'),
     ]);
 
     if (planError) throw planError;
     if (paymentError) throw paymentError;
     if (brandError) throw brandError;
+
+    const planContents = mergePlanContents(planContentsRows);
+
+    const plansWithContent = (plans || []).map((p: any) => {
+      const content = planContents[p.plan_key as keyof typeof planContents];
+      return {
+        ...p,
+        name: content?.name || p.name,
+        subtitle: content?.subtitle || '',
+        badge: content?.badge || '',
+        features: content?.features || [],
+        metric_1_label: content?.metric_1_label || '',
+        metric_1_value: content?.metric_1_value || '',
+        metric_2_label: content?.metric_2_label || '',
+        metric_2_value: content?.metric_2_value || '',
+      };
+    });
+
+    const hasFreeInDb = plansWithContent.some((p: any) => (p.plan_key || '').toLowerCase() === 'free');
+    if (!hasFreeInDb) {
+      const freeContent = planContents.free || DEFAULT_PLAN_CONTENTS.free;
+      plansWithContent.unshift({
+        id: 'free',
+        plan_key: 'free',
+        name: freeContent.name,
+        subtitle: freeContent.subtitle,
+        badge: freeContent.badge,
+        price_monthly: 0,
+        price_yearly: 0,
+        coins_monthly: 0,
+        coins_yearly: 0,
+        features: freeContent.features,
+        metric_1_label: freeContent.metric_1_label,
+        metric_1_value: freeContent.metric_1_value,
+        metric_2_label: freeContent.metric_2_label,
+        metric_2_value: freeContent.metric_2_value,
+        is_active: true,
+      });
+    }
 
     const isFirstTimeBuyer = !successfulPayments?.length;
 
@@ -91,7 +135,8 @@ export async function GET(request: Request) {
     // 🚀 ส่งข้อมูลแพลนปัจจุบัน วันหมดอายุ และจำนวนวันคงเหลือกลับไปพร้อมกันทีเดียว
     return new NextResponse(JSON.stringify({ 
         success: true, 
-        plans, 
+        plans: plansWithContent, 
+        planContents,
         isFirstTimeBuyer,
         currentPlan,
         expiryDate,

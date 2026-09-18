@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getFirebaseAdmin } from '@/lib/firebaseAdmin';
+import { mergePlanContents, DEFAULT_PLAN_CONTENTS, PLAN_CONTENTS_MIGRATION_SQL } from '@/lib/planContents';
 
 const DEFAULT_DASHBOARD_PERMISSIONS = {
-  free: { max_days: 30, allow_advanced: false, receipt_max_days: 7, max_food_items: 50, max_products: 50, max_tables: 10 },
-  basic: { max_days: 0, allow_advanced: false, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0 },
-  pro: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0 },
-  ultimate: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0 }
+  free: { max_days: 30, allow_advanced: false, receipt_max_days: 7, max_food_items: 50, max_products: 50, max_tables: 10, max_orders: 1000 },
+  basic: { max_days: 0, allow_advanced: false, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 },
+  pro: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 },
+  ultimate: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 }
 };
 
 const mergePermissions = (saved: any) => {
@@ -77,6 +78,23 @@ async function broadcastSystemStatus(settings: {
 export async function GET() {
   try {
     const supabase = getSupabaseAdmin();
+
+    // Fetch plan_contents
+    let planContents = DEFAULT_PLAN_CONTENTS;
+    let needsPlanContentsMigration = false;
+    try {
+      const { data: pcRows, error: pcErr } = await supabase.from('plan_contents').select('*');
+      if (pcErr) {
+        needsPlanContentsMigration = true;
+      } else if (pcRows && pcRows.length > 0) {
+        planContents = mergePlanContents(pcRows);
+      } else {
+        needsPlanContentsMigration = true;
+      }
+    } catch {
+      needsPlanContentsMigration = true;
+    }
+
     const { data, error } = await supabase
       .from('system_settings')
       .select('*')
@@ -118,7 +136,10 @@ export async function GET() {
         settings: {
           ...inserted,
           dashboard_permissions: inserted?.dashboard_permissions || DEFAULT_DASHBOARD_PERMISSIONS,
-        }
+        },
+        plan_contents: planContents,
+        needsPlanContentsMigration,
+        planContentsMigrationSql: PLAN_CONTENTS_MIGRATION_SQL,
       });
     }
 
@@ -127,7 +148,10 @@ export async function GET() {
       settings: {
         ...data,
         dashboard_permissions: mergePermissions(data?.dashboard_permissions),
-      }
+      },
+      plan_contents: planContents,
+      needsPlanContentsMigration,
+      planContentsMigrationSql: PLAN_CONTENTS_MIGRATION_SQL,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -215,14 +239,62 @@ ADD COLUMN IF NOT EXISTS dashboard_permissions JSONB DEFAULT '{"free":{"max_days
     }).catch(e => console.error('[FCM system_status] broadcast error:', e));
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ── บันทึกข้อมูล plan_contents ถ้ามีการส่งมา ─────────────────────────────
+    let planContents = DEFAULT_PLAN_CONTENTS;
+    let needsPlanContentsMigration = false;
+    if (body.plan_contents && typeof body.plan_contents === 'object') {
+      try {
+        const upsertList = Object.values(body.plan_contents).map((item: any) => ({
+          plan_key: item.plan_key,
+          name: item.name || '',
+          subtitle: item.subtitle ?? '',
+          badge: item.badge ?? '',
+          metric_1_label: item.metric_1_label ?? '',
+          metric_1_value: item.metric_1_value ?? '',
+          metric_2_label: item.metric_2_label ?? '',
+          metric_2_value: item.metric_2_value ?? '',
+          features: Array.isArray(item.features) ? item.features : [],
+          updated_at: new Date().toISOString(),
+        }));
+        const { error: pcUpsertErr } = await supabase
+          .from('plan_contents')
+          .upsert(upsertList, { onConflict: 'plan_key' });
+        if (pcUpsertErr) {
+          needsPlanContentsMigration = true;
+          console.warn('[AppSettings] plan_contents upsert error:', pcUpsertErr.message);
+        }
+      } catch (err: any) {
+        needsPlanContentsMigration = true;
+        console.warn('[AppSettings] Failed to save plan_contents:', err?.message);
+      }
+    }
+
+    try {
+      const { data: pcRows, error: pcErr } = await supabase.from('plan_contents').select('*');
+      if (pcErr) {
+        needsPlanContentsMigration = true;
+        if (body.plan_contents) planContents = body.plan_contents;
+      } else if (pcRows && pcRows.length > 0) {
+        planContents = mergePlanContents(pcRows);
+      } else if (body.plan_contents) {
+        planContents = body.plan_contents;
+      }
+    } catch {
+      needsPlanContentsMigration = true;
+      if (body.plan_contents) planContents = body.plan_contents;
+    }
+
     return NextResponse.json({
       success: true,
       needsColumnMigration,
       migrationSql: needsColumnMigration ? migrationSql : undefined,
+      needsPlanContentsMigration,
+      planContentsMigrationSql: needsPlanContentsMigration ? PLAN_CONTENTS_MIGRATION_SQL : undefined,
       settings: {
         ...data,
         dashboard_permissions: mergePermissions(data?.dashboard_permissions || body.dashboard_permissions),
-      }
+      },
+      plan_contents: planContents,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

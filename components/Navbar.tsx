@@ -21,7 +21,6 @@ export default function Navbar() {
     { href: '/pricing', label: 'ราคา' },
     { href: '/manual', label: 'วิธีใช้งาน' },
     { href: '/download', label: 'ดาวน์โหลด', hasIcon: true },
-    { href: '/setup-printer', label: 'ตั้งค่าเครื่องพิมพ์' },
   ];
 
   return (
