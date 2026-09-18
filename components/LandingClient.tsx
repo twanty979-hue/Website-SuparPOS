@@ -805,7 +805,7 @@ function BannerSlider({
 
       {/* Dots */}
       <div className="absolute bottom-4 right-5 z-10 flex gap-2">
-        {GENAI_BANNERS.map((_, i) => (
+        {HERO_BANNERS.map((_, i) => (
           <button
             key={i}
             onClick={() => onChangeIndex(i)}

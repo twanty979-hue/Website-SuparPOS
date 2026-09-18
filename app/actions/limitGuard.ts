@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import dayjs from 'dayjs';
 
 // 🔧 CONFIG: กำหนดโควต้าสแกนสั่งอาหารสำหรับแพ็กเกจฟรี (บิล/เดือน) - ปรับเปลี่ยนตัวเลขตรงนี้ได้เลย
-export const MAX_FREE_ORDERS = 1000;
+const MAX_FREE_ORDERS = 1000;
 
 // Helper สร้าง Supabase
 async function getSupabase() {
