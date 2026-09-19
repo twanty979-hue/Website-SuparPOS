@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getAuthenticatedUser } from '@/lib/authHelper';
 
 import {
   getBrandPlanPermissions,
@@ -43,10 +44,8 @@ export async function GET(request: Request) {
 
     let context = await getPlanPermissions(db, requestedPlan);
 
-    if (token) {
-      const {
-        data: { user },
-      } = await db.auth.getUser(token);
+    if (authorization) {
+      const { user } = await getAuthenticatedUser(request);
 
       if (user) {
         const { data: profile } = await db

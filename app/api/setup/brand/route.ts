@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
+import { getAuthenticatedUser } from '@/lib/authHelper';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -15,27 +16,17 @@ export async function OPTIONS() {
 export async function POST(request: Request) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    // 🛡️ ขั้นตอนที่ 1: ดึง Token จาก Header ที่ Flutter ส่งมา
-    const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.split(' ')[1];
+    // 🛡️ ขั้นตอนที่ 1 & 2: ตรวจสอบและดึง User จาก Token (รองรับ Expired Token อัตโนมัติ)
+    const { user } = await getAuthenticatedUser(request);
 
-    if (!token) {
-      return NextResponse.json(
-        { error: "ไม่พบสิทธิ์ในการเข้าถึงระบบ" }, 
-        { status: 401, headers: { 'Access-Control-Allow-Origin': '*' } }
-      );
-    }
-
-    // 🛡️ ขั้นตอนที่ 2: แกะ Token ตรวจสอบกับ Supabase Auth เพื่อเอา User ID ที่แท้จริง
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json(
         { error: "เซสชันหมดอายุหรือสิทธิ์ไม่ถูกต้อง" }, 
         { status: 401, headers: { 'Access-Control-Allow-Origin': '*' } }
       );
     }
 
-    const secureUserId = user.id; // นี่คือ ID ของคนที่ล็อกอินอยู่ชัวร์ๆ ปลอมไม่ได้แล้ว
+    const secureUserId = user.id;
     const { shopName, shopPhone } = await request.json();
 
     if (!shopName) {

@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import dayjs from 'dayjs'; // ใช้งาน dayjs เพื่อจัดการวันที่
+import { getAuthContext } from '@/lib/authHelper';
 
 const PURCHASED_THEME_TYPES = ['free', 'weekly', 'monthly', 'yearly', 'lifetime'];
 
@@ -30,28 +31,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. ตรวจสอบ Token (ผู้ใช้ต้องล็อกอิน)
-    const authHeader = request.headers.get('authorization');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: authHeader || '' } } }
-    );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw new Error('Unauthorized: กรุณาล็อกอิน');
-
-    // 3. ตรวจสอบสิทธิ์ (ต้องเป็น owner เท่านั้นถึงจะซื้อได้)
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, brand_id')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile?.brand_id) throw new Error('ไม่พบข้อมูลร้านค้า');
-    if (profile.role !== 'owner') throw new Error('Permission denied: เจ้าของร้านเท่านั้นที่สามารถสั่งซื้อได้');
-
-    const brandId = profile.brand_id;
+    // 2. ตรวจสอบสิทธิ์ (รองรับ Expired JWT อัตโนมัติ)
+    const { supabase, brandId, user, isOwner } = await getAuthContext(request);
+    if (!isOwner) throw new Error('Permission denied: เจ้าของร้านเท่านั้นที่สามารถสั่งซื้อได้');
 
     // 4. ดึงข้อมูล ธีม และ ยอดเหรียญปัจจุบันจาก Database
     const { data: themeData } = await supabase.from('marketplace_themes').select('*').eq('id', theme_id).single();

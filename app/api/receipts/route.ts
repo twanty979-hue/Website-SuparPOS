@@ -35,31 +35,10 @@ export async function OPTIONS() {
   });
 }
 
-const getSupabaseAndBrandId = async (request: Request) => {
-  const authHeader = request.headers.get('authorization');
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: authHeader || '' } } }
-  );
+import { getAuthContext } from '@/lib/authHelper';
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) throw new Error('Unauthorized');
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('brand_id, brands(timezone, plan, expiry_basic, expiry_pro, expiry_ultimate)')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile?.brand_id) throw new Error('No brand assigned');
-  const brand = Array.isArray(profile.brands) ? profile.brands[0] : profile.brands;
-  return {
-    supabase,
-    brandId: profile.brand_id,
-    timezone: brand?.timezone || 'Asia/Bangkok',
-    effectivePlan: calculateEffectivePlan(brand),
-  };
+const getSupabaseAndBrandId = async (request: Request, body?: any) => {
+  return getAuthContext(request, body);
 };
 
 export async function GET(request: Request) {

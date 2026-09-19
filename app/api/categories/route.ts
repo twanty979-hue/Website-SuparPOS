@@ -16,51 +16,10 @@ export async function OPTIONS() {
   });
 }
 
-// 🔐 Helper: ดึง Supabase client และ brand_id (รองรับทั้ง Bearer Token และ Payload/Query Fallback)
+import { getAuthContext } from '@/lib/authHelper';
+
 async function getSupabaseAndBrand(request: Request, fallbackData?: any) {
-  const authHeader = request.headers.get('authorization');
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY!;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  const userClient = createClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    { global: { headers: { Authorization: authHeader || '' } } }
-  );
-
-  const adminClient = serviceRoleKey
-    ? createClient(supabaseUrl, serviceRoleKey)
-    : userClient;
-
-  let brandId: string | null = null;
-
-  if (authHeader) {
-    try {
-      const { data: { user } } = await userClient.auth.getUser();
-      if (user) {
-        const { data: profile } = await adminClient
-          .from('profiles')
-          .select('brand_id')
-          .eq('id', user.id)
-          .single();
-        if (profile?.brand_id) {
-          brandId = profile.brand_id;
-        }
-      }
-    } catch (_) {}
-  }
-
-  // Fallback ถ้าใน Token ยังไม่มี brand หรือส่งตรงมาจาก App
-  if (!brandId && fallbackData?.brand_id) {
-    brandId = String(fallbackData.brand_id);
-  }
-
-  if (!brandId) {
-    throw new Error('Unauthorized: ไม่พบข้อมูลรหัสร้านค้า (brand_id)');
-  }
-
-  return { supabase: adminClient, userClient, brandId };
+  return getAuthContext(request, fallbackData);
 }
 
 // --- 📥 1. [GET] ดึงรายการหมวดหมู่ของร้านค้า ---

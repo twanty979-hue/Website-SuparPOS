@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { getAuthenticatedUser } from '@/lib/authHelper'
 
 const admin = () => createClient(
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,9 +28,9 @@ export async function POST(request: Request) {
     if (!token) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบใหม่' }, { status: 401 })
     }
-    const db = admin()
-    const { data: { user }, error: authError } = await db.auth.getUser(token)
-    if (authError || !user) {
+
+    const { user, adminClient: db } = await getAuthenticatedUser(request)
+    if (!user) {
       return NextResponse.json({ error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่' }, { status: 401 })
     }
     const { fullName, phone, avatarUrl } = await request.json()

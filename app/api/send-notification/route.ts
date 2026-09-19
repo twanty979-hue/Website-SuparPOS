@@ -4,6 +4,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 import { sendBrandNotification } from '@/lib/brandNotifications';
+import { getAuthenticatedUser } from '@/lib/authHelper';
 
 export async function POST(request: Request) {
   try {
@@ -25,9 +26,13 @@ export async function POST(request: Request) {
         },
       },
     );
-    const {
+    let {
       data: { user },
     } = await auth.auth.getUser();
+    if (!user) {
+      const authHelperUser = await getAuthenticatedUser(request);
+      user = authHelperUser.user;
+    }
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

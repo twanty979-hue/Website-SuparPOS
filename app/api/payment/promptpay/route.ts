@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-// 🌟 1. แก้ไขบรรทัด Import ด้านบน: เปลี่ยนจาก upgradeBrandPlanAction เป็น processFreeUpgradeFromApi
+import { getAuthenticatedUser } from '@/lib/authHelper';
 import { createBeamCheckoutAction, processFreeUpgradeFromApi } from '@/app/actions/settingsActions';
 
 export async function OPTIONS() {
@@ -16,17 +16,9 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) throw new Error('Unauthorized');
 
-    const supabaseClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) throw new Error('Unauthorized');
+    const { user, adminClient: supabaseClient } = await getAuthenticatedUser(request);
+    if (!user) throw new Error('Unauthorized');
 
     const body = await request.json();
     const { brandId, newPlan, period } = body;

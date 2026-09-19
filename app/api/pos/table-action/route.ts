@@ -11,32 +11,11 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders })
 }
 
+import { getAuthContext } from '@/lib/authHelper'
+
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization')
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: authHeader || '' } } },
-    )
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401, headers: corsHeaders },
-      )
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('brand_id')
-      .eq('id', user.id)
-      .single()
-    if (!profile?.brand_id) throw new Error('No brand assigned')
+    const { supabase, brandId, user } = await getAuthContext(request)
 
     const body = await request.json()
     const action = body.action
@@ -59,7 +38,7 @@ export async function POST(request: Request) {
     const { data: targetTable, error: tableError } = await supabase
       .from('tables')
       .select('id, label, access_token')
-      .eq('brand_id', profile.brand_id)
+      .eq('brand_id', brandId)
       .eq('id', targetTableId)
       .single()
     if (tableError || !targetTable) {
@@ -72,7 +51,7 @@ export async function POST(request: Request) {
     const { data: sourceOrders, error: sourceError } = await supabase
       .from('orders')
       .select('id, table_id')
-      .eq('brand_id', profile.brand_id)
+      .eq('brand_id', brandId)
       .in('id', sourceOrderIds)
       .in('status', ['pending', 'preparing', 'done'])
     if (sourceError) throw sourceError
@@ -87,7 +66,7 @@ export async function POST(request: Request) {
       const { data: occupiedOrders, error: occupiedError } = await supabase
         .from('orders')
         .select('id')
-        .eq('brand_id', profile.brand_id)
+        .eq('brand_id', brandId)
         .eq('table_id', targetTableId)
         .in('status', ['pending', 'preparing', 'done'])
       if (occupiedError) throw occupiedError
@@ -110,7 +89,7 @@ export async function POST(request: Request) {
         table_access_token: targetTable.access_token,
         updated_at: new Date().toISOString(),
       })
-      .eq('brand_id', profile.brand_id)
+      .eq('brand_id', brandId)
       .in('id', sourceOrderIds)
     if (updateError) throw updateError
 

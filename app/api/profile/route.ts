@@ -8,14 +8,10 @@ const admin = () => createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 )
 
+import { getAuthenticatedUser } from '@/lib/authHelper'
+
 async function authenticatedUser(request: NextRequest) {
-  const authorization = request.headers.get('authorization')
-  if (!authorization?.startsWith('Bearer ')) return null
-  const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    global: { headers: { Authorization: authorization } },
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-  const { data: { user } } = await client.auth.getUser()
+  const { user } = await getAuthenticatedUser(request)
   return user
 }
 

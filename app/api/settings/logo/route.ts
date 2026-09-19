@@ -55,33 +55,13 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
+import { getAuthContext } from '@/lib/authHelper';
+
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: authHeader || '' } } },
-    );
+    const { supabase, brandId, isOwner } = await getAuthContext(request);
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401, headers: corsHeaders },
-      );
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('brand_id, role')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile?.brand_id || profile.role !== 'owner') {
+    if (!isOwner) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized: Owners only' },
         { status: 403, headers: corsHeaders },
@@ -112,7 +92,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const brandId = profile.brand_id as string;
     const { data: currentBrand } = await supabase
       .from('brands')
       .select('logo_url')

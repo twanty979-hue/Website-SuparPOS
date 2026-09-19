@@ -4,13 +4,11 @@ import { sendProfilePush } from '@/lib/pushNotifications'
 
 const admin = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
 
+import { getAuthenticatedUser } from '@/lib/authHelper'
+
 async function ownerContext(request: NextRequest) {
-  const authorization = request.headers.get('authorization')
-  if (!authorization?.startsWith('Bearer ')) return null
-  const auth = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { global: { headers: { Authorization: authorization } }, auth: { autoRefreshToken: false, persistSession: false } })
-  const { data: { user } } = await auth.auth.getUser()
+  const { user, adminClient: db } = await getAuthenticatedUser(request)
   if (!user) return null
-  const db = admin()
   const { data: profile } = await db.from('profiles').select('id,brand_id,role').eq('id', user.id).maybeSingle()
   if (!profile?.brand_id || profile.role !== 'owner') return null
   return { user, profile, db }

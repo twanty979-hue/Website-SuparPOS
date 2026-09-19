@@ -28,97 +28,10 @@ function calculateEffectivePlan(brand: any) {
   return 'free';
 }
 
-// 🔐 Helper: แกะ Token หา brand_id และแพ็กเกจของพนักงาน (พร้อม Fallback กรณี Token หมดอายุกลางคัน)
+import { getAuthContext } from '@/lib/authHelper';
+
 const getSupabaseAndBrandId = async (request: Request, body?: any) => {
-  const authHeader = request.headers.get('authorization');
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY!;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  const supabase = createClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    { global: { headers: { Authorization: authHeader || '' } } }
-  );
-
-  const adminClient = serviceRoleKey
-    ? createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
-    : supabase;
-
-  let user: any = null;
-  if (authHeader) {
-    const { data: userData, error: authError } = await supabase.auth.getUser();
-    if (userData?.user && !authError) {
-      user = userData.user;
-    } else {
-      // 🛡️ Fallback สำหรับกรณี Token หมดอายุ (JWT expired) แต่ลูกค้าเปิดแอปค้างอยู่
-      try {
-        const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-        if (token && token.includes('.')) {
-          const parts = token.split('.');
-          if (parts.length >= 2) {
-            const payloadJson = Buffer.from(parts[1], 'base64').toString('utf8');
-            const payload = JSON.parse(payloadJson);
-            const userId = payload.sub;
-            if (userId && typeof userId === 'string' && serviceRoleKey) {
-              const { data: adminUserData } = await adminClient.auth.admin.getUserById(userId);
-              if (adminUserData?.user) {
-                user = adminUserData.user;
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error('[Auth Fallback Error]:', err);
-      }
-    }
-  }
-
-  let brandId: string | null = null;
-  let brandData: any = null;
-
-  if (user?.id) {
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('brand_id, brands(timezone, plan, expiry_basic, expiry_pro, expiry_ultimate)')
-      .eq('id', user.id)
-      .single();
-
-    if (profile?.brand_id) {
-      brandId = profile.brand_id;
-      brandData = (profile as any).brands;
-    }
-  }
-
-  // Fallback 2: ถ้ากำลังแก้ไขสินค้า (มี body.id) และยังไม่ได้ brandId
-  if (!brandId && body?.id && serviceRoleKey) {
-    const { data: existingProd } = await adminClient
-      .from('products')
-      .select('brand_id, brands(timezone, plan, expiry_basic, expiry_pro, expiry_ultimate)')
-      .eq('id', body.id)
-      .single();
-
-    if (existingProd?.brand_id) {
-      brandId = existingProd.brand_id;
-      brandData = (existingProd as any).brands;
-    }
-  }
-
-  // Fallback 3: ถ้ามี body.brand_id ส่งมา
-  if (!brandId && body?.brand_id && serviceRoleKey) {
-    brandId = String(body.brand_id);
-    const { data: bData } = await adminClient
-      .from('brands')
-      .select('timezone, plan, expiry_basic, expiry_pro, expiry_ultimate')
-      .eq('id', brandId)
-      .single();
-    brandData = bData;
-  }
-
-  if (!brandId) throw new Error('Unauthorized');
-
-  const effectivePlan = calculateEffectivePlan(brandData);
-  return { supabase: adminClient, brandId, effectivePlan };
+  return getAuthContext(request, { ...body, tableName: 'products' });
 };
 
 const buildToppingOptions = (

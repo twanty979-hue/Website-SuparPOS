@@ -1,41 +1,11 @@
 // app/api/themes/route.ts
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import dayjs from 'dayjs';
+import { getAuthContext, corsHeaders, handleCorsOptions } from '@/lib/authHelper';
 
-// 🌐 จัดการ CORS Preflight ให้แอปยิงผ่านได้ฉลุย
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  });
+  return handleCorsOptions();
 }
-
-// 🔐 Helper พระเอกแกะตัวตนและสิทธิ์จาก Token
-const getSupabaseAndBrandInfo = async (request: Request) => {
-  const authHeader = request.headers.get('authorization');
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: authHeader || '' } } }
-  );
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) throw new Error('Unauthorized');
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('brand_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile?.brand_id) throw new Error('No brand assigned');
-  return { supabase, brandId: profile.brand_id, isOwner: profile.role === 'owner' };
-};
 
 const PURCHASED_THEME_TYPES = ['free', 'weekly', 'monthly', 'yearly', 'lifetime'];
 
@@ -48,15 +18,10 @@ function calculateEffectivePlan(brand: any) {
   return { plan: 'free', expiry: null };
 }
 
-// 🔄 ระบบ Sync สิทธิ์การใช้ธีมตามระดับ Plan (Smart Merge)
-async function syncThemesWithPlan(supabase: any, brandId: string, plan: string, planExpiry: string | null) {
-  return;
-}
-
 // 📥 [GET] ดึงข้อมูลสถานะธีมทั้งหมด
 export async function GET(request: Request) {
   try {
-    const { supabase, brandId, isOwner } = await getSupabaseAndBrandInfo(request);
+    const { supabase, brandId, isOwner } = await getAuthContext(request);
 
     // 1. ดึงข้อมูลหมวดหมู่ (Categories) ทั้งหมด
     const { data: categories } = await supabase
@@ -161,7 +126,7 @@ export async function GET(request: Request) {
     return response;
 
   } catch (error: any) {
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message }, { status, headers: { 'Access-Control-Allow-Origin': '*' } });
+    const status = error.message.includes('Unauthorized') ? 401 : 500;
+    return NextResponse.json({ success: false, error: error.message }, { status, headers: corsHeaders });
   }
 }

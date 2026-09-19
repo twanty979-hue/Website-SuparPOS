@@ -45,36 +45,10 @@ export async function OPTIONS() {
   });
 }
 
-const getSupabaseAndBrandInfo = async (request: Request) => {
-  const authHeader = request.headers.get('authorization');
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: authHeader || '' } } }
-  );
+import { getAuthContext } from '@/lib/authHelper';
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) throw new Error('Unauthorized');
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('brand_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError) throw profileError;
-  if (!profile?.brand_id) throw new Error('No brand assigned');
-
-  return {
-    supabase,
-    userId: user.id,
-    brandId: profile.brand_id,
-    isOwner: profile.role === 'owner',
-  };
+const getSupabaseAndBrandInfo = async (request: Request, body?: any) => {
+  return getAuthContext(request, body);
 };
 
 const isFutureDate = (date: string | null | undefined) => {

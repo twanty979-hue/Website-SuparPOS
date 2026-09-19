@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 import { mergePlanContents, DEFAULT_PLAN_CONTENTS } from '@/lib/planContents';
+import { getAuthContext } from '@/lib/authHelper';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -18,23 +19,8 @@ export async function OPTIONS() {
 export async function GET(request: Request) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) throw new Error('Unauthorized');
 
-    // ตรวจสอบ User ฝั่ง Client
-    const supabaseClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) throw new Error('Unauthorized');
-
-    const { data: profile } = await supabaseClient.from('profiles').select('brand_id').eq('id', user.id).single();
-    if (!profile?.brand_id) throw new Error('No brand assigned');
-
-    const brandId = profile.brand_id;
+    const { brandId } = await getAuthContext(request);
 
     // ข้อมูลทั้งหมดไม่ขึ้นต่อกัน จึงดึงพร้อมกันเพื่อลดเวลา response
     const [

@@ -17,22 +17,12 @@ export async function OPTIONS() {
   });
 }
 
+import { getAuthenticatedUser } from '@/lib/authHelper';
+
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabase = createClient(
-      supabaseUrl,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { global: { headers: { Authorization: authHeader || '' } } },
-    );
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) throw new Error('Unauthorized');
+    const { user, adminClient: db } = await getAuthenticatedUser(request);
+    if (!user) throw new Error('Unauthorized');
 
     const { fcm_token, platform = 'android', device_label } = await request.json();
     const token = String(fcm_token || '').trim();
@@ -44,10 +34,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const db = serviceRoleKey
-      ? createClient(supabaseUrl, serviceRoleKey)
-      : supabase;
 
     const { data: profile, error: profileError } = await db
       .from('profiles')

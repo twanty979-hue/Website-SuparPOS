@@ -16,27 +16,10 @@ export async function OPTIONS() {
   });
 }
 
-async function getContext(request: Request) {
-  const authHeader = request.headers.get('authorization');
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      process.env.SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: authHeader || '' } } },
-  );
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) throw new Error('Unauthorized');
+import { getAuthContext } from '@/lib/authHelper';
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('brand_id')
-    .eq('id', user.id)
-    .single();
-  if (profileError || !profile?.brand_id) throw new Error('No brand assigned');
-  return { supabase, brandId: profile.brand_id, userId: user.id };
+async function getContext(request: Request, body?: any) {
+  return getAuthContext(request, body);
 }
 
 export async function GET(request: Request) {

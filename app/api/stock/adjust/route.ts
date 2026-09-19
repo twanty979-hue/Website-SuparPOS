@@ -32,25 +32,10 @@ export async function OPTIONS() {
   });
 }
 
-const getSupabaseAndBrandId = async (request: Request) => {
-  const authHeader = request.headers.get('authorization');
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: authHeader || '' } } }
-  );
+import { getAuthContext } from '@/lib/authHelper';
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) throw new Error('Unauthorized');
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('brand_id')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError || !profile?.brand_id) throw new Error('No brand assigned');
-  return { supabase, brandId: profile.brand_id, userId: user.id };
+const getSupabaseAndBrandId = async (request: Request, body?: any) => {
+  return getAuthContext(request, body);
 };
 
 const getRequestedType = (item: StockAdjustmentItem) => {

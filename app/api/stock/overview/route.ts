@@ -12,33 +12,11 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
+import { getAuthContext } from '@/lib/authHelper';
+
 export async function GET(req: Request) {
   try {
-    // 1. ตรวจสอบ Token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
-    }
-    const token = authHeader.split(' ')[1];
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } }
-    });
-
-    // 2. ดึงข้อมูล User & Brand ID
-    const { data: { user }, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !user) throw new Error('Invalid Token');
-
-    const { data: profile, error: profileErr } = await supabase
-      .from('profiles')
-      .select('brand_id')
-      .eq('id', user.id)
-      .single();
-
-    if (profileErr || !profile?.brand_id) throw new Error('Brand not found');
-    const brandId = profile.brand_id;
+    const { supabase, brandId } = await getAuthContext(req);
 
     // 🚀 3. ใช้ Promise.all ดึงข้อมูล 3 ก้อนพร้อมกัน (รีด Performance สุดๆ)
     const [stocksRes, lostLogsRes, recentTxRes] = await Promise.all([

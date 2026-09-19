@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { exceedsLimit, getBrandPlanPermissions } from '@/lib/planPermissions';
+import { getAuthenticatedUser } from '@/lib/authHelper';
 
 const admin = () =>
   createClient(
@@ -33,9 +34,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบใหม่' }, { status: 401 });
     }
 
-    const db = admin();
-    const { data: { user }, error: authError } = await db.auth.getUser(token);
-    if (authError || !user) {
+    const { user, adminClient: db } = await getAuthenticatedUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่' }, { status: 401 });
     }
 
