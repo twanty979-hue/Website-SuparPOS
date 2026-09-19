@@ -17,6 +17,7 @@ export async function OPTIONS() {
 }
 
 import { getAuthContext } from '@/lib/authHelper';
+import { deduplicateAndCleanCategories } from '@/lib/categoryHelper';
 
 async function getSupabaseAndBrand(request: Request, fallbackData?: any) {
   return getAuthContext(request, fallbackData);
@@ -39,11 +40,14 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
+    // 🧹 ทำความสะอาดหมวดหมู่ที่ซ้ำกันอัตโนมัติ (Deduplicate & Clean up)
+    const cleanCategories = await deduplicateAndCleanCategories(supabase, brandId, data || []);
+
     return NextResponse.json(
       {
         success: true,
-        data: data || [],
-        categories: data || [],
+        data: cleanCategories,
+        categories: cleanCategories,
       },
       {
         status: 200,
@@ -67,16 +71,42 @@ export async function POST(request: Request) {
 
     const { id, name, sort_order, is_active } = body;
 
-    if (!name || !String(name).trim()) {
+    const trimmedName = String(name || '').trim();
+    if (!trimmedName) {
       return NextResponse.json(
         { success: false, error: 'กรุณาระบุชื่อหมวดหมู่' },
         { status: 400, headers: corsHeaders }
       );
     }
 
+    // 🛡️ ป้องกันชื่อหมวดหมู่ซ้ำกันในร้านเดียวกัน
+    if (!id) {
+      const { data: existingCat } = await supabase
+        .from('categories')
+        .select('id, brand_id, name, sort_order, is_active, created_at')
+        .eq('brand_id', brandId)
+        .ilike('name', trimmedName)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingCat) {
+        return NextResponse.json(
+          {
+            success: true,
+            data: existingCat,
+            category: existingCat,
+          },
+          {
+            status: 200,
+            headers: corsHeaders,
+          }
+        );
+      }
+    }
+
     const payload: Record<string, any> = {
       brand_id: brandId,
-      name: String(name).trim(),
+      name: trimmedName,
       sort_order: Number(sort_order) || 0,
       is_active: is_active ?? true,
     };

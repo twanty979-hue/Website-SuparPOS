@@ -29,6 +29,7 @@ function calculateEffectivePlan(brand: any) {
 }
 
 import { getAuthContext } from '@/lib/authHelper';
+import { deduplicateAndCleanCategories } from '@/lib/categoryHelper';
 
 const getSupabaseAndBrandId = async (request: Request, body?: any) => {
   return getAuthContext(request, { ...body, tableName: 'products' });
@@ -149,10 +150,13 @@ export async function GET(request: Request) {
     const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
     const maxFoodItems = Number(rawPerms.max_food_items ?? rawPerms.max_products ?? (effectivePlan === 'free' ? 50 : 0));
 
+    // 🧹 ทำความสะอาดหมวดหมู่ที่ซ้ำกันอัตโนมัติ
+    const cleanCategories = await deduplicateAndCleanCategories(supabase, brandId, categoriesRes.data || []);
+
     return new NextResponse(JSON.stringify({ 
       success: true, 
       products: productsWithToppings,
-      categories: categoriesRes.data || [],
+      categories: cleanCategories,
       max_food_items: maxFoodItems,
       total_count: productsRes.data?.length || 0,
       effective_plan: effectivePlan
