@@ -78,15 +78,23 @@ export async function getAuthenticatedUser(request: Request): Promise<{ user: an
 
   let user: any = null;
   if (authHeader) {
+    let isExpiredJwt = false;
     try {
       const { data: userData, error: authError } = await userClient.auth.getUser();
       if (userData?.user && !authError) {
         user = userData.user;
+      } else if (authError) {
+        const errorMsg = (authError.message || '').toLowerCase();
+        // Supabase returns 'JWT expired' when signature is valid but time expired
+        if (errorMsg.includes('expired') || errorMsg.includes('jwt expired')) {
+          isExpiredJwt = true;
+        }
       }
     } catch (_) {}
 
-    if (!user && serviceRoleKey) {
-      const { sub, email, payload } = parseJwtSubAndPayload(authHeader);
+    // 2. 🛡️ Fallback ONLY for genuinely Expired JWT (issued by Supabase, valid signature, but expired)
+    if (!user && isExpiredJwt && serviceRoleKey) {
+      const { sub } = parseJwtSubAndPayload(authHeader);
       if (sub) {
         try {
           const { data: adminUserData } = await adminClient.auth.admin.getUserById(sub);
@@ -94,14 +102,6 @@ export async function getAuthenticatedUser(request: Request): Promise<{ user: an
             user = adminUserData.user;
           }
         } catch (_) {}
-        if (!user) {
-          user = {
-            id: sub,
-            email: email || '',
-            user_metadata: payload?.user_metadata || {},
-            app_metadata: payload?.app_metadata || {},
-          };
-        }
       }
     }
   }
@@ -133,16 +133,23 @@ export async function getAuthContext(
 
   // 1. Try standard getUser
   if (authHeader) {
+    let isExpiredJwt = false;
     try {
       const { data: userData, error: authError } = await userClient.auth.getUser();
       if (userData?.user && !authError) {
         user = userData.user;
+      } else if (authError) {
+        const errorMsg = (authError.message || '').toLowerCase();
+        // Supabase returns 'JWT expired' when signature is valid but time expired
+        if (errorMsg.includes('expired') || errorMsg.includes('jwt expired')) {
+          isExpiredJwt = true;
+        }
       }
     } catch (_) {}
 
-    // 2. 🛡️ Fallback for Expired JWT (mobile app or cached token)
-    if (!user && serviceRoleKey) {
-      const { sub, email, payload } = parseJwtSubAndPayload(authHeader);
+    // 2. 🛡️ Fallback ONLY for genuinely Expired JWT (issued by Supabase, valid signature, but expired)
+    if (!user && isExpiredJwt && serviceRoleKey) {
+      const { sub } = parseJwtSubAndPayload(authHeader);
       if (sub) {
         try {
           const { data: adminUserData } = await adminClient.auth.admin.getUserById(sub);
@@ -150,15 +157,6 @@ export async function getAuthContext(
             user = adminUserData.user;
           }
         } catch (_) {}
-
-        if (!user) {
-          user = {
-            id: sub,
-            email: email || '',
-            user_metadata: payload?.user_metadata || {},
-            app_metadata: payload?.app_metadata || {},
-          };
-        }
       }
     }
   }
