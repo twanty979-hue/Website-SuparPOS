@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Glacier Glass Style) ---
@@ -338,6 +339,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="glass-panel p-3 rounded-2xl cursor-pointer group hover:bg-white/60 transition-all" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden bg-white/50 rounded-xl mb-3 relative shadow-inner">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 right-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold text-[10px] px-2 py-1 rounded-full shadow-sm">
                                                 -{pricing.discount}
@@ -503,6 +505,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="relative h-56 sm:h-64 md:h-60 xl:h-64 shrink-0 bg-white/50">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent" />
                     </div>
 

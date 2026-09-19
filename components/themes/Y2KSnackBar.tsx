@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Y2K Cyber Style) ---
@@ -357,6 +358,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="cursor-pointer group bg-white/60 backdrop-blur-md rounded-[2rem] p-3 border-[3px] border-white/50 hover:border-[#00FFFF] hover:shadow-[0_0_20px_rgba(0,255,255,0.3)] transition-all duration-300" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden bg-[#E0E5EC] rounded-[1.25rem] mb-3 relative border-2 border-transparent group-hover:border-[#FF007F] transition-colors">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 right-2 bg-[#FF007F] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-[0_0_10px_rgba(255,0,127,0.5)]">
                                                 -{pricing.discount}
@@ -547,6 +549,7 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-64 shrink-0 bg-[#E0E5EC] rounded-t-[2.5rem] md:rounded-t-[2.2rem] xl:rounded-t-[2.5rem] overflow-hidden p-2">
                         <div className="w-full h-full rounded-[2rem] overflow-hidden relative shadow-inner">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                         </div>
                     </div>

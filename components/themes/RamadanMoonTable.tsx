@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🌙 Icons (Ramadan Style) ---
@@ -330,6 +331,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="cursor-pointer group" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden bg-[#1B1D36] mb-3 relative rounded-t-[40px] rounded-b-xl border border-[#2D3054] group-hover:border-[#E2C974]/50 transition-colors">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-0 right-0 bg-[#E2C974] text-[#0F1123] font-bold text-[10px] px-2 py-1 rounded-bl-lg">
                                                 -{pricing.discount}
@@ -490,6 +492,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-64 shrink-0 bg-[#0F1123]">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover opacity-90" />
+                        <ProductModalBadge product={selectedProduct} />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1B1D36] to-transparent"></div>
                     </div>
 

@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 export default function App({ state, actions, helpers }: any) {
@@ -353,12 +354,13 @@ export default function App({ state, actions, helpers }: any) {
                     </div>
 
                     <div id="foodItemsHome" className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-2 gap-4 pb-10">
-                        {products?.filter((p: any) => p.is_recommended).slice(0, 4).map((p: any, idx: number) => {
+                        {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: number) => {
                             const pricing = calculatePrice(p, 'normal');
                             return (
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card animate-wobble-custom cursor-pointer" style={{ animationDelay: `${idx * 0.1}s` }}>
                                     <div className="w-full h-36 overflow-hidden relative bg-slate-100 border-b-4 border-black">
                                         <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover" />
+                                         <ProductCardBadge product={p} />
                                         {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-lg border-2 border-black transform -rotate-6 shadow-sm">SAVE!</div>
                                         )}

@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Johnny Test / Lab Style) ---
@@ -418,6 +419,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer animate-image-pop" style={{animationDelay: `${idx * 0.1}s`}}>
                                      <div className="w-full h-40 overflow-hidden relative bg-zinc-100 border-b-4 border-zinc-900">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 right-2 bg-[#ef4444] text-white text-[10px] font-black px-2 py-1 border-2 border-black shadow-sm comic-font transform rotate-3">
                                                  DANGER!
@@ -643,6 +645,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-8 border-zinc-900 bg-slate-100">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-zinc-900 text-yellow-400 font-black text-3xl comic-font border-4 border-white shadow-[6px_6px_0_#ef4444] transform -rotate-2 flex flex-col items-center leading-none">
                                     {basePriceObj.discount > 0 && (

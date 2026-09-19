@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Adventure Time / Ooo Style) ---
@@ -389,6 +390,7 @@ export default function App({ state, actions, helpers }: any) {
                                      <div className="absolute top-2 right-2 w-8 h-8 bg-[#facc15] rounded-full z-10 opacity-50 blur-xl"></div>
                                      <div className="w-full h-40 overflow-hidden relative bg-[#f0f9ff] border-b-2 border-[#bfdbfe]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 left-2 bg-[#ef4444] text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white shadow-sm ooo-font">
                                                  WOAH!
@@ -612,6 +614,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-85 md:h-52 xl:h-85 shrink-0 overflow-hidden border-b-4 border-[#ecfeff] rounded-b-[3.5rem] bg-[#ecfeff]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-[#facc15] text-[#78350f] font-black text-3xl ooo-font rounded-full border-4 border-white shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

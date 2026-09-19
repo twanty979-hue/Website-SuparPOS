@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Friendly Rounded Style - Green Theme) ---
@@ -409,6 +410,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="card-fresh p-3 pb-4 cursor-pointer relative group h-full flex flex-col" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden relative rounded-2xl bg-green-50 mb-3 shadow-inner">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 right-2 bg-lime-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm font-friendly">
                                                 ลดพิเศษ
@@ -591,6 +593,7 @@ export default function App({ state, actions, helpers }: any) {
                 >
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-72 shrink-0 bg-green-50">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         <div className="absolute inset-0 bg-gradient-to-t from-green-900/60 to-transparent"></div>
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 w-10 h-10 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-green-600 transition-colors border border-white/40">
                             <Icon name="x" size={20} />

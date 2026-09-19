@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🔮 Icons Wrapper (Adapted for Juniper/Magic Theme) ---
@@ -422,6 +423,7 @@ export default function App({ state, actions, helpers }: any) {
                                      <div className="card-accent"></div>
                                      <div className="w-full h-40 overflow-hidden relative bg-purple-50">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-3 left-3 bg-pink-600 text-white text-[10px] font-bold px-3 py-1 rounded-sm shadow-md animate-pulse">
                                                  SALE
@@ -617,6 +619,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full shrink-0 h-[21.25rem] md:h-52 xl:h-[21.25rem] overflow-hidden border-b-4 border-purple-50 rounded-b-[2.5rem] bg-indigo-50">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-indigo-950 text-emerald-400 font-black text-2xl magic-font rounded-xl border border-emerald-500/50 shadow-xl transform -rotate-1">
                                      {currentPriceObj.discount > 0 && (

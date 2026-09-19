@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Peter Pan / Neverland Style) ---
@@ -417,6 +418,7 @@ export default function App({ state, actions, helpers }: any) {
                                      <div className="card-feather"></div>
                                      <div className="w-full h-40 overflow-hidden relative bg-[#f0fdf4] border-b-2 border-[#bbf7d0]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 left-2 bg-[#ef4444] text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white shadow-sm adventure-font">
                                                  MAGIC!
@@ -641,6 +643,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative shrink-0 w-full h-64 md:h-52 xl:h-64 overflow-hidden border-b-4 border-[#bbf7d0] rounded-b-[3.5rem] bg-white">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-[#15803d] text-white font-black text-3xl adventure-font rounded-full border-4 border-[#dcfce7] shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

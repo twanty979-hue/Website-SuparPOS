@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Sketch / Hand-drawn Style) ---
@@ -416,6 +417,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer">
                                      <div className="w-full h-40 overflow-hidden relative border-b-2 border-black">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover sketch-image" alt={p.name} />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 right-2 bg-black text-white text-[10px] font-bold px-2 py-1 sketch-font">
                                                  PROMO
@@ -633,6 +635,7 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="relative w-full h-72 md:h-52 xl:h-64 shrink-0 overflow-hidden border-b-4 border-black bg-gray-100">
                             {/* 🔥 FULL COLOR IMAGE */}
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" alt={selectedProduct.name} />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-white text-black font-black text-3xl sketch-font border-4 border-black shadow-[4px_4px_0_black] transform -rotate-2 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

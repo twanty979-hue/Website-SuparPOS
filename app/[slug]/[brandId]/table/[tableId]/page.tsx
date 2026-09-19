@@ -71,9 +71,97 @@ import WarmGrid from "@/components/themes/WarmGrid"
 import Y2KSnackBar from "@/components/themes/Y2KSnackBar"
 import RamadanMoonTable from "@/components/themes/RamadanMoonTable"
 import VeganBotanica from "@/components/themes/VeganBotanica"
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 
 // 🌟 1. ประกาศ URL ของ Cloudflare ตรงนี้
 const CDN_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "https://img.pos-foodscan.com";
+
+// 🛡️ Universal fallback: สำหรับธีมในอนาคตที่อาจไม่ได้ใส่ Component ป้ายเข้ามา
+function UniversalThemeBadgeEnforcer({ products, activeTab, selectedProduct }: { products: any[]; activeTab: string; selectedProduct: any }) {
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const timer = setTimeout(() => {
+      // 1. ตรวจสอบการ์ดในหน้า Home
+      if ((activeTab === "home" || !activeTab) && products?.length) {
+        const hasCardBadge = document.querySelector('[data-theme-badge="true"]');
+        if (!hasCardBadge) {
+          const recommendedProducts = products.filter((p: any) => p.is_recommended);
+          const allImgs = Array.from(document.querySelectorAll("img"));
+
+          recommendedProducts.forEach((p: any) => {
+            if (!p.image_name) return;
+            const matchImg = allImgs.find((img) => img.src && img.src.includes(p.image_name));
+            if (matchImg && matchImg.parentElement) {
+              const parent = matchImg.parentElement;
+              if (parent.querySelector('[data-theme-badge="true"]')) return;
+
+              if (window.getComputedStyle(parent).position === "static") {
+                parent.style.position = "relative";
+              }
+
+              const badge = document.createElement("div");
+              badge.setAttribute("data-theme-badge", "true");
+              badge.className = "absolute top-2 left-2 z-10 pointer-events-none";
+              badge.innerHTML = p.is_auto_recommended
+                ? `<span class="bg-[#1C1917]/85 backdrop-blur-md text-white border border-white/10 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
+                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400">
+                       <polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line>
+                     </svg>
+                     <span class="tracking-wide">สุ่ม</span>
+                   </span>`
+                : `<span class="bg-[#1C1917]/85 backdrop-blur-md text-white border border-white/10 text-[10px] font-medium px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
+                     <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="text-amber-400">
+                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                     </svg>
+                     <span class="tracking-wide">แนะนำ</span>
+                   </span>`;
+              parent.appendChild(badge);
+            }
+          });
+        }
+      }
+
+      // 2. ตรวจสอบ Modal รายละเอียดเมนู
+      if (selectedProduct && (selectedProduct.is_recommended || selectedProduct.is_auto_recommended)) {
+        const hasModalBadge = document.querySelector('[data-theme-modal-badge="true"]');
+        if (!hasModalBadge) {
+          const allImgs = Array.from(document.querySelectorAll("img"));
+          const modalImg = allImgs.find((img) => img.src && selectedProduct.image_name && img.src.includes(selectedProduct.image_name));
+          if (modalImg && modalImg.parentElement) {
+            const parent = modalImg.parentElement;
+            if (!parent.querySelector('[data-theme-modal-badge="true"]')) {
+              if (window.getComputedStyle(parent).position === "static") {
+                parent.style.position = "relative";
+              }
+              const modalBadge = document.createElement("div");
+              modalBadge.setAttribute("data-theme-modal-badge", "true");
+              modalBadge.className = "absolute top-4 left-4 z-10 pointer-events-none";
+              modalBadge.innerHTML = selectedProduct.is_auto_recommended
+                ? `<span class="bg-[#1C1917]/85 backdrop-blur-md text-white border border-white/10 text-xs font-medium px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
+                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400">
+                       <polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line>
+                     </svg>
+                     <span class="tracking-wide">เมนูสุ่ม</span>
+                   </span>`
+                : `<span class="bg-[#1C1917]/85 backdrop-blur-md text-white border border-white/10 text-xs font-medium px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
+                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="text-amber-400">
+                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                     </svg>
+                     <span class="tracking-wide">เมนูแนะนำ</span>
+                   </span>`;
+              parent.appendChild(modalBadge);
+            }
+          }
+        }
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [products, activeTab, selectedProduct]);
+
+  return null;
+}
 
 export default function Page({ params, searchParams }: { params: any, searchParams?: any }) {
   const resolvedParams = React.use(params);
@@ -84,8 +172,8 @@ export default function Page({ params, searchParams }: { params: any, searchPara
   
   const { loading, error, brand } = state;
 
-  // 🌟 2. ดัดแปลง (Override) Helpers เดิมที่มาจาก Hook เพื่อให้รองรับ Cloudflare
-  // วิธีนี้จะทำให้ทั้ง 50 ธีมที่เรียกใช้ getMenuUrl หรือ getBannerUrl ได้ลิงก์ใหม่ทันที
+  // 🌟 2. ดัดแปลง (Override) Helpers เดิมที่มาจาก Hook เพื่อให้รองรับ Cloudflare และ Badge
+  // วิธีนี้จะทำให้ทั้ง 50+ ธีมและธีมใหม่ในอนาคตที่เรียกใช้ helpers ได้ป้ายและการตั้งค่าเหมือนกันทันที
   const helpers = {
       ...originalHelpers, // เอาฟังก์ชันอื่นๆ (เช่น calculatePrice) มาใช้เหมือนเดิม
       getMenuUrl: (imageName: string | null) => {
@@ -97,7 +185,13 @@ export default function Page({ params, searchParams }: { params: any, searchPara
           if (!imageName) return '/placeholder-banner.png'; 
           if (imageName.startsWith('http')) return imageName;
           return `${CDN_URL}/${imageName}`; // ดึงจาก Cloudflare
-      }
+      },
+      renderProductBadge: (product: any, className?: string) => (
+          <ProductCardBadge product={product} className={className} />
+      ),
+      renderModalBadge: (product: any, className?: string) => (
+          <ProductModalBadge product={product} className={className} />
+      )
   };
 
 
@@ -120,8 +214,9 @@ export default function Page({ params, searchParams }: { params: any, searchPara
   const themeMode = resolvedSearchParams?.theme || brand.theme_mode || 'mkinimalearth';
 
   // 🌟 3. ส่ง helpers ตัวใหม่ (ที่ดัดแปลงแล้ว) ลงไปให้ทุกธีม!
-  switch (themeMode) {
-    case 'luxury': return <LuxuryTheme state={state} actions={actions} helpers={helpers} />;
+  const renderTheme = () => {
+    switch (themeMode) {
+      case 'luxury': return <LuxuryTheme state={state} actions={actions} helpers={helpers} />;
     case 'scoopydo': return <Scooby state={state} actions={actions} helpers={helpers} />;
     case 'camplazlo': return <CampLazlo state={state} actions={actions} helpers={helpers} />;
     case 'ralph': return <Ralph state={state} actions={actions} helpers={helpers} />;
@@ -191,5 +286,17 @@ export default function Page({ params, searchParams }: { params: any, searchPara
     case 'mkinimalearth':
     default:
         return <MinimalEarth state={state} actions={actions} helpers={helpers} />;
-  }
+    }
+  };
+
+  return (
+    <>
+      <UniversalThemeBadgeEnforcer
+        products={state.products}
+        activeTab={state.activeTab}
+        selectedProduct={state.selectedProduct}
+      />
+      {renderTheme()}
+    </>
+  );
 }

@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Scooby-Doo Mystery Style) ---
@@ -405,6 +406,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="mystery-card overflow-hidden relative cursor-pointer group">
                                      <div className="w-full h-36 overflow-hidden relative bg-[#36B5B0] border-b-4 border-black">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-all duration-300" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#F28F1C] text-black text-xs font-black px-2 py-1 rounded-md border-2 border-black transform -rotate-6 shadow-[2px_2px_0_black] comic-font">
                                                 SAVE!
@@ -643,6 +645,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-56 sm:h-64 md:h-52 xl:h-72 overflow-hidden border-b-4 border-black rounded-b-[2rem] bg-[#36B5B0]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#99CC33] text-black font-black text-3xl comic-font rounded-xl border-4 border-black shadow-[4px_4px_0_black] transform -rotate-3 flex flex-col items-center leading-none">
                                     {basePriceObj.discount > 0 && (

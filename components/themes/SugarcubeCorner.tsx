@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🧁 Sugarcube Corner Icons Wrapper ---
@@ -407,6 +408,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card overflow-hidden relative cursor-pointer group">
                                      <div className="w-full h-36 overflow-hidden relative bg-[#fdf4ff] border-b-2 border-[#fbcfe8]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#ec4899] text-white text-xs font-black px-2 py-1 rounded-lg border border-white transform -rotate-3 shadow-sm">
                                                 SAVE!
@@ -595,6 +597,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-4 border-[#fbcfe8] rounded-b-[2.5rem] bg-[#fdf4ff]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#a855f7] text-white font-black text-2xl magic-font rounded-2xl border-4 border-white shadow-lg transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

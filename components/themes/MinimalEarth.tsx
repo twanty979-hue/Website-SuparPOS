@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Minimal Style) ---
@@ -62,6 +63,7 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
     </svg>
   );
 };
+
 
 export default function App({ state, actions, helpers }: any) {
   const {
@@ -330,6 +332,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="cursor-pointer group" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden bg-[#F5F5F4] mb-3 relative rounded-lg">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-0 right-0 bg-[#1C1917] text-white text-[10px] px-2 py-1">
                                                 -{pricing.discount}
@@ -489,6 +492,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-64 shrink-0 bg-[#F5F5F4]">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                     </div>
 
                     {/* scroll area — ไม่ต้องมี pb พิเศษเพราะปุ่มเป็น shrink-0 flex sibling */}

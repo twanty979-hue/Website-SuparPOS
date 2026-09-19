@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Adapted for Pink Theme) ---
@@ -420,6 +421,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer animate-image-pop" style={{animationDelay: `${idx * 0.1}s`}}>
                                      <div className="w-full h-40 overflow-hidden relative bg-pink-50">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md pink-font animate-pulse">
                                                  SALE
@@ -634,6 +636,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-80 md:h-52 xl:h-64 shrink-0 overflow-hidden rounded-b-[2.5rem] bg-pink-50">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent pt-20">
                                 <div className="flex items-end justify-between text-white animate-pink-smooth">
                                      <h2 className="text-3xl pink-font leading-tight drop-shadow-md">{selectedProduct.name}</h2>

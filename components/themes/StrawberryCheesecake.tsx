@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Strawberry Cheesecake / Baby Looney Tunes Style) ---
@@ -399,6 +400,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer" style={{animationDelay: `${idx * 0.1}s`}}>
                                      <div className="w-full h-40 overflow-hidden relative bg-[#fff1f2] border-b-4 border-rose-100 mt-0">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 right-2 bg-rose-500 text-white text-[10px] font-bold px-3 py-1 rounded-full border-2 border-white shadow-sm baby-font transform rotate-3">SALE!</div>
                                          )}
@@ -553,6 +555,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-[340px] md:h-64 xl:h-[340px] shrink-0 overflow-hidden border-b-4 border-rose-50 rounded-b-[3.5rem] bg-rose-50">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-yellow-400 text-rose-900 font-black text-3xl baby-font rounded-full border-4 border-white shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

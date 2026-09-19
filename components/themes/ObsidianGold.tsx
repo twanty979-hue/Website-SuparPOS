@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Minimal Style) ---
@@ -334,6 +335,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="cursor-pointer group" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden bg-[#1E1E1E] mb-3 relative rounded-none border border-[#333333]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-0 right-0 bg-[#D4AF37] text-[#121212] font-bold text-[10px] px-2 py-1">
                                                 -{pricing.discount}
@@ -493,6 +495,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-64 shrink-0 bg-[#1E1E1E]">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover opacity-90" />
+                        <ProductModalBadge product={selectedProduct} />
                     </div>
 
                     {/* scroll area */}

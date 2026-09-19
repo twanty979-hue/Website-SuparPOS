@@ -54,9 +54,25 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  const pathname = request.nextUrl.pathname
+
+  // ⚡ สำหรับ /api routes ให้ข้ามการตรวจสิทธิ์ใน middleware ไปเลย
+  // เนื่องจาก API ทุกตัวมี AuthContext / Bearer Token แยกจัดการเองอยู่แล้ว
+  // การข้ามตรงนี้จะช่วยลด Latency (proxy.ts) ลงได้มหาศาล และป้องกันปัญหา fetch failed
+  if (pathname.startsWith('/api')) {
+    return response
+  }
+
   // ดึง User (User จะถูก Refresh Token อัตโนมัติถ้าจำเป็น)
-  const { data: { user } } = await supabase.auth.getUser()
-  const isAdminPath = request.nextUrl.pathname.startsWith('/admin')
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data?.user || null
+  } catch (error) {
+    console.warn('⚠️ [Middleware Auth Error]:', error)
+  }
+
+  const isAdminPath = pathname.startsWith('/admin')
 
   if (isAdminPath) {
     if (!user) {

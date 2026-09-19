@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (SAO / Aincrad Style) ---
@@ -438,6 +439,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer animate-digitize" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full h-32 overflow-hidden relative bg-gray-200 border-b border-gray-300">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-sm shadow-sm sao-font tracking-wide">
                                                 SALE
@@ -616,6 +618,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="relative w-full h-44 md:h-40 xl:h-48 bg-gray-200 shrink-0">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4">
                              {/* Added discount logic here */}
                             {currentPriceObj.discount > 0 && (

@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Vegan Botanica Style) ---
@@ -326,6 +327,7 @@ export default function App({ state, actions, helpers }: any) {
                                      <div className="w-full aspect-square overflow-hidden bg-white mb-4 relative rounded-t-full p-2 border border-[#C8DBCB] shadow-sm transition-all group-hover:shadow-md">
                                          <div className="w-full h-full rounded-t-full overflow-hidden relative bg-[#F8FAF8]">
                                              <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                         <ProductCardBadge product={p} />
                                              {pricing.discount > 0 && (
                                                 <div className="absolute top-2 right-2 bg-[#2D5936] text-white text-[10px] px-2 py-1 rounded-full font-serif">
                                                     -{pricing.discount}
@@ -490,6 +492,7 @@ export default function App({ state, actions, helpers }: any) {
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-64 shrink-0 bg-white p-2">
                         <div className="w-full h-full rounded-t-xl overflow-hidden botanical-border">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         </div>
                     </div>
 

@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🐕 Scooby-Doo Icons Wrapper ---
@@ -391,6 +392,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card overflow-hidden relative cursor-pointer group">
                                      <div className="w-full h-40 overflow-hidden relative bg-[#2d1b4e] border-b-4 border-[#7452a3]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#f28f1c] text-white text-sm font-black px-3 py-1 rounded-lg border-2 border-[#2d1b4e] shadow-sm">
                                                 CLUE!
@@ -580,6 +582,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-64 sm:h-72 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-[6px] border-[#36b5b0] rounded-b-[2.5rem] bg-[#99cc33]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-[#7452a3] text-[#99cc33] font-black text-4xl spooky-font rounded-2xl border-4 border-white shadow-xl transform rotate-2">
                                     {currentPriceObj.discount > 0 && (

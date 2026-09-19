@@ -59,8 +59,8 @@ export async function GET(request: Request) {
 
     const [categoriesRes, productsRes, retailRes, discountsRes, tablesRes, unpaidOrdersRes, groupsRes, itemsRes, mappingsRes] = await Promise.all([
       supabase.from('categories').select('*').eq('brand_id', brandId).order('sort_order'),
-      supabase.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).is('deleted_at', null), 
-      supabase.from('product_master').select('*').eq('brand_id', brandId).eq('is_active', true), 
+      supabase.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).is('deleted_at', null).order('created_at', { ascending: true }), 
+      supabase.from('product_master').select('*').eq('brand_id', brandId).eq('is_active', true).order('created_at', { ascending: true }), 
       supabase.from('discounts').select(`*, discount_products(product_id)`).eq('brand_id', brandId).eq('is_active', true),
       supabase.from('tables').select('*').eq('brand_id', brandId).order('label'),
       supabase

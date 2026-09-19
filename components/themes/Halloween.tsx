@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Halloween / Spooky Style) ---
@@ -52,6 +53,7 @@ const Icon = ({ name, size = 24, className = "" }: any) => {
     </svg>
   );
 };
+
 
 export default function App({ state, actions, helpers }: any) {
   const {
@@ -392,6 +394,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer animate-image-pop" style={{animationDelay: `${idx * 0.1}s`}}>
                                      <div className="w-full h-40 overflow-hidden relative bg-black/50 border-b-2 border-purple-900/50">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity duration-500" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 right-2 bg-orange-600 text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white shadow-sm spooky-title">
                                                  CURSED!
@@ -615,6 +618,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-80 sm:h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-4 border-purple-900 rounded-b-[3.5rem] bg-black">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover opacity-80" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-orange-600 text-white font-black text-3xl spooky-title rounded-full border-4 border-white shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

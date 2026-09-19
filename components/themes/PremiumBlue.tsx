@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Standard Modern Icons (Fixed Syntax) ---
@@ -414,6 +415,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="modern-card cursor-pointer p-3" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full h-36 overflow-hidden relative rounded-xl bg-slate-100 mb-3">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm font-inter">
                                                 SALE
@@ -588,6 +590,7 @@ export default function App({ state, actions, helpers }: any) {
                 <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white rounded-t-[2rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[2rem] shadow-xl relative overflow-hidden max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] flex flex-col">
                     <div className="relative h-52 sm:h-60 md:h-48 xl:h-64 shrink-0 bg-slate-100">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 w-9 h-9 glass rounded-full flex items-center justify-center text-white hover:bg-white hover:text-slate-800 transition-colors">
                             <Icon name="x" size={20} />

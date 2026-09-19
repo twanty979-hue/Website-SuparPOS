@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Simple & Cozy Style) ---
@@ -390,6 +391,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="card-wood p-3 cursor-pointer h-full flex flex-col" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden relative rounded-lg bg-[#fef3c7] mb-2">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-0 left-0 bg-[#dc2626] text-white text-[10px] font-bold px-2 py-1 rounded-br-lg font-mali">
                                                 ลดราคา
@@ -573,6 +575,7 @@ export default function App({ state, actions, helpers }: any) {
                 >
                     <div className="relative h-52 sm:h-60 md:h-48 xl:h-64 shrink-0 bg-[#fef3c7]">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 w-9 h-9 bg-white/80 rounded-full flex items-center justify-center text-gray-700 hover:bg-white transition-colors shadow-sm">
                             <Icon name="x" size={20} />
                         </button>

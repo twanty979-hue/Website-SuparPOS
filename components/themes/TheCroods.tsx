@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (The Croods / Stone Age Style) ---
@@ -403,6 +404,7 @@ export default function App({ state, actions, helpers }: any) {
                                      <div className="w-full h-40 overflow-hidden relative bg-[#d6d3d1] border-b-4 border-[#78350f]">
                                          {/* 🎨 Removed grayscale */}
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-0 right-0 bg-[#f97316] text-white text-[12px] font-bold px-3 py-1 rounded-bl-xl border-l-2 border-b-2 border-white shadow-sm cave-font">
                                                  HOT!
@@ -630,6 +632,7 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="relative w-full h-85 md:h-52 xl:h-85 shrink-0 overflow-hidden border-b-8 border-[#78350f] rounded-b-[2rem] bg-[#a8a29e]">
                             {/* 🎨 Removed grayscale */}
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-[#ea580c] text-white font-black text-3xl cave-font rounded-sm border-4 border-[#78350f] shadow-[6px_6px_0_#292524] transform -rotate-2 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

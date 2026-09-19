@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Flapjack / Stormalong Harbor Style) ---
@@ -395,6 +396,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="dock-card overflow-hidden relative cursor-pointer group">
                                      <div className="w-full h-36 overflow-hidden relative bg-[#B2EBF2] border-b-4 border-[#5D4037]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#D32F2F] text-white text-xs font-bold px-2 py-1 rounded-md border border-[#B71C1C] transform -rotate-6 shadow-sm sailor-font">
                                                 CANDY!
@@ -632,6 +634,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-72 md:h-52 xl:h-72 overflow-hidden border-b-8 border-[#5D4037] rounded-b-[2rem] bg-[#81D4FA]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#D32F2F] text-white font-normal text-3xl sailor-font rounded-xl border-4 border-[#FFF] shadow-[4px_4px_0_#3E2723] transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

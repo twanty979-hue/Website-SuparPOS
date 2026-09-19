@@ -19,6 +19,17 @@ body {
   overflow-x: hidden;
 }
 
+/* 🔒 Modal Scroll Containment: ป้องกันการเลื่อนทะลุไปดึงพื้นหลัง (Overscroll Chaining) */
+.fixed.inset-0 {
+  overscroll-behavior: contain;
+}
+
+.overflow-y-auto {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
 /* Custom CSS จากหน้าเว็บเดิม */
 .reveal {
   opacity: 0;

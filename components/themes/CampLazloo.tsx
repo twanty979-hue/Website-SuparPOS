@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🏕️ Camp Lazlo Icons Wrapper ---
@@ -301,6 +302,7 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                                     <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer" style={{animationDelay: `${idx * 0.1}s`}}>
                                          <div className="w-full h-36 overflow-hidden relative bg-white border-b-2 border-[#78350f] mt-0">
                                              <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                              {pricing.discount > 0 && (
                                                  <div className="absolute top-2 left-2 bg-[#ef4444] text-white text-[10px] font-bold px-2 py-1 rounded border-2 border-[#78350f] transform -rotate-6 shadow-sm">SALE!</div>
                                              )}
@@ -461,6 +463,7 @@ export default function CampLazloTheme({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-4 border-[#78350f] rounded-b-[2rem] bg-[#ecfccb]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#f97316] text-white font-black text-3xl camp-font rounded-lg border-4 border-white shadow-[4px_4px_0_rgba(0,0,0,0.2)] transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

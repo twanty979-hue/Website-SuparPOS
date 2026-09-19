@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- ⌚ Omnitrix Icons Wrapper ---
@@ -399,6 +400,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer group">
                                      <div className="w-full h-32 overflow-hidden relative bg-black border-b border-[#333]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-lime-600 text-black text-[10px] font-bold px-2 py-0.5 rounded-full hero-font shadow-lg">
                                                 DNA UPGRADE
@@ -587,6 +589,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-56 sm:h-64 md:h-52 xl:h-72 overflow-hidden border-b-4 border-lime-500/20 rounded-b-[3rem]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover opacity-90" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-6 py-2 bg-lime-500 text-black font-black text-2xl hero-font rounded-full shadow-[0_0_15px_#84cc16]">
                                     {currentPriceObj.discount > 0 && (

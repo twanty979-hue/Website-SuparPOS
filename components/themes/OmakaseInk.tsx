@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Omakase Ink Style) ---
@@ -317,12 +318,13 @@ export default function App({ state, actions, helpers }: any) {
                          </button>
                     </div>
                     <div className="flex flex-col gap-10">
-                        {products?.filter((p: any) => p.is_recommended).slice(0, 4).map((p: any, idx: any) => {
+                        {products?.filter((p: any) => p.is_recommended).slice(0, 6).map((p: any, idx: any) => {
                              const pricing = calculatePrice(p, 'normal');
                              return (
                                  <div key={p.id} onClick={() => setSelectedProduct(p)} className="cursor-pointer group flex items-start gap-6" style={{animationDelay: `${idx * 0.1}s`}}>
                                      <div className="w-28 h-36 overflow-hidden bg-[#E5E5E5] shrink-0 relative">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-0 left-0 bg-[#000000] text-white text-[9px] uppercase tracking-widest px-2 py-1">
                                                 -{pricing.discount}
@@ -482,6 +484,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="relative h-64 sm:h-72 shrink-0 bg-[#E5E5E5]">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover grayscale" />
+                        <ProductModalBadge product={selectedProduct} />
                     </div>
 
                     <div className="p-8 overflow-y-auto bg-[#FAFAFA] flex-1 no-scrollbar pb-6">

@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Luxury Line Style) ---
@@ -380,6 +381,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="cursor-pointer group" style={{animationDelay: `${idx * 0.1}s`}}>
                                      <div className="w-full aspect-[4/5] overflow-hidden bg-[#1e293b] mb-4 relative rounded-sm">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-500" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 right-2 bg-[#fbbf24] text-[#0f172a] text-[10px] px-2 py-0.5 font-bold uppercase tracking-wide">
                                                 Special
@@ -544,6 +546,7 @@ export default function App({ state, actions, helpers }: any) {
                 >
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-72 shrink-0">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent"></div>
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 w-10 h-10 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:text-[#fbbf24] transition-colors border border-white/10">
                             <Icon name="x" size={20} />

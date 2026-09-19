@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Spring / Garden Style) ---
@@ -412,6 +413,7 @@ export default function App({ state, actions, helpers }: any) {
                                      <div className="card-leaf"></div>
                                      <div className="w-full h-40 overflow-hidden relative bg-green-50/50">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 right-2 bg-[#f472b6] text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white shadow-sm spring-title">
                                                  SALE!
@@ -636,6 +638,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-64 md:h-52 xl:h-64 overflow-hidden border-b-4 border-green-50 rounded-b-[3.5rem] bg-white">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-green-500 text-white font-black text-3xl spring-title rounded-full border-4 border-white shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

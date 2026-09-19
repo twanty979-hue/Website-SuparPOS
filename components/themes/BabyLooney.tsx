@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Baby Looney Tunes Style) ---
@@ -407,6 +408,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="baby-card group cursor-pointer">
                                      <div className="w-full h-36 overflow-hidden relative bg-[#FCE4EC] border-b-4 border-[#B3E5FC]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 rounded-t-[1.8rem]" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#FFF9C4] text-[#FBC02D] text-xs font-bold px-2 py-1 rounded-xl border-2 border-white transform -rotate-6 shadow-sm bubbly-font">
                                                 ★ SPECIAL
@@ -645,6 +647,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-72 md:h-52 xl:h-72 shrink-0 overflow-hidden border-b-8 border-[#B3E5FC] rounded-b-[2rem] bg-[#E1F5FE]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#F06292] text-white font-bold text-3xl bubbly-font rounded-xl border-4 border-white shadow-sm transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

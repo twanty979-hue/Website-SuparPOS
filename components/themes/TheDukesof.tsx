@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Adapted for Punk Theme) ---
@@ -411,6 +412,7 @@ export default function App({ state, actions, helpers }: any) {
                                      {/* 🔴 EDITED: Removed grayscale here */}
                                      <div className="w-full h-40 overflow-hidden relative bg-white border-b-4 border-black">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-0 left-0 bg-[#facc15] text-black text-xs font-black px-3 py-1 border-r-2 border-b-2 border-black">
                                                  SALE!
@@ -613,6 +615,7 @@ export default function App({ state, actions, helpers }: any) {
                         {/* 🔴 EDITED: Removed grayscale and BG color logic to show full food color */}
                         <div className="relative shrink-0 w-full h-80 md:h-52 xl:h-80 overflow-hidden border-b-8 border-black bg-white">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-6 py-2 bg-[#facc15] text-black font-black text-3xl punk-font border-4 border-black shadow-[6px_6px_0_#ef4444] transform -rotate-3">
                                      {currentPriceObj.discount > 0 && (

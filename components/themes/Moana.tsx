@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Moana Style) ---
@@ -436,6 +437,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card group cursor-pointer animate-pop-up" style={{animationDelay: `${(idx * 0.1) + 0.2}s`}}>
                                      <div className="w-full h-36 overflow-hidden relative bg-[#E0F7FA] border-b-4 border-[#00838F]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#FF6F00] text-white text-xs font-bold px-2 py-1 rounded-xl border-2 border-white transform -rotate-6 shadow-sm island-font">
                                                 ★ GIFT!
@@ -681,6 +683,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative shrink-0 w-full h-72 md:h-52 xl:h-72 overflow-hidden border-b-8 border-[#00838F] rounded-b-[2rem] bg-[#E0F7FA]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#00ACC1] text-white font-bold text-3xl island-font rounded-xl border-4 border-white shadow-sm transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

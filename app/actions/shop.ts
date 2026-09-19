@@ -292,7 +292,7 @@ export async function fetchShopData(params: ShopParams) {
     ] = await Promise.all([
       supabaseServer.from('banners').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
       supabaseServer.from('categories').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
-      supabaseServer.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).is('deleted_at', null).order('is_recommended', { ascending: false }),
+      supabaseServer.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).is('deleted_at', null).order('is_recommended', { ascending: false }).order('created_at', { ascending: true }),
       supabaseServer.from('discounts').select(`*, discount_products(product_id)`).eq('brand_id', brandId).eq('is_active', true),
       supabaseServer.from('orders').select(`*, order_items(*)`).eq('brand_id', brandId).eq('table_id', realTableId).neq('status', 'paid').order('created_at', { ascending: false }),
       supabaseServer.from('topping_groups').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
@@ -332,6 +332,28 @@ export async function fetchShopData(params: ShopParams) {
       image_url: getImageUrl(p.image_name) // เพิ่ม property image_url เข้าไป
     }));
 
+    // 🌟 สุ่มสินค้าแนะนำให้ครบ 6 รายการในหน้าแรก หากที่ตั้งค่าไว้มีน้อยกว่า 6 รายการ
+    const explicitlyRecommended = mappedProducts
+      .filter(p => Boolean(p.is_recommended))
+      .map(p => ({ ...p, is_auto_recommended: false }));
+    let finalProducts = mappedProducts.map(p => ({ ...p, is_auto_recommended: false }));
+
+    if (explicitlyRecommended.length < 6) {
+      const otherProducts = mappedProducts.filter(p => !p.is_recommended);
+      const needed = 6 - explicitlyRecommended.length;
+      const shuffledOthers = [...otherProducts].sort(() => 0.5 - Math.random());
+      const selectedToFill = shuffledOthers.slice(0, needed).map(p => ({
+        ...p,
+        is_recommended: true,
+        is_auto_recommended: true,
+      }));
+      const remainingOthers = shuffledOthers.slice(needed).map(p => ({
+        ...p,
+        is_auto_recommended: false,
+      }));
+      finalProducts = [...explicitlyRecommended, ...selectedToFill, ...remainingOthers];
+    }
+
     return {
       success: true,
       data: {
@@ -339,7 +361,7 @@ export async function fetchShopData(params: ShopParams) {
         tableLabel: tableData.label,
         banners: mappedBanners, // ✅ ส่งแบนเนอร์ที่แปลงเป็น R2 URL แล้ว
         categories: catRes.data?.length ? [{ id: "all", name: "All" }, ...catRes.data] : [{ id: "all", name: "All" }],
-        products: mappedProducts, // ✅ ส่งเมนูอาหารที่แปลงเป็น R2 URL แล้ว
+        products: finalProducts, // ✅ ส่งเมนูอาหารที่มีรายการแนะนำครบ 6 รายการ
         discounts: discRes.data || [],
         orders: ordersRes.data || []
       }

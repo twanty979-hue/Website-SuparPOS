@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Moana / Motunui Style) ---
@@ -394,6 +395,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer animate-pop-up" style={{animationDelay: `${(idx * 0.1) + 0.2}s`}}>
                                      <div className="w-full h-40 overflow-hidden relative bg-[#ecfeff] border-b-2 border-[#451a03]/10">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 left-2 bg-[#db2777] text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white shadow-sm ocean-font">
                                                  GIFT!
@@ -617,6 +619,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full shrink-0 h-72 md:h-52 xl:h-72 overflow-hidden border-b-4 border-[#ecfeff] rounded-b-[3.5rem] bg-[#ecfeff]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-white text-[#0891b2] font-black text-3xl ocean-font rounded-full border-4 border-[#ffedd5] shadow-xl transform -rotate-3 flex flex-col items-center leading-none">
                                     {basePriceObj.discount > 0 && (

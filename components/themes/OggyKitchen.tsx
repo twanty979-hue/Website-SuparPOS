@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🐱 Oggy & Cockroaches Icons Wrapper ---
@@ -430,6 +431,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card overflow-hidden relative cursor-pointer group">
                                      <div className="w-full h-36 overflow-hidden relative bg-[#e0f2fe] border-b-4 border-[#60a5fa]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#f43f5e] text-white text-xs font-black px-2 py-1 rounded-lg border-2 border-white transform -rotate-6 shadow-sm">
                                                 SAVE!
@@ -618,6 +620,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-[6px] border-[#60a5fa] rounded-b-[2.5rem] bg-[#e0f2fe]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#84cc16] text-white font-black text-2xl cartoon-font rounded-2xl border-4 border-white shadow-[0_4px_0_#3f6212] transform -rotate-3 flex flex-col items-center leading-none">
                                     {basePriceObj.discount > 0 && (

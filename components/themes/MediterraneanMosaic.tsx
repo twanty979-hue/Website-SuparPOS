@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Mediterranean Style) ---
@@ -343,6 +344,7 @@ export default function MediterraneanMosaic({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="cursor-pointer mosaic-tile overflow-hidden flex flex-col" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden bg-white relative">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 right-2 bg-[#E07A5F] text-white text-[10px] font-bold px-2 py-1 rounded-lg">
                                                 -{pricing.discount}
@@ -504,6 +506,7 @@ export default function MediterraneanMosaic({ state, actions, helpers }: any) {
 
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-64 shrink-0 bg-white">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent"></div>
                     </div>
 

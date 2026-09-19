@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Foster's Home Style) ---
@@ -430,6 +431,7 @@ export default function App({ state, actions, helpers }: any) {
                                      <div className="w-full h-36 overflow-hidden relative bg-[#E3F2FD] border-b-4 border-[#1A237E]">
                                          {/* Product Image Animation */}
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover animate-image-pop" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#D32F2F] text-white text-xs font-bold px-2 py-1 rounded-xl border-2 border-white transform -rotate-6 shadow-sm foster-font animate-gentle-wiggle">
                                                 ★ WOW!
@@ -670,6 +672,7 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="relative shrink-0 w-full h-72 md:h-52 xl:h-72 overflow-hidden border-b-8 border-[#2979FF] rounded-b-[2rem] bg-[#E3F2FD]">
                             {/* Product Image Animation in Modal */}
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover animate-image-pop" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#2979FF] text-white font-bold text-3xl foster-font rounded-xl border-4 border-white shadow-sm transform -rotate-3 flex flex-col items-center leading-none">
                                     {basePriceObj.discount > 0 && (

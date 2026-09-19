@@ -1,5 +1,5 @@
-// hooks/useShopLogic.ts
 import { useState, useEffect, useMemo, useCallback, use } from "react";
+import { supabase } from "@/lib/supabase";
 import {
   fetchShopData,
   fetchShopOrderStatus,
@@ -158,7 +158,26 @@ export const useShopLogic = (params: any) => {
         setTableLabel(d.tableLabel);
         setBanners(d.banners || []);
         setCategories(d.categories || []);
-        setProducts(d.products || []);
+
+        // 🌟 สุ่มสินค้าแนะนำให้ครบ 6 รายการในหน้าแรก หากที่ตั้งค่าไว้มีน้อยกว่า 6
+        const fillRecommended = (rawList: any[], target: number = 6) => {
+          if (!Array.isArray(rawList) || rawList.length === 0) return [];
+          const manualRec = rawList.filter((p: any) => Boolean(p.is_recommended));
+          if (manualRec.length >= target) return rawList;
+
+          const others = rawList.filter((p: any) => !p.is_recommended);
+          const needed = target - manualRec.length;
+          const shuffled = [...others].sort(() => 0.5 - Math.random());
+          const fillItems = shuffled.slice(0, needed).map((p: any) => ({
+            ...p,
+            is_recommended: true,
+            is_auto_recommended: true,
+          }));
+          const remaining = shuffled.slice(needed);
+          return [...manualRec, ...fillItems, ...remaining];
+        };
+
+        setProducts(fillRecommended(d.products || [], 6));
         setDiscounts(d.discounts || []);
         
         setOrdersList(transformOrdersForDisplay(d.orders || [])); 
@@ -184,8 +203,42 @@ export const useShopLogic = (params: any) => {
     return () => clearInterval(interval);
   }, [banners]);
 
-  // Poll through a token-validating server action. Public clients never receive
-  // direct database SELECT or Realtime permissions.
+  // 🔒 ล็อกการเลื่อนของพื้นหลัง (Body Scroll Lock) เมื่อเปิด Modal สินค้า (selectedProduct)
+  // ครอบคลุมทุกธีม 100% ทั้งบนมือถือ (iOS/Android) และ Desktop
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (selectedProduct) {
+      const scrollY = window.scrollY;
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalBodyPosition = document.body.style.position;
+      const originalBodyTop = document.body.style.top;
+      const originalBodyWidth = document.body.style.width;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      const originalOverscroll = document.body.style.overscrollBehavior;
+
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+      document.body.style.overscrollBehavior = "none";
+      document.documentElement.style.overflow = "hidden";
+      document.documentElement.style.overscrollBehavior = "none";
+
+      return () => {
+        document.body.style.position = originalBodyPosition;
+        document.body.style.top = originalBodyTop;
+        document.body.style.width = originalBodyWidth;
+        document.body.style.overflow = originalBodyOverflow;
+        document.body.style.overscrollBehavior = originalOverscroll;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+        document.documentElement.style.overscrollBehavior = "";
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [selectedProduct]);
+
+  // ⚡ Supabase Realtime แทนการ Polling ทุก 5 วินาที
   useEffect(() => {
     if (!realTableId || !brandId || !combinedId) return;
     let active = true;
@@ -211,16 +264,58 @@ export const useShopLogic = (params: any) => {
       }
     };
 
-    const interval = window.setInterval(refreshOrders, 5000);
+    // เมื่อเปิดเข้ามาหรือเปลี่ยนแท็บมาดูหน้า status ให้ดึงข้อมูลล่าสุด 1 ครั้ง
+    if (activeTab === 'status') {
+      refreshOrders();
+    }
+
+    // 1. ฟังการเปลี่ยนแปลงของตาราง orders สำหรับโต๊ะนี้ผ่าน Supabase Realtime
+    const orderChannel = supabase
+      .channel(`table-orders-${realTableId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `table_id=eq.${realTableId}`,
+        },
+        () => {
+          if (active) refreshOrders();
+        }
+      )
+      .on(
+        'broadcast',
+        { event: '*' },
+        () => {
+          if (active) refreshOrders();
+        }
+      )
+      .subscribe();
+
+    // 2. ฟัง Broadcast จากร้านค้า (เช่น เมื่อมีการเปลี่ยนสถานะ หรือแอดมินแจ้งเตือน)
+    const brandChannel = supabase
+      .channel(`brand-${brandId}`)
+      .on(
+        'broadcast',
+        { event: '*' },
+        () => {
+          if (active) refreshOrders();
+        }
+      )
+      .subscribe();
+
     return () => {
       active = false;
-      window.clearInterval(interval);
+      try { supabase.removeChannel(orderChannel); } catch (_) {}
+      try { supabase.removeChannel(brandChannel); } catch (_) {}
     };
   }, [
     realTableId,
     brandId,
     combinedId,
     currentSlug,
+    activeTab,
     kickOut,
     transformOrdersForDisplay,
   ]);

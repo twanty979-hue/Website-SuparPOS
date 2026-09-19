@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Raft Survival Style) ---
@@ -444,6 +445,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer" style={{animationDelay: `${idx * 0.1}s`}}>
                                      <div className="w-full h-40 overflow-hidden relative bg-[#fef3c7] border-b-4 border-[#451a03] mt-0">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 right-2 bg-[#d32f2f] text-white text-[10px] font-bold px-3 py-1 rounded-sm border border-[#451a03] shadow-sm survival-font transform rotate-3">
                                                 SCRAP!
@@ -623,6 +625,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative shrink-0 w-full h-72 md:h-52 xl:h-72 overflow-hidden border-b-8 border-[#5D4037] rounded-b-[2rem] bg-[#81D4FA]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#D32F2F] text-white font-normal text-3xl survival-font rounded-xl border-4 border-[#FFF] shadow-[4px_4px_0_#3E2723] transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

@@ -78,10 +78,10 @@ export async function GET(request: Request) {
     const [productsRes, categoriesRes, groupsRes, itemsRes, mappingsRes] = await Promise.all([
       supabase
         .from('products')
-        .select('id, brand_id, category_id, name, description, image_name, price, price_special, price_jumbo, options, is_available, is_recommended')
+        .select('id, brand_id, category_id, name, description, image_name, price, price_special, price_jumbo, options, is_available, is_recommended, created_at')
         .eq('brand_id', brandId)
         .is('deleted_at', null)
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: true }),
         
       supabase
         .from('categories')

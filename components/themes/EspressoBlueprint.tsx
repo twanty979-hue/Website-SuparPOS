@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Technical/Blueprint Style) ---
@@ -348,6 +349,7 @@ export default function App({ state, actions, helpers }: any) {
                                      <div className="w-full aspect-square overflow-hidden bg-[#0F2C59] mb-3 relative border border-[rgba(234,219,200,0.1)]">
                                          <div className="absolute top-1 left-1 text-[8px] text-[#7AC0D6] z-10 bg-[#0A1C3A]/80 px-1">ID:{p.id.slice(-4)}</div>
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover filter grayscale sepia-[0.2] hue-rotate-180 brightness-90 group-hover:filter-none transition-all duration-500" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute bottom-0 right-0 bg-[#EADBC8] text-[#0F2C59] text-[10px] px-2 py-0.5 font-bold">
                                                 -DEV:{pricing.discount}
@@ -519,6 +521,7 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="w-full h-full border border-dashed border-[rgba(234,219,200,0.3)] relative overflow-hidden">
                             <div className="absolute top-2 left-2 text-[10px] text-[#7AC0D6] bg-black/60 px-1 z-10">FIG.01 // VIEW</div>
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover filter grayscale sepia-[0.2] hue-rotate-180 brightness-90" />
+                        <ProductModalBadge product={selectedProduct} />
                         </div>
                     </div>
 

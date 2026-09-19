@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🏀 Court Side Icons Wrapper ---
@@ -373,6 +374,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card bg-white rounded-lg cursor-pointer group">
                                      <div className="w-full h-32 overflow-hidden relative">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded skew-x-[-10deg] border border-black shadow-sm">
                                                 ON SALE
@@ -556,6 +558,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-56 sm:h-64 md:h-48 xl:h-72 rounded-b-[2rem] overflow-hidden shadow-md bg-slate-200 shrink-0">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4 bg-black/80 px-4 py-2 rounded-lg border-l-4 border-orange-500 backdrop-blur-md">
                                 {currentPriceObj.discount > 0 && (
                                     <span className="text-xs line-through text-slate-400 block -mb-1">{currentPriceObj.original}</span>

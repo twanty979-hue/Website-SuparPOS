@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Garfield Style) ---
@@ -415,6 +416,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="lazy-card group cursor-pointer animate-pop-up" style={{animationDelay: `${(idx * 0.1) + 0.2}s`}}>
                                      <div className="w-full h-36 overflow-hidden relative bg-[#000] border-b-4 border-[#F97316]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover animate-image-pop opacity-90 group-hover:opacity-100 transition-opacity" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 left-2 bg-[#F97316] text-black text-xs font-bold px-2 py-1 rounded-xl border-2 border-black transform -rotate-6 shadow-sm garfield-font animate-gentle-wiggle">
                                                  ★ YUM!
@@ -648,6 +650,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-72 md:h-52 xl:h-72 shrink-0 overflow-hidden border-b-8 border-[#F97316] rounded-b-[2rem] bg-[#000]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover animate-image-pop opacity-90" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#F97316] text-black font-bold text-3xl garfield-font rounded-xl border-4 border-black shadow-sm transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

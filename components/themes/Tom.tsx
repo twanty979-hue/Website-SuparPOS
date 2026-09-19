@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🧀 Tom & Jerry Icons Wrapper ---
@@ -387,6 +388,7 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer" style={{animationDelay: `${idx * 0.1}s`}}>
                                      <div className="w-full h-36 overflow-hidden relative bg-white border-b-4 border-[#94a3b8] mt-0">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                              <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-lg border-2 border-slate-800 transform -rotate-6 shadow-sm">SALE!</div>
                                          )}
@@ -541,6 +543,7 @@ export default function TomAndJerryTheme({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-[6px] border-slate-700 rounded-b-[2.5rem] bg-slate-100">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-6 py-2 bg-[#fbbf24] text-[#92400e] font-black text-3xl cartoon-font rounded-2xl border-4 border-[#92400e] shadow-[6px_6px_0_rgba(0,0,0,0.2)] transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- ⚽ Stadium Icons Wrapper ---
@@ -380,6 +381,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card bg-white rounded-lg shadow-sm cursor-pointer group">
                                      <div className="w-full h-32 overflow-hidden relative">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 text-[10px] font-black px-2 py-0.5 rounded skew-x-[-10deg] border border-yellow-500 shadow-sm">
                                                 ON SALE
@@ -565,6 +567,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-56 sm:h-64 md:h-48 xl:h-72 shrink-0 rounded-b-[2rem] overflow-hidden shadow-md bg-slate-200">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-slate-900/90 to-transparent flex items-end p-8">
                                 <span className="text-yellow-400 font-black text-4xl italic drop-shadow-md sport-font">{finalPriceWithOpts}.-</span>
                             </div>

@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Chowder Style) ---
@@ -381,6 +382,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card overflow-hidden relative cursor-pointer group">
                                      <div className="w-full h-36 overflow-hidden relative bg-white border-b-2 border-purple-200">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-yellow-400 text-purple-900 text-xs font-black px-2 py-1 rounded-lg border-2 border-purple-900 transform -rotate-6 shadow-sm">
                                                 SALE!
@@ -619,6 +621,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-56 sm:h-64 md:h-52 xl:h-72 shrink-0 overflow-hidden border-b-4 border-purple-900 rounded-b-[2rem] bg-purple-100">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-yellow-400 text-purple-900 font-black text-2xl cartoon-font rounded-xl border-4 border-purple-900 shadow-[4px_4px_0_#4c1d95] transform -rotate-3 flex flex-col items-center leading-none">
                                     {basePriceObj.discount > 0 && (

@@ -1,4 +1,5 @@
 "use client";
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React from "react";
 
 export const ThemeMaster = ({ state, actions, helpers, themeConfig, themeIcons }: any) => {
@@ -61,12 +62,13 @@ export const ThemeMaster = ({ state, actions, helpers, themeConfig, themeIcons }
                         </div>
                     )}
                     <div className="grid grid-cols-2 gap-6">
-                        {products?.filter((p:any) => p.is_recommended).slice(0, 4).map((p:any, idx:number) => (
+                        {products?.filter((p:any) => p.is_recommended).slice(0, 6).map((p:any, idx:number) => (
                             <div key={p.id} onClick={() => setSelectedProduct(p)} 
                                  className={`animate-pop active-squash p-3 cursor-pointer bg-white border-[5px] ${themeConfig.styles.card}`}
                                  style={{ borderColor: themeConfig.colors.border, animationDelay: `${idx * 0.1}s`, boxShadow: `8px 8px 0 ${themeConfig.colors.shadow}` }}>
                                 <div className="aspect-square rounded-[1.8rem] overflow-hidden mb-3 border-4 border-black/5 bg-slate-100">
                                     <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover" />
+                                         <ProductCardBadge product={p} />
                                 </div>
                                 <h3 className="text-xl theme-font truncate">{p.name}</h3>
                                 <span className="text-2xl theme-font" style={{ color: themeConfig.colors.primary }}>฿{calculatePrice(p).final}</span>
@@ -123,7 +125,8 @@ export const ThemeMaster = ({ state, actions, helpers, themeConfig, themeIcons }
         {selectedProduct && (
             <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm px-4 animate-in fade-in duration-300">
                 <div className="bg-white w-full max-w-xl rounded-t-[4rem] border-t-[10px] border-x-[10px] p-8 animate-pop shadow-2xl" style={{ borderColor: themeConfig.colors.border, backgroundColor: themeConfig.colors.bg }}>
-                    <div className="aspect-square rounded-[3rem] overflow-hidden mb-8 border-[8px] bg-white shadow-inner" style={{ borderColor: themeConfig.colors.border }}><img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" /></div>
+                    <div className="aspect-square rounded-[3rem] overflow-hidden mb-8 border-[8px] bg-white shadow-inner" style={{ borderColor: themeConfig.colors.border }}><img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} /></div>
                     <h2 className="text-5xl theme-font text-center mb-6">{selectedProduct.name}</h2>
                     <div className="grid gap-4">
                         {[{ label: 'SCOUT SIZE', key: 'normal' }, { label: 'GIANT SIZE', key: 'jumbo' }].map((opt) => (

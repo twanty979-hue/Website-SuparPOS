@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🍬 Flapjack Icons Wrapper ---
@@ -398,6 +399,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card overflow-hidden relative cursor-pointer group">
                                      <div className="w-full h-36 overflow-hidden relative bg-[#fef3c7] border-b-4 border-[#92400e]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 sepia-[.2]" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#ef4444] text-white text-xs font-black px-2 py-1 rounded border-2 border-[#451a03] transform -rotate-6 shadow-sm">
                                                 LOOT!
@@ -590,6 +592,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-[6px] border-[#92400e] rounded-b-[1.5rem] bg-[#2dd4bf]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover sepia-[.3]" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#fde047] text-[#451a03] font-black text-2xl adventure-font rounded-lg border-4 border-[#451a03] shadow-[4px_4px_0_rgba(0,0,0,0.2)] transform -rotate-3 flex flex-col items-center leading-none">
                                     {basePriceObj.discount > 0 && (

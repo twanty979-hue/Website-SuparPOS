@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Courage Style) ---
@@ -462,6 +463,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card cursor-pointer" style={{animationDelay: `${idx * 0.1}s`}}>
                                      <div className="w-full h-40 overflow-hidden relative bg-black border-b-2 border-slate-700 mt-0">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110 opacity-80" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 right-2 bg-[#991b1b] text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white/20 shadow-sm spooky-font">
                                                 SCARY GOOD!
@@ -639,6 +641,7 @@ export default function App({ state, actions, helpers }: any) {
                         <div className="relative w-full h-80 md:h-52 xl:h-80 shrink-0 overflow-hidden border-b-2 border-pink-900/50 bg-black">
                             <div className="scanline"></div>
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover opacity-70" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-6 left-6">
                                 <div className="px-8 py-3 bg-pink-500 text-white font-black text-3xl spooky-font border-2 border-white shadow-[0_0_15px_rgba(244,114,182,0.8)] transform -rotate-2">
                                     {currentPriceObj.discount > 0 && (

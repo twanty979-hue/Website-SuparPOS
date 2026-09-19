@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons Wrapper (Camp Lazlo Style) ---
@@ -380,6 +381,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="item-card overflow-hidden relative cursor-pointer group">
                                      <div className="w-full h-36 overflow-hidden relative bg-[#DCEDC8] border-b-2 border-[#AED581]">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#FFD600] text-[#3E2723] text-xs font-black px-2 py-1 rounded-lg border-2 border-[#3E2723] transform -rotate-6 shadow-sm">
                                                 SAVE!
@@ -618,6 +620,7 @@ export default function App({ state, actions, helpers }: any) {
                         </button>
                         <div className="relative w-full h-56 sm:h-64 md:h-52 xl:h-72 shrink-0 overflow-hidden border-b-4 border-[#3E2723] rounded-b-[2rem] bg-[#DCEDC8]">
                             <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                             <div className="absolute bottom-4 left-4">
                                 <div className="px-6 py-2 bg-[#FFD600] text-[#3E2723] font-black text-2xl cartoon-font rounded-xl border-4 border-[#3E2723] shadow-[4px_4px_0_#3E2723] transform -rotate-3 flex flex-col items-center leading-none">
                                     {currentPriceObj.discount > 0 && (

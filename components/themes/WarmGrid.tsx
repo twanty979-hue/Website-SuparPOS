@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Architectural / Grid Style) ---
@@ -353,6 +354,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="cursor-pointer group border-2 border-[#2D2B2A] bg-white p-2 flex flex-col hover:shadow-[4px_4px_0px_0px_rgba(45,43,42,1)] transition-shadow" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden bg-[#F8F6F0] mb-3 border border-[#D7D3C9] relative">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-0 right-0 bg-[#2D2B2A] text-[#F8F6F0] text-[10px] px-2 py-1 font-head font-bold border-l border-b border-[#2D2B2A]">
                                                 -{pricing.discount}
@@ -515,6 +517,7 @@ export default function App({ state, actions, helpers }: any) {
 
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-64 shrink-0 bg-[#F8F6F0] border-b-2 border-[#2D2B2A]">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none" />
                     </div>
 

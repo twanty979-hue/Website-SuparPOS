@@ -87,6 +87,11 @@ const IconBox = ({ size = 16 }) => (
     <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
   </svg>
 );
+const IconExternalLink = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1-2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+  </svg>
+);
 
 // 🛡️ Safe Product Image with Error Fallback
 function SafeProductImage({ src, alt, className }: { src?: string | null; alt: string; className?: string }) {
@@ -161,6 +166,23 @@ type StoreCategory = {
   sort_order?: number;
 };
 
+type TableInfo = {
+  id: string;
+  brand_id: string;
+  label: string;
+  access_token?: string | null;
+  access_tokens?: any;
+  status?: string;
+  is_active?: boolean;
+  order_url_path: string;
+};
+
+type BrandsSummary = {
+  grand_total_sales: number;
+  grand_today_sales: number;
+  grand_paid_orders_count: number;
+};
+
 type BrandReport = {
   id: string;
   name: string;
@@ -183,11 +205,19 @@ type BrandReport = {
   owner?: OwnerInfo | null;
   members_count?: number;
   members?: MemberInfo[];
+  total_sales?: number;
+  today_sales?: number;
+  paid_orders_count?: number;
+  last_paid_at?: string | null;
+  tables?: TableInfo[];
+  default_table_url?: string | null;
+  table_qr_mode?: string;
 };
 
 export default function SuperAdminBrands() {
   const router = useRouter();
   const [brands, setBrands] = useState<BrandReport[]>([]);
+  const [summary, setSummary] = useState<BrandsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<BrandReport | null>(null);
@@ -201,6 +231,10 @@ export default function SuperAdminBrands() {
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [productSearchTerm, setProductSearchTerm] = useState('');
 
+  // Table Ordering Links State
+  const [viewingTablesBrand, setViewingTablesBrand] = useState<BrandReport | null>(null);
+  const [tableSearchTerm, setTableSearchTerm] = useState('');
+
   useEffect(() => {
     fetchBrands();
   }, []);
@@ -212,6 +246,9 @@ export default function SuperAdminBrands() {
       const json = await res.json();
       if (json.success && json.data) {
         setBrands(json.data);
+        if (json.summary) {
+          setSummary(json.summary);
+        }
       } else {
         const { data, error } = await supabase.from('brand_dashboard_report').select('*').order('created_at', { ascending: false });
         if (data) setBrands(data);
@@ -305,6 +342,9 @@ export default function SuperAdminBrands() {
   const grandTotalOrders = brands.reduce((sum, b) => sum + (Number(b.total_orders) || 0), 0);
   const totalOrdersToday = brands.reduce((sum, b) => sum + (Number(b.today_orders) || 0), 0);
   const totalOwnersWithProfile = brands.filter((b) => b.owner && b.owner.full_name && b.owner.full_name !== 'ไม่ระบุชื่อ').length;
+  const grandTotalSales = summary?.grand_total_sales ?? brands.reduce((sum, b) => sum + (Number(b.total_sales) || 0), 0);
+  const grandTodaySales = summary?.grand_today_sales ?? brands.reduce((sum, b) => sum + (Number(b.today_sales) || 0), 0);
+  const grandPaidOrders = summary?.grand_paid_orders_count ?? brands.reduce((sum, b) => sum + (Number(b.paid_orders_count) || 0), 0);
 
   return (
     <div className="min-h-screen bg-[#F4F7F4] p-4 md:p-8 font-sans text-[#1E3A27] pb-32">
@@ -322,7 +362,7 @@ export default function SuperAdminBrands() {
                   สรุปภาพรวมร้านค้า & เจ้าของร้าน
                 </h1>
                 <p className="text-[#608367] font-semibold text-xs md:text-sm mt-0.5">
-                  Super Admin Portal • ข้อมูลโปรไฟล์เจ้าของร้าน, รายการสินค้าของร้าน และสถิติ Real-time
+                  Super Admin Portal • ยอดขายจริง (pai_orders), โต๊ะ & ลิงก์สั่งอาหารของร้าน, สินค้า และโปรไฟล์
                 </p>
               </div>
             </div>
@@ -332,13 +372,13 @@ export default function SuperAdminBrands() {
             <button
               onClick={fetchBrands}
               disabled={loading}
-              className="p-3.5 bg-white border border-[#D0DDD0] hover:bg-[#E2ECE2] text-[#2C4A34] rounded-2xl font-bold flex items-center gap-2 shadow-xs transition-all active:scale-95 text-sm"
+              className="p-3.5 bg-white border border-[#D0DDD0] hover:bg-[#E2ECE2] text-[#2C4A34] rounded-2xl font-bold flex items-center gap-2 shadow-xs transition-all active:scale-95 text-sm cursor-pointer"
               title="รีเฟรชข้อมูล"
             >
               <span className={loading ? 'animate-spin' : ''}><IconRefresh size={18} /></span>
               <span className="hidden sm:inline">รีเฟรช</span>
             </button>
-            <button className="flex-1 md:flex-initial group bg-[#2C4A34] hover:bg-[#3B5E44] text-white px-5 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-[#2C4A34]/20 transition-all active:scale-95 text-sm">
+            <button className="flex-1 md:flex-initial group bg-[#2C4A34] hover:bg-[#3B5E44] text-white px-5 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-[#2C4A34]/20 transition-all active:scale-95 text-sm cursor-pointer">
               <span className="bg-white/20 p-1 rounded-lg"><IconPlus size={16} /></span>
               <span>เพิ่มร้านค้าใหม่</span>
             </button>
@@ -346,29 +386,56 @@ export default function SuperAdminBrands() {
         </div>
 
         {/* 📊 Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-8">
-          <div className="bg-white p-4.5 rounded-2xl border border-[#D0DDD0] shadow-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-8">
+          <div className="bg-white p-4 rounded-2xl border border-[#D0DDD0] shadow-xs">
             <p className="text-[10px] md:text-xs font-bold text-[#8FAF96] uppercase tracking-wider mb-1">ร้านค้าทั้งหมด</p>
             <p className="text-xl md:text-2xl font-black text-[#2C4A34]">{totalStores} <span className="text-xs font-semibold text-[#608367]">ร้าน</span></p>
           </div>
-          <div className="bg-white p-4.5 rounded-2xl border border-[#D0DDD0] shadow-xs">
+          <div className="bg-white p-4 rounded-2xl border border-[#D0DDD0] shadow-xs">
             <p className="text-[10px] md:text-xs font-bold text-[#8FAF96] uppercase tracking-wider mb-1">สถานะ Active</p>
             <p className="text-xl md:text-2xl font-black text-green-700">{activeStores} <span className="text-xs font-semibold text-[#608367]">ร้าน</span></p>
           </div>
-          <div className="bg-white p-4.5 rounded-2xl border border-[#D0DDD0] shadow-xs bg-linear-to-br from-white to-[#F4F7F4]">
+
+          {/* 💰 ยอดขายรวม pai_orders */}
+          <div className="bg-gradient-to-br from-emerald-50 via-white to-emerald-50/50 p-4 rounded-2xl border border-emerald-300 shadow-xs relative overflow-hidden">
+            <p className="text-[10px] md:text-xs font-black text-emerald-800 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <span>💰</span> ยอดขายรวม (pai)
+            </p>
+            <p className="text-xl md:text-2xl font-black text-emerald-950">
+              ฿{grandTotalSales.toLocaleString()}
+            </p>
+            <p className="text-[10px] font-bold text-emerald-700 mt-0.5">
+              ชำระแล้ว {grandPaidOrders.toLocaleString()} บิล
+            </p>
+          </div>
+
+          {/* ⚡ ยอดขายวันนี้ pai_orders */}
+          <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50/50 p-4 rounded-2xl border border-amber-300 shadow-xs">
+            <p className="text-[10px] md:text-xs font-black text-amber-800 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <span>⚡</span> ยอดขายวันนี้ (pai)
+            </p>
+            <p className="text-xl md:text-2xl font-black text-amber-950">
+              ฿{grandTodaySales.toLocaleString()}
+            </p>
+            <p className="text-[10px] font-bold text-amber-700 mt-0.5">
+              {grandTodaySales > 0 ? 'คิดเงินวันนี้' : 'ยังไม่มียอดวันนี้'}
+            </p>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-[#D0DDD0] shadow-xs bg-linear-to-br from-white to-[#F4F7F4]">
             <p className="text-[10px] md:text-xs font-bold text-[#5F8565] uppercase tracking-wider mb-1 flex items-center gap-1">
-              <IconReceipt size={14} /> ออเดอร์รวมทั้งหมด
+              <IconReceipt size={14} /> ออเดอร์รวม
             </p>
             <p className="text-xl md:text-2xl font-black text-[#2C4A34]">{grandTotalOrders.toLocaleString()} <span className="text-xs font-semibold text-[#5F8565]">บิล</span></p>
           </div>
-          <div className="bg-white p-4.5 rounded-2xl border border-[#D0DDD0] shadow-xs">
+          <div className="bg-white p-4 rounded-2xl border border-[#D0DDD0] shadow-xs">
             <p className="text-[10px] md:text-xs font-bold text-[#8FAF96] uppercase tracking-wider mb-1 flex items-center gap-1">
               <IconActivity size={14} /> ออเดอร์วันนี้
             </p>
             <p className="text-xl md:text-2xl font-black text-[#5F8565]">{totalOrdersToday.toLocaleString()} <span className="text-xs font-semibold text-[#608367]">บิล</span></p>
           </div>
-          <div className="bg-white p-4.5 rounded-2xl border border-[#D0DDD0] shadow-xs col-span-2 md:col-span-1">
-            <p className="text-[10px] md:text-xs font-bold text-[#8FAF96] uppercase tracking-wider mb-1">เจ้าของร้านพร้อมโปรไฟล์</p>
+          <div className="bg-white p-4 rounded-2xl border border-[#D0DDD0] shadow-xs col-span-2 sm:col-span-1">
+            <p className="text-[10px] md:text-xs font-bold text-[#8FAF96] uppercase tracking-wider mb-1">โปรไฟล์เจ้าของ</p>
             <p className="text-xl md:text-2xl font-black text-[#2C4A34]">{totalOwnersWithProfile} <span className="text-xs font-semibold text-[#608367]">บัญชี</span></p>
           </div>
         </div>
@@ -418,7 +485,7 @@ export default function SuperAdminBrands() {
                     <th className="p-5">เจ้าของร้าน & โปรไฟล์ (Owner)</th>
                     <th className="p-5">สถานะ & แพ็กเกจ</th>
                     <th className="p-5">สถิติระบบ & สินค้า</th>
-                    <th className="p-5 bg-[#D5E4D5]">ยอดออเดอร์ (รวม / วันนี้)</th>
+                    <th className="p-5 bg-[#D5E4D5]">ยอดขาย & ออเดอร์ (pai)</th>
                     <th className="p-5">วันที่เปิดร้าน</th>
                     <th className="p-5 text-center">จัดการ</th>
                   </tr>
@@ -430,6 +497,10 @@ export default function SuperAdminBrands() {
                     const hasAvatar = !!owner?.avatar_url;
                     const totalOrders = Number(brand.total_orders) || 0;
                     const todayOrders = Number(brand.today_orders) || 0;
+                    const totalSales = Number(brand.total_sales) || 0;
+                    const todaySales = Number(brand.today_sales) || 0;
+                    const paidOrdersCount = Number(brand.paid_orders_count) || 0;
+                    const brandTables = brand.tables || [];
 
                     return (
                       <tr key={brand.id} className="hover:bg-[#F4F7F4]/80 transition-colors group">
@@ -537,7 +608,7 @@ export default function SuperAdminBrands() {
                           </div>
                         </td>
 
-                        {/* 4. สถิติระบบ & สินค้า (คลิกดูสินค้าได้) */}
+                        {/* 4. สถิติระบบ & สินค้า (คลิกดูสินค้า / โต๊ะได้) */}
                         <td className="p-5">
                           <div className="space-y-1.5">
                             <button
@@ -551,32 +622,66 @@ export default function SuperAdminBrands() {
                             </button>
 
                             <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] font-semibold text-[#608367]">
-                              <p>🪑 โต๊ะ: <span className="font-bold text-[#2C4A34]">{brand.total_tables || 0}</span></p>
+                              <button
+                                onClick={() => {
+                                  setViewingTablesBrand(brand);
+                                  setTableSearchTerm('');
+                                }}
+                                className="text-left hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer font-bold"
+                                title="คลิกเพื่อดูโต๊ะและลิงก์สั่งอาหารของร้านนี้"
+                              >
+                                🪑 โต๊ะ: <span className="text-[#2C4A34] underline decoration-emerald-600 font-black">{brandTables.length || brand.total_tables || 0}</span>
+                              </button>
                               <p>🏷️ ส่วนลด: <span className="font-bold text-[#2C4A34]">{brand.total_discounts || 0}</span></p>
                               <p>🪙 คอยน์: <span className="font-bold text-[#2C4A34]">{brand.total_coins || 0}</span></p>
+                              <p className="text-[10px] text-[#8FAF96]">
+                                QR: <span className="font-mono text-[#2C4A34] font-bold">{brand.table_qr_mode === 'static' ? 'Static' : 'Token'}</span>
+                              </p>
                             </div>
                           </div>
                         </td>
 
-                        {/* 5. ยอดออเดอร์ (รวมทั้งหมด / วันนี้) */}
+                        {/* 5. ยอดขาย & ออเดอร์ (pai_orders + views) */}
                         <td className="p-5 bg-[#F4F7F4]/60">
-                          <div className="flex items-center gap-3">
-                            <div className={'p-2.5 rounded-xl ' + (totalOrders > 0 ? 'bg-[#2C4A34] text-white shadow-xs' : 'bg-[#D0DDD0] text-[#608367]')}>
-                              <IconReceipt size={18} />
+                          <div className="space-y-1.5">
+                            {/* ยอดขายจริงจาก pai_orders */}
+                            <div className="flex items-center gap-2.5">
+                              <div className={'w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ' + (totalSales > 0 ? 'bg-emerald-700 text-white shadow-xs' : 'bg-[#D0DDD0] text-[#608367]')}>
+                                ฿
+                              </div>
+                              <div>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-[10px] font-black text-[#5F8565] uppercase">ยอดขาย (pai):</span>
+                                  <span className={'text-base font-black ' + (totalSales > 0 ? 'text-emerald-950' : 'text-[#8FAF96]')}>
+                                    ฿{totalSales.toLocaleString()}
+                                  </span>
+                                </div>
+                                {todaySales > 0 ? (
+                                  <div className="flex items-center gap-1 mt-0.5">
+                                    <span className="text-[10px] font-bold text-emerald-700 uppercase">วันนี้:</span>
+                                    <span className="text-xs font-bold px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800">
+                                      +฿{todaySales.toLocaleString()}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] text-[#8FAF96] font-medium mt-0.5">
+                                    ชำระแล้ว: <span className="font-bold text-[#2C4A34]">{paidOrdersCount}</span> บิล
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div>
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-[10px] font-black text-[#8FAF96] uppercase">รวมทั้งหมด:</span>
-                                <span className={'text-base font-black ' + (totalOrders > 0 ? 'text-[#2C4A34]' : 'text-[#8FAF96]')}>
-                                  {totalOrders.toLocaleString()} <span className="text-xs font-semibold">บิล</span>
+
+                            {/* จำนวนออเดอร์ในระบบ */}
+                            <div className="text-[11px] text-[#8FAF96] flex items-center gap-2 pt-1 border-t border-[#E2ECE2]">
+                              <span className="flex items-center gap-1">
+                                <IconReceipt size={11} />
+                                <span>ออเดอร์ระบบ: <strong className="text-[#2C4A34]">{totalOrders.toLocaleString()}</strong></span>
+                              </span>
+                              {todayOrders > 0 && (
+                                <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.2 rounded">
+                                  วันนี้ {todayOrders}
                                 </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[10px] font-bold text-[#5F8565] uppercase">วันนี้:</span>
-                                <span className={'text-xs font-bold px-1.5 py-0.2 rounded-md ' + (todayOrders > 0 ? 'bg-emerald-100 text-emerald-800' : 'text-[#8FAF96]')}>
-                                  {todayOrders > 0 ? todayOrders + ' บิล' : '0 บิล'}
-                                </span>
-                              </div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -592,22 +697,42 @@ export default function SuperAdminBrands() {
                         {/* 7. จัดการ (Action) */}
                         <td className="p-5">
                           <div className="flex items-center justify-center gap-1.5">
+                            {/* ปุ่มดูหน้าสั่งอาหาร (โต๊ะ) */}
+                            <button 
+                              onClick={() => {
+                                setViewingTablesBrand(brand);
+                                setTableSearchTerm('');
+                              }}
+                              className="px-2.5 py-2 bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-900 border border-amber-300/80 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                              title="เปิดดูรายการโต๊ะและลิงก์สั่งอาหารของร้านนี้"
+                            >
+                              <IconExternalLink size={13} />
+                              <span>สั่งอาหาร (โต๊ะ)</span>
+                              {brandTables.length > 0 && (
+                                <span className="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-full font-black">
+                                  {brandTables.length}
+                                </span>
+                              )}
+                            </button>
+
                             <button 
                               onClick={() => fetchStoreProducts(brand)}
-                              className="px-2.5 py-2 bg-emerald-50 hover:bg-[#2C4A34] hover:text-white text-emerald-800 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1"
+                              className="px-2.5 py-2 bg-emerald-50 hover:bg-[#2C4A34] hover:text-white text-emerald-800 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="ดูรายการสินค้าของร้าน"
                             >
                               <IconBox size={13} />
                               <span>ดูสินค้า</span>
                             </button>
+
                             <button 
                               onClick={() => setSelectedBrand(brand)}
-                              className="px-2.5 py-2 bg-[#E2ECE2] hover:bg-[#2C4A34] hover:text-white text-[#2C4A34] rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1"
+                              className="px-2.5 py-2 bg-[#E2ECE2] hover:bg-[#2C4A34] hover:text-white text-[#2C4A34] rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                               title="ดูรายละเอียดโปรไฟล์เจ้าของร้าน"
                             >
                               <IconUser size={13} />
                               <span>โปรไฟล์</span>
                             </button>
+
                             <button className="p-2 bg-[#F4F7F4] text-[#608367] rounded-xl hover:bg-[#2C4A34] hover:text-white transition-all shadow-xs" title="แก้ไขข้อมูล">
                               <IconEdit size={14} />
                             </button>
@@ -943,31 +1068,80 @@ export default function SuperAdminBrands() {
               </div>
             </div>
 
-            {/* Shop Overview Stats (รวมออเดอร์ทั้งหมด + วันนี้) */}
+            {/* Shop Overview Stats (รวมออเดอร์ทั้งหมด + วันนี้ + ยอดขาย pai) */}
             <div className="py-4 border-t border-[#E2ECE2]">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-black uppercase tracking-wider text-[#8FAF96]">สรุปข้อมูลร้านค้า & ยอดขาย</h3>
-                <button
-                  onClick={() => {
-                    const b = selectedBrand;
-                    setSelectedBrand(null);
-                    fetchStoreProducts(b);
-                  }}
-                  className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-xl border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  <IconBox size={13} />
-                  <span>ดูรายการสินค้าทั้งหมด ({selectedBrand.total_products || 0})</span>
-                </button>
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-[#8FAF96]">สรุปข้อมูลร้านค้า & ยอดขาย (pai_orders)</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const b = selectedBrand;
+                      setSelectedBrand(null);
+                      setViewingTablesBrand(b);
+                      setTableSearchTerm('');
+                    }}
+                    className="text-xs font-bold text-amber-900 hover:text-white bg-amber-50 hover:bg-amber-600 px-3 py-1 rounded-xl border border-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <IconExternalLink size={13} />
+                    <span>โต๊ะสั่งอาหาร ({selectedBrand.tables?.length || selectedBrand.total_tables || 0})</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const b = selectedBrand;
+                      setSelectedBrand(null);
+                      fetchStoreProducts(b);
+                    }}
+                    className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-xl border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <IconBox size={13} />
+                    <span>สินค้า ({selectedBrand.total_products || 0})</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-center">
-                <div className="bg-white p-3 rounded-2xl border border-[#E2ECE2] shadow-xs">
-                  <p className="text-[10px] font-bold text-[#8FAF96] uppercase">ออเดอร์รวมทั้งหมด</p>
-                  <p className="text-lg font-black text-[#2C4A34] mt-0.5">{(Number(selectedBrand.total_orders) || 0).toLocaleString()} <span className="text-xs font-bold text-[#608367]">บิล</span></p>
+                {/* ยอดขายรวม pai_orders */}
+                <div className="bg-gradient-to-br from-emerald-50 to-white p-3 rounded-2xl border border-emerald-200 shadow-xs">
+                  <p className="text-[10px] font-bold text-emerald-800 uppercase">ยอดขายรวม (pai)</p>
+                  <p className="text-lg font-black text-emerald-950 mt-0.5">฿{(Number(selectedBrand.total_sales) || 0).toLocaleString()}</p>
                 </div>
+
+                {/* ยอดขายวันนี้ pai_orders */}
+                <div className="bg-gradient-to-br from-amber-50 to-white p-3 rounded-2xl border border-amber-200 shadow-xs">
+                  <p className="text-[10px] font-bold text-amber-800 uppercase">ยอดวันนี้ (pai)</p>
+                  <p className="text-lg font-black text-amber-950 mt-0.5">฿{(Number(selectedBrand.today_sales) || 0).toLocaleString()}</p>
+                </div>
+
+                {/* บิลคิดเงิน pai_orders */}
                 <div className="bg-white p-3 rounded-2xl border border-[#E2ECE2] shadow-xs">
-                  <p className="text-[10px] font-bold text-[#8FAF96] uppercase">ออเดอร์วันนี้</p>
-                  <p className="text-lg font-black text-[#5F8565] mt-0.5">{(Number(selectedBrand.today_orders) || 0).toLocaleString()} <span className="text-xs font-bold text-[#608367]">บิล</span></p>
+                  <p className="text-[10px] font-bold text-[#8FAF96] uppercase">บิลชำระแล้ว (pai)</p>
+                  <p className="text-lg font-black text-[#2C4A34] mt-0.5">{(Number(selectedBrand.paid_orders_count) || 0).toLocaleString()} <span className="text-xs font-bold text-[#608367]">บิล</span></p>
+                </div>
+
+                {/* จำนวนโต๊ะ */}
+                <div 
+                  onClick={() => {
+                    const b = selectedBrand;
+                    setSelectedBrand(null);
+                    setViewingTablesBrand(b);
+                    setTableSearchTerm('');
+                  }}
+                  className="bg-white p-3 rounded-2xl border border-[#E2ECE2] shadow-xs hover:border-amber-400 cursor-pointer transition-all group/tbl"
+                  title="คลิกเพื่อดูโต๊ะและลิงก์สั่งอาหาร"
+                >
+                  <p className="text-[10px] font-bold text-[#8FAF96] uppercase group-hover/tbl:text-amber-800">จำนวนโต๊ะ ↗</p>
+                  <p className="text-lg font-black text-[#2C4A34] mt-0.5 group-hover/tbl:text-amber-800">{selectedBrand.tables?.length || selectedBrand.total_tables || 0}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 text-center mt-2.5">
+                <div className="bg-white p-2.5 rounded-2xl border border-[#E2ECE2] shadow-xs">
+                  <p className="text-[10px] font-bold text-[#8FAF96] uppercase">ออเดอร์ในระบบรวม</p>
+                  <p className="text-base font-black text-[#2C4A34] mt-0.5">{(Number(selectedBrand.total_orders) || 0).toLocaleString()} <span className="text-xs font-semibold text-[#608367]">บิล</span></p>
+                </div>
+                <div className="bg-white p-2.5 rounded-2xl border border-[#E2ECE2] shadow-xs">
+                  <p className="text-[10px] font-bold text-[#8FAF96] uppercase">ออเดอร์ระบบวันนี้</p>
+                  <p className="text-base font-black text-[#5F8565] mt-0.5">{(Number(selectedBrand.today_orders) || 0).toLocaleString()} <span className="text-xs font-semibold text-[#608367]">บิล</span></p>
                 </div>
                 <div 
                   onClick={() => {
@@ -975,15 +1149,11 @@ export default function SuperAdminBrands() {
                     setSelectedBrand(null);
                     fetchStoreProducts(b);
                   }}
-                  className="bg-white p-3 rounded-2xl border border-[#E2ECE2] shadow-xs hover:border-emerald-400 cursor-pointer transition-all group/prod"
+                  className="bg-white p-2.5 rounded-2xl border border-[#E2ECE2] shadow-xs hover:border-emerald-400 cursor-pointer transition-all group/prod col-span-2 md:col-span-1"
                   title="คลิกเพื่อเปิดดูสินค้า"
                 >
                   <p className="text-[10px] font-bold text-[#8FAF96] uppercase group-hover/prod:text-emerald-700">สินค้าทั้งหมด ↗</p>
-                  <p className="text-lg font-black text-[#2C4A34] mt-0.5 group-hover/prod:text-emerald-700">{selectedBrand.total_products || 0}</p>
-                </div>
-                <div className="bg-white p-3 rounded-2xl border border-[#E2ECE2] shadow-xs">
-                  <p className="text-[10px] font-bold text-[#8FAF96] uppercase">จำนวนโต๊ะ</p>
-                  <p className="text-lg font-black text-[#2C4A34] mt-0.5">{selectedBrand.total_tables || 0}</p>
+                  <p className="text-base font-black text-[#2C4A34] mt-0.5 group-hover/prod:text-emerald-700">{selectedBrand.total_products || 0} รายการ</p>
                 </div>
               </div>
             </div>
@@ -997,21 +1167,229 @@ export default function SuperAdminBrands() {
             </div>
 
             {/* Footer Action */}
-            <div className="mt-6 flex justify-between items-center gap-3">
-              <button
-                onClick={() => {
-                  const b = selectedBrand;
-                  setSelectedBrand(null);
-                  fetchStoreProducts(b);
-                }}
-                className="px-5 py-2.5 rounded-xl bg-[#2C4A34] hover:bg-[#3B5E44] text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <IconBox size={14} />
-                <span>เปิดดูสินค้าของร้านนี้</span>
-              </button>
+            <div className="mt-6 flex flex-wrap justify-between items-center gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const b = selectedBrand;
+                    setSelectedBrand(null);
+                    setViewingTablesBrand(b);
+                    setTableSearchTerm('');
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-900 border border-amber-300 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <IconExternalLink size={14} />
+                  <span>ดูโต๊ะ & ลิงก์สั่งอาหาร</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const b = selectedBrand;
+                    setSelectedBrand(null);
+                    fetchStoreProducts(b);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-[#2C4A34] hover:bg-[#3B5E44] text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <IconBox size={14} />
+                  <span>เปิดดูสินค้าของร้าน</span>
+                </button>
+              </div>
               <button
                 onClick={() => setSelectedBrand(null)}
                 className="px-6 py-2.5 rounded-xl bg-[#E2ECE2] hover:bg-[#D0DDD0] text-[#2C4A34] font-bold text-xs transition-colors cursor-pointer"
+              >
+                ปิดหน้าต่าง
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 🍽️ Table Ordering Links Modal */}
+      {viewingTablesBrand && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-[#FAF9F6] border border-[#D0DDD0] rounded-3xl max-w-4xl w-full p-6 md:p-8 shadow-2xl relative max-h-[90vh] flex flex-col">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-5 border-b border-[#E2ECE2] shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-[#DBE6DB] flex items-center justify-center text-2xl font-black text-[#5F8565] shadow-inner overflow-hidden shrink-0 border border-[#D0DDD0]/60">
+                  {viewingTablesBrand.logo_url ? (
+                    <img src={viewingTablesBrand.logo_url} className="w-full h-full object-cover" alt={viewingTablesBrand.name} />
+                  ) : (
+                    viewingTablesBrand.name ? viewingTablesBrand.name.charAt(0).toUpperCase() : 'B'
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-xl md:text-2xl font-black text-[#2C4A34]">
+                      {viewingTablesBrand.name}
+                    </h2>
+                    <span className="text-[10px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-bold uppercase border border-amber-200">
+                      QR: {viewingTablesBrand.table_qr_mode === 'static' ? 'Static (คงที่)' : 'Rotating (หมุนเวียน Token)'}
+                    </span>
+                    <span className="text-[10px] bg-[#E2ECE2] text-[#3B5E44] px-2 py-0.5 rounded-md font-bold uppercase">
+                      /{viewingTablesBrand.slug || 'shop'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#608367] font-semibold mt-0.5 flex items-center gap-2">
+                    <span>ลิงก์หน้าสั่งอาหารสำหรับลูกค้าตามแต่ละโต๊ะ</span>
+                    <span className="text-[#D0DDD0]">•</span>
+                    <span className="font-mono text-[11px] text-[#8FAF96]">Brand ID: {viewingTablesBrand.id}</span>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setViewingTablesBrand(null)}
+                className="p-2 rounded-xl bg-white border border-[#D0DDD0] text-[#608367] hover:text-[#2C4A34] hover:bg-[#E2ECE2] transition-colors cursor-pointer"
+              >
+                <IconClose size={18} />
+              </button>
+            </div>
+
+            {/* Subheader: Search & Summary Info */}
+            <div className="py-4 border-b border-[#E2ECE2] shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FAF96]">
+                  <IconSearch size={16} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="ค้นหาชื่อโต๊ะ (เช่น T-1, โต๊ะ 2)..."
+                  value={tableSearchTerm}
+                  onChange={(e) => setTableSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-[#D0DDD0] rounded-xl text-xs md:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#5F8565]/30 text-[#2C4A34]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-[#608367] font-semibold">
+                  มีโต๊ะทั้งหมด <strong className="text-[#2C4A34] font-black">{viewingTablesBrand.tables?.length || 0}</strong> โต๊ะ
+                </span>
+                {viewingTablesBrand.default_table_url && (
+                  <a
+                    href={viewingTablesBrand.default_table_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-[#2C4A34] hover:bg-[#3B5E44] text-white font-bold rounded-xl flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <span>เปิดโต๊ะแรกทันที</span>
+                    <IconExternalLink size={12} />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Table List Container */}
+            <div className="flex-1 overflow-y-auto py-4">
+              {(() => {
+                const tables = (viewingTablesBrand.tables || []).filter(t => 
+                  !tableSearchTerm || t.label.toLowerCase().includes(tableSearchTerm.toLowerCase()) || t.id.toLowerCase().includes(tableSearchTerm.toLowerCase())
+                );
+
+                if (tables.length === 0) {
+                  return (
+                    <div className="py-16 text-center text-[#8FAF96]">
+                      <div className="text-3xl mb-2">🪑</div>
+                      <p className="font-bold text-sm text-[#2C4A34]">
+                        {viewingTablesBrand.tables && viewingTablesBrand.tables.length > 0
+                          ? 'ไม่พบโต๊ะที่ตรงกับคำค้นหา'
+                          : 'ร้านค้านี้ยังไม่มีข้อมูลโต๊ะในระบบ'}
+                      </p>
+                      <p className="text-xs mt-1 text-[#608367]">
+                        {viewingTablesBrand.tables && viewingTablesBrand.tables.length > 0
+                          ? 'ลองค้นหาด้วยชื่อโต๊ะอื่น'
+                          : 'สามารถเข้าสู่ระบบร้านค้าเพื่อสร้างโต๊ะและสร้าง QR Code ได้'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {tables.map((table) => {
+                      const fullUrl = `${origin}${table.order_url_path}`;
+                      const copyId = `table-url-${table.id}`;
+                      const isCopied = copiedKey === copyId;
+
+                      return (
+                        <div
+                          key={table.id}
+                          className="bg-white p-4 rounded-2xl border border-[#E2ECE2] shadow-xs hover:border-[#5F8565]/50 transition-all flex flex-col justify-between gap-3"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="p-2 rounded-xl bg-amber-50 text-amber-800 font-black text-sm border border-amber-200">
+                                  🪑 {table.label}
+                                </span>
+                                {table.status && (
+                                  <span className={'text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ' + (
+                                    table.status === 'available' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                                  )}>
+                                    {table.status === 'available' ? 'ว่าง' : table.status}
+                                  </span>
+                                )}
+                              </div>
+                              {table.access_token && (
+                                <span className="text-[10px] font-mono text-[#8FAF96] bg-[#F4F7F4] px-2 py-0.5 rounded border border-[#E2ECE2]">
+                                  Token: {table.access_token}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* URL Preview */}
+                            <div className="bg-[#F4F7F4] p-2 rounded-xl border border-[#E2ECE2] mt-2">
+                              <p className="text-[10px] font-mono text-[#608367] break-all line-clamp-2">
+                                {fullUrl}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-[#E2ECE2]">
+                            <a
+                              href={fullUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 py-2 px-3 bg-[#2C4A34] hover:bg-[#3B5E44] text-white rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            >
+                              <span>เปิดหน้าสั่งอาหาร</span>
+                              <IconExternalLink size={13} />
+                            </a>
+                            <button
+                              onClick={() => copyToClipboard(fullUrl, copyId)}
+                              className={'py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 cursor-pointer ' + (
+                                isCopied
+                                  ? 'bg-green-50 text-green-700 border-green-300'
+                                  : 'bg-white hover:bg-[#F4F7F4] text-[#2C4A34] border-[#D0DDD0]'
+                              )}
+                              title="คัดลอกลิงก์สำหรับส่งให้ลูกค้า"
+                            >
+                              {isCopied ? <IconCheck size={13} /> : <IconCopy size={13} />}
+                              <span>{isCopied ? 'คัดลอกแล้ว' : 'คัดลอก'}</span>
+                            </button>
+                          </div>
+
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-4 border-t border-[#E2ECE2] flex items-center justify-between shrink-0">
+              <p className="text-xs text-[#8FAF96]">
+                คลิกเพื่อเปิดดูหน้าเว็บสั่งอาหารตามแต่ละโต๊ะได้ทันที
+              </p>
+              <button
+                onClick={() => setViewingTablesBrand(null)}
+                className="px-6 py-2 rounded-xl bg-[#2C4A34] hover:bg-[#3B5E44] text-white font-bold text-xs transition-colors cursor-pointer"
               >
                 ปิดหน้าต่าง
               </button>

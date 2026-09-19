@@ -1,3 +1,4 @@
+import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemeProductBadge";
 import React, { useState, useEffect, useRef } from "react";
 
 // --- 🛠️ Icons (Rounded & Friendly Style) ---
@@ -304,6 +305,7 @@ export default function App({ state, actions, helpers }: any) {
                                 <div key={p.id} onClick={() => setSelectedProduct(p)} className="card-soft p-3 pb-4 cursor-pointer relative group h-full flex flex-col" style={{animationDelay: `${idx * 0.05}s`}}>
                                      <div className="w-full aspect-square overflow-hidden relative rounded-2xl bg-orange-100 mb-3 shadow-inner">
                                          <img src={getMenuUrl(p.image_name)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                         <ProductCardBadge product={p} />
                                          {pricing.discount > 0 && (
                                             <div className="absolute top-2 left-2 bg-[#ef4444] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm">
                                                 ลดพิเศษ
@@ -480,6 +482,7 @@ export default function App({ state, actions, helpers }: any) {
                 <div className="w-full max-w-md md:max-w-xl xl:max-w-md bg-white rounded-t-[2.5rem] md:rounded-2xl xl:rounded-none xl:rounded-t-[2.5rem] shadow-2xl relative overflow-hidden max-h-[90vh] md:max-h-[85vh] xl:max-h-[90vh] flex flex-col">
                     <div className="relative h-56 sm:h-64 md:h-52 xl:h-72 shrink-0 bg-orange-50">
                         <img src={getMenuUrl(selectedProduct.image_name)} className="w-full h-full object-cover" />
+                        <ProductModalBadge product={selectedProduct} />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                         <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white hover:text-[#ea580c] transition-colors border border-white/30">
                             <Icon name="x" size={20} />
