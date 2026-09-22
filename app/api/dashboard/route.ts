@@ -158,17 +158,32 @@ export async function GET(request: Request) {
       const dateStr = cur.format('YYYY-MM-DD');
       const existing = salesMap.get(dateStr);
       if (existing) {
-        filledDailySales.push(existing);
+        const rev = Number(existing.total_revenue || 0);
+        const ord = Number(existing.total_payments || existing.total_orders || 0);
+        filledDailySales.push({
+          ...existing,
+          total_revenue: rev,
+          revenue: rev,
+          value: rev,
+          total_orders: ord,
+          total_payments: ord,
+          orders: ord,
+        });
       } else {
         filledDailySales.push({
           brand_id: brandId,
           report_date: dateStr,
           total_revenue: 0,
+          revenue: 0,
+          value: 0,
           total_orders: 0,
           total_payments: 0,
+          orders: 0,
           customer_count: 0,
           total_cash: 0,
-          total_transfer: 0
+          total_transfer: 0,
+          vat_amount: 0,
+          subtotal_before_vat: 0
         });
       }
       cur = cur.add(1, 'day');
@@ -223,20 +238,87 @@ export async function GET(request: Request) {
       }
     }
 
-    // 🏆 2. จัดอันดับสินค้าขายดี Top 10
-    const productMap: Record<string, { name: string, qty: number, revenue: number }> = {};
+    // 🏆 2. จัดอันดับสินค้าขายดี Top 10 และ สินค้าทั้งหมด
+    const productMap: Record<string, { id: string, name: string, qty: number, revenue: number, image_url?: string }> = {};
     
     productStats.forEach(p => {
       if (!productMap[p.product_id]) {
-        productMap[p.product_id] = { name: p.product_name, qty: 0, revenue: 0 };
+        productMap[p.product_id] = { id: p.product_id, name: p.product_name, qty: 0, revenue: 0 };
       }
       productMap[p.product_id].qty += Number(p.total_quantity || 0);
       productMap[p.product_id].revenue += Number(p.total_revenue || 0);
     });
 
-    const topProducts = Object.values(productMap)
-      .sort((a, b) => b.qty - a.qty)
-      .slice(0, 10);
+    const allSortedProducts = Object.values(productMap)
+      .sort((a, b) => b.qty - a.qty);
+
+    const allProductIds = allSortedProducts.map(p => p.id).filter(Boolean);
+    let categoryStats: any[] = [];
+    if (allProductIds.length > 0) {
+      try {
+        const [prodImgsRes, categoriesRes] = await Promise.all([
+          supabase
+            .from('products')
+            .select('id, image_name, category_id')
+            .in('id', allProductIds),
+          supabase
+            .from('categories')
+            .select('id, name')
+            .eq('brand_id', brandId)
+        ]);
+
+        if (prodImgsRes.error) {
+          console.error('[Dashboard] Error fetching products:', prodImgsRes.error);
+        }
+        if (categoriesRes.error) {
+          console.error('[Dashboard] Error fetching categories:', categoriesRes.error);
+        }
+
+        const catNameById: Record<string, string> = {};
+        if (categoriesRes.data) {
+          categoriesRes.data.forEach((c: any) => {
+            catNameById[c.id] = c.name;
+          });
+        }
+
+        const prodCatMap: Record<string, string> = {};
+        const imgMap: Record<string, string> = {};
+        if (prodImgsRes.data) {
+          prodImgsRes.data.forEach((pi: any) => {
+            imgMap[pi.id] = pi.image_name || '';
+            if (pi.category_id && catNameById[pi.category_id]) {
+              prodCatMap[pi.id] = catNameById[pi.category_id];
+            }
+          });
+        }
+
+        allSortedProducts.forEach((p: any) => {
+          if (p.id && imgMap[p.id]) {
+            p.image_url = imgMap[p.id];
+          }
+          if (p.id && prodCatMap[p.id]) {
+            p.category_name = prodCatMap[p.id];
+          }
+        });
+
+        // 🏷️ Category aggregation
+        const categoryMap: Record<string, { id: string, name: string, qty: number, revenue: number }> = {};
+        allSortedProducts.forEach((p: any) => {
+          const cName = p.category_name || 'ทั่วไป';
+          if (!categoryMap[cName]) {
+            categoryMap[cName] = { id: cName, name: cName, qty: 0, revenue: 0 };
+          }
+          categoryMap[cName].qty += Number(p.qty || 0);
+          categoryMap[cName].revenue += Number(p.revenue || 0);
+        });
+        categoryStats = Object.values(categoryMap).sort((a, b) => b.revenue - a.revenue);
+      } catch (err) {
+        console.warn('[Dashboard] Error fetching product images and categories:', err);
+      }
+    }
+
+    const topProducts = allSortedProducts.slice(0, 10);
+    const allProducts = allSortedProducts;
 
     const toppingMap: Record<string, { name: string, groupName: string, qty: number, revenue: number }> = {};
     toppingStats.forEach(row => {
@@ -380,6 +462,7 @@ export async function GET(request: Request) {
         summary,
         chartData: filledDailySales,
         topProducts,
+        allProducts,
         topToppings,
         effectivePlan,
         limitWarning,
@@ -388,7 +471,8 @@ export async function GET(request: Request) {
         hourlySales,
         paymentStats,
         tableStats,
-        cashierStats
+        cashierStats,
+        categoryStats
       }
     });
   } catch (error: any) {

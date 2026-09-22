@@ -144,13 +144,21 @@ export async function DELETE(request: Request) {
 
     const { supabase, brandId } = await getSupabaseAndBrand(request, { brand_id: fallbackBrandId });
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from('master_categories')
       .delete()
       .eq('id', id)
       .eq('brand_id', brandId);
 
-    if (error) throw error;
+    if (error) {
+      // Fallback: หากติด Foreign Key หรือมีสินค้าผูกอยู่ ให้ทำ Soft Delete โดยซ่อนไว้
+      const { error: softErr } = await supabase
+        .from('master_categories')
+        .update({ is_active: false })
+        .eq('id', id)
+        .eq('brand_id', brandId);
+      if (softErr) throw error;
+    }
 
     return NextResponse.json(
       { success: true, message: 'ลบหมวดหมู่เรียบร้อยแล้ว' },

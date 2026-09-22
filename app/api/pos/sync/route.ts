@@ -110,6 +110,28 @@ export async function POST(request: Request) {
       return response;
     }
 
+    const sanitizeOrderItem = (item: any) => {
+      let productId = item.product_id;
+      if (!productId || typeof productId !== 'string' || productId.trim() === '') {
+        const cartItem = (syncPayload?.cartItems || []).find(
+          (c: any) => c.order_item_id === item.id || c.id === item.id
+        );
+        if (cartItem?.id) {
+          const cleanId = String(cartItem.id).replace(/^topping:/, '');
+          productId = isUuidValue(cleanId) ? cleanId : item.id;
+        } else {
+          productId = item.id;
+        }
+      }
+
+      return {
+        ...item,
+        product_id: productId,
+        promotion_snapshot: safeJsonParse(item.promotion_snapshot, null),
+        toppings_snapshot: safeJsonParse(item.toppings_snapshot, []),
+      };
+    };
+
     if (action === 'cancel_order') {
       const targetOrderIds = Array.isArray(orderIds)
         ? orderIds.filter(Boolean).map(String)
@@ -124,11 +146,7 @@ export async function POST(request: Request) {
         const { error: orderError } = await supabase.from('orders').upsert(newOrderData);
         if (orderError) throw orderError;
         
-        const processedCancelItems = itemsToSave.map((item: any) => ({
-          ...item,
-          promotion_snapshot: safeJsonParse(item.promotion_snapshot, null),
-          toppings_snapshot: safeJsonParse(item.toppings_snapshot, []),
-        }));
+        const processedCancelItems = itemsToSave.map(sanitizeOrderItem);
 
         const { error: itemsError } = await supabase.from('order_items').upsert(processedCancelItems);
         if (itemsError) throw itemsError;
@@ -250,11 +268,7 @@ export async function POST(request: Request) {
     }
     paiOrderData.cashier_id = resolvedCashierId;
 
-    const processedItems = itemsToSave.map((item: any) => ({
-      ...item,
-      promotion_snapshot: safeJsonParse(item.promotion_snapshot, null),
-      toppings_snapshot: safeJsonParse(item.toppings_snapshot, []),
-    }));
+    const processedItems = itemsToSave.map(sanitizeOrderItem);
 
     // ---------------------------------------------------------
     // 🚧 3️⃣ จัดลำดับการเซฟใหม่ แก้ปัญหา "ไก่กับไข่" (Circular Foreign Key)

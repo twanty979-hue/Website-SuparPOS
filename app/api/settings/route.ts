@@ -107,8 +107,8 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-        const updateData: any = { updated_at: new Date().toISOString() };
-    for (const key of ['name', 'phone', 'address', 'promptpay_number']) {
+    const updateData: any = { updated_at: new Date().toISOString() };
+    for (const key of ['name', 'phone', 'address', 'promptpay_number', 'logo_url', 'qr_image_url']) {
       if (body[key] !== undefined) updateData[key] = body[key];
     }
 
