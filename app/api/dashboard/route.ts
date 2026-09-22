@@ -117,7 +117,8 @@ export async function GET(request: Request) {
     }
 
     // 🚀 อ่านจากตารางสรุปทั้งหมด เพื่อให้ Dashboard ตอบสนองเร็วเมื่อข้อมูลโตขึ้น
-    const [salesRes, productsRes, toppingsRes] = await Promise.all([
+    // พร้อมดึงยอดบิลที่ยกเลิก และรายการอาหารที่ยกเลิก (Void & Cancellations)
+    const [salesRes, productsRes, toppingsRes, cancelledOrdersRes, cancelledItemsRes] = await Promise.all([
       supabase
         .from('dashboard_daily_sales')
         .select('*')
@@ -138,22 +139,124 @@ export async function GET(request: Request) {
         .select('*')
         .eq('brand_id', brandId)
         .gte('report_date', startDate.format('YYYY-MM-DD'))
-        .lte('report_date', endDate.format('YYYY-MM-DD'))
+        .lte('report_date', endDate.format('YYYY-MM-DD')),
+
+      // 🛑 1. บิลที่ยกเลิกทั้งบิล (Orders with status = 'cancelled')
+      supabase
+        .from('orders')
+        .select(`
+          id,
+          total_price,
+          created_at,
+          cancelled_at,
+          cancel_reason,
+          order_items (
+            id,
+            price,
+            quantity,
+            status
+          )
+        `)
+        .eq('brand_id', brandId)
+        .eq('status', 'cancelled')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString()),
+
+      // 🛑 2. รายการอาหารที่ยกเลิกบางรายการในบิลสำเร็จ (Items with status = 'cancelled' in active/paid orders)
+      supabase
+        .from('order_items')
+        .select(`
+          id,
+          price,
+          quantity,
+          product_name,
+          status,
+          created_at,
+          cancelled_at,
+          cancel_reason,
+          orders!inner (
+            id,
+            brand_id,
+            status,
+            created_at
+          )
+        `)
+        .eq('orders.brand_id', brandId)
+        .neq('orders.status', 'cancelled')
+        .eq('status', 'cancelled')
+        .gte('orders.created_at', startDate.toISOString())
+        .lte('orders.created_at', endDate.toISOString())
     ]);
 
     if (salesRes.error) throw salesRes.error;
     if (productsRes.error) throw productsRes.error;
     if (toppingsRes.error) throw toppingsRes.error;
+    if (cancelledOrdersRes.error) console.error('[Dashboard] cancelledOrders error:', cancelledOrdersRes.error);
+    if (cancelledItemsRes.error) console.error('[Dashboard] cancelledItems error:', cancelledItemsRes.error);
 
     const dailySales = salesRes.data || [];
     const productStats = productsRes.data || [];
     const toppingStats = toppingsRes.data || [];
+    const cancelledOrders = cancelledOrdersRes.data || [];
+    const cancelledItems = cancelledItemsRes.data || [];
+
+    // 🧮 คำนวณสรุปยอดการยกเลิก (ทั้งบิล และ ยกเลิกบางรายการ)
+    let cancelledBillsCount = cancelledOrders.length;
+    let cancelledBillsAmount = 0;
+
+    cancelledOrders.forEach((o: any) => {
+      let amt = Number(o.total_price || 0);
+      if (amt <= 0 && o.order_items && o.order_items.length > 0) {
+        amt = o.order_items.reduce((s: number, it: any) => s + (Number(it.price || 0) * Number(it.quantity || 1)), 0);
+      }
+      cancelledBillsAmount += amt;
+    });
+
+    let cancelledItemsCount = 0;
+    let cancelledItemsAmount = 0;
+
+    cancelledItems.forEach((it: any) => {
+      const qty = Number(it.quantity || 1);
+      const price = Number(it.price || 0);
+      cancelledItemsCount += qty;
+      cancelledItemsAmount += (price * qty);
+    });
+
+    const totalCancelledAmount = cancelledBillsAmount + cancelledItemsAmount;
+
+    const cancellationStats = {
+      cancelledBillsCount,
+      cancelledBillsAmount,
+      cancelledItemsCount,
+      cancelledItemsAmount,
+      totalCancelledAmount
+    };
 
     // เติมข้อมูลวันที่ขาดหายไปด้วยยอดขาย 0 เพื่อให้กราฟพล็อตได้ตรงกับปฏิทินจริงและยอดสะสมไม่ข้ามวัน
     const filledDailySales: any[] = [];
-    let cur = startDate.clone();
-    const salesMap = new Map(dailySales.map(item => [item.report_date, item]));
+    const salesMap = new Map<string, any>();
+    dailySales.forEach((item: any) => {
+      const d = item.report_date;
+      if (!salesMap.has(d)) {
+        salesMap.set(d, {
+          ...item,
+          total_revenue: Number(item.total_revenue || 0),
+          total_payments: Number(item.total_payments || item.total_orders || 0),
+          total_orders: Number(item.total_orders || item.total_payments || 0),
+        });
+      } else {
+        const existing = salesMap.get(d);
+        existing.total_revenue += Number(item.total_revenue || 0);
+        existing.total_payments += Number(item.total_payments || item.total_orders || 0);
+        existing.total_orders += Number(item.total_orders || item.total_payments || 0);
+        existing.total_cash = Number(existing.total_cash || 0) + Number(item.total_cash || 0);
+        existing.total_transfer = Number(existing.total_transfer || 0) + Number(item.total_transfer || 0);
+        existing.vat_amount = Number(existing.vat_amount || 0) + Number(item.vat_amount || 0);
+        existing.subtotal_before_vat = Number(existing.subtotal_before_vat || 0) + Number(item.subtotal_before_vat || 0);
+      }
+    });
 
+    let cur = startDate.clone();
     while (cur.isBefore(endDate) || cur.isSame(endDate, 'day')) {
       const dateStr = cur.format('YYYY-MM-DD');
       const existing = salesMap.get(dateStr);
@@ -197,7 +300,13 @@ export async function GET(request: Request) {
       totalCash: 0,
       totalTransfer: 0,
       vatAmount: 0,
-      subtotalBeforeVat: 0
+      subtotalBeforeVat: 0,
+      cancelledBillsCount: cancellationStats.cancelledBillsCount,
+      cancelledBillsAmount: cancellationStats.cancelledBillsAmount,
+      cancelledItemsCount: cancellationStats.cancelledItemsCount,
+      cancelledItemsAmount: cancellationStats.cancelledItemsAmount,
+      totalCancelledAmount: cancellationStats.totalCancelledAmount,
+      cancellationStats
     };
 
     dailySales.forEach(day => {
@@ -320,11 +429,12 @@ export async function GET(request: Request) {
     const topProducts = allSortedProducts.slice(0, 10);
     const allProducts = allSortedProducts;
 
-    const toppingMap: Record<string, { name: string, groupName: string, qty: number, revenue: number }> = {};
+    const toppingMap: Record<string, { id?: string, name: string, groupName: string, qty: number, revenue: number, image_url?: string }> = {};
     toppingStats.forEach(row => {
       const key = row.topping_id || `${row.group_name}:${row.topping_name}`;
       if (!toppingMap[key]) {
         toppingMap[key] = {
+          id: row.topping_id,
           name: row.topping_name,
           groupName: row.group_name,
           qty: 0,
@@ -335,9 +445,38 @@ export async function GET(request: Request) {
       toppingMap[key].revenue += Number(row.total_revenue || 0);
     });
 
-    const topToppings = Object.values(toppingMap)
-      .sort((a, b) => b.qty - a.qty)
-      .slice(0, 10);
+    const allSortedToppings = Object.values(toppingMap)
+      .sort((a, b) => b.qty - a.qty);
+
+    try {
+      const { data: toppingItems } = await supabase
+        .from('topping_items')
+        .select('id, name, image_name')
+        .eq('brand_id', brandId);
+
+      if (toppingItems && toppingItems.length > 0) {
+        const topImgById: Record<string, string> = {};
+        const topImgByName: Record<string, string> = {};
+        toppingItems.forEach((ti: any) => {
+          if (ti.image_name) {
+            if (ti.id) topImgById[ti.id] = ti.image_name;
+            if (ti.name) topImgByName[ti.name.toLowerCase().trim()] = ti.image_name;
+          }
+        });
+        allSortedToppings.forEach((t: any) => {
+          if (t.id && topImgById[t.id]) {
+            t.image_url = topImgById[t.id];
+          } else if (t.name && topImgByName[t.name.toLowerCase().trim()]) {
+            t.image_url = topImgByName[t.name.toLowerCase().trim()];
+          }
+        });
+      }
+    } catch (err) {
+      console.warn('[Dashboard] Error fetching topping images:', err);
+    }
+
+    const topToppings = allSortedToppings.slice(0, 10);
+    const allToppings = allSortedToppings;
 
     let hourlySales: any[] = [];
     let paymentStats: any[] = [];
@@ -464,6 +603,7 @@ export async function GET(request: Request) {
         topProducts,
         allProducts,
         topToppings,
+        allToppings,
         effectivePlan,
         limitWarning,
         canAccessAdvanced,
@@ -472,7 +612,8 @@ export async function GET(request: Request) {
         paymentStats,
         tableStats,
         cashierStats,
-        categoryStats
+        categoryStats,
+        cancellationStats
       }
     });
   } catch (error: any) {
