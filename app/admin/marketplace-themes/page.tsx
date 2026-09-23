@@ -18,12 +18,15 @@ const IconSearch = ({ size = 16, className = "" }: IconProps) => <svg width={siz
 const CDN_BASE_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "https://img.pos-foodscan.com";
 
 // --- IPhone Component ---
-const IPhone15Pro = ({ src }: { src: string | null }) => {
+const IPhone15Pro = ({ src, size = 'lg', className = "" }: { src: string | null; size?: 'sm' | 'lg'; className?: string }) => {
+    const isSm = size === 'sm';
     return (
-        <div className="relative mx-auto h-[380px] w-[180px] shadow-xl transition-all hover:scale-[1.02] duration-300 group bg-white rounded-[2.5rem]">
-            <div className="absolute inset-0 border-[4px] border-slate-800 rounded-[2.5rem] z-20 pointer-events-none ring-1 ring-white/10"></div>
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-[30%] h-[20px] bg-black rounded-full z-30"></div>
-            <div className="absolute inset-[4px] bg-slate-100 rounded-[2.2rem] overflow-hidden z-10">
+        <div className={`relative mx-auto shadow-xl transition-all hover:scale-[1.02] duration-300 group bg-white ${
+            isSm ? 'h-[230px] w-[114px] rounded-[1.8rem]' : 'h-[380px] w-[180px] rounded-[2.5rem]'
+        } ${className}`}>
+            <div className={`absolute inset-0 ${isSm ? 'border-[3px] rounded-[1.8rem]' : 'border-[4px] rounded-[2.5rem]'} border-slate-800 z-20 pointer-events-none ring-1 ring-white/10`}></div>
+            <div className={`absolute ${isSm ? 'top-2 w-[30px] h-[9px]' : 'top-3 w-[30%] h-[20px]'} left-1/2 -translate-x-1/2 bg-black rounded-full z-30`}></div>
+            <div className={`absolute ${isSm ? 'inset-[3px] rounded-[1.6rem]' : 'inset-[4px] rounded-[2.2rem]'} bg-slate-100 overflow-hidden z-10`}>
                 {src ? (
                     <img 
                         src={src} 
@@ -33,8 +36,8 @@ const IPhone15Pro = ({ src }: { src: string | null }) => {
                     />
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center bg-slate-50 text-slate-300">
-                        <IconImage />
-                        <span className="text-[10px] font-black uppercase tracking-widest mt-2">No Cover</span>
+                        <IconImage size={isSm ? 18 : 24} />
+                        <span className={`${isSm ? 'text-[8px]' : 'text-[10px]'} font-black uppercase tracking-widest mt-1`}>No Cover</span>
                     </div>
                 )}
             </div>
@@ -372,162 +375,367 @@ export default function AdminThemesPage() {
 
             {/* --- SINGLE PAGE MODAL FORM --- */}
             {showModal && (
-                <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={closeModal}></div>
-                    <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-6xl h-[90vh] overflow-hidden relative z-50 flex flex-col animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white rounded-[28px] shadow-2xl w-full max-w-5xl max-h-[94vh] overflow-hidden relative z-50 flex flex-col animate-in fade-in zoom-in-95 duration-200 border border-slate-100">
                         
-                        <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
-                            <h2 className="text-xl font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                {editingId ? <span className="text-amber-500 flex items-center gap-2"><IconEdit/> Edit Theme</span> : <span className="text-blue-600 flex items-center gap-2"><IconPlus/> Create New</span>}
-                            </h2>
-                            <button onClick={closeModal} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-red-500 transition-colors"><IconX /></button>
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-xl ${editingId ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                                    {editingId ? <IconEdit size={18} /> : <IconPlus size={18} />}
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-base font-black text-slate-800 uppercase tracking-wide">
+                                            {editingId ? 'แก้ไขข้อมูลธีม (Edit Theme)' : 'เพิ่มธีมใหม่ (Create Theme)'}
+                                        </h2>
+                                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase ${
+                                            formData.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                                        }`}>
+                                            {formData.is_active ? 'Active' : 'Draft'}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 font-medium">กำหนดรูปภาพ รายละเอียด และราคาแพ็กเกจ</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                                {/* Toggle Active Button in Header */}
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black transition-all border ${
+                                        formData.is_active 
+                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' 
+                                        : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    <span className={`w-2 h-2 rounded-full ${formData.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                                    <span>{formData.is_active ? 'เปิดขายอยู่' : 'ปิดการขาย'}</span>
+                                </button>
+                                
+                                <button 
+                                    onClick={closeModal} 
+                                    className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-700 transition-colors ml-1"
+                                >
+                                    <IconX size={20} />
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-8 bg-slate-50">
-                            <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Modal Body */}
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50">
+                            <form id="theme-form" onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
                                 
-                                {/* LEFT COL: IMAGES */}
-                                <div className="lg:col-span-4 space-y-6">
-                                    <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm flex flex-col items-center sticky top-0">
-                                        <label className="text-sm font-black text-slate-800 mb-4 uppercase tracking-widest">Cover Image ({"<"}50KB)</label>
-                                        <div className="relative mb-6 transform scale-95">
-                                            <IPhone15Pro src={getImageUrl(formData.image_url)} />
+                                {/* LEFT COL: MEDIA & PREVIEW (5 cols) */}
+                                <div className="lg:col-span-5 space-y-4">
+                                    {/* Cover Card */}
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center">
+                                        <div className="w-full flex justify-between items-center mb-3">
+                                            <span className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                                <IconImage size={15} className="text-blue-500" /> รูปหน้าปก (Cover)
+                                            </span>
+                                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                                                &lt; 50KB
+                                            </span>
                                         </div>
-                                        <label className="w-full cursor-pointer bg-slate-900 text-white px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg hover:bg-blue-600 transition-all flex items-center justify-center gap-2">
-                                            <IconImage /> {uploadingState === 'cover' ? 'Uploading...' : formData.image_url ? 'Change Cover' : 'Upload Cover'}
+
+                                        <div className="py-1">
+                                            <IPhone15Pro src={getImageUrl(formData.image_url)} size="sm" />
+                                        </div>
+
+                                        <label className="mt-3 w-full cursor-pointer bg-slate-900 text-white hover:bg-blue-600 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 active:scale-98">
+                                            <IconImage size={15} />
+                                            <span>{uploadingState === 'cover' ? 'กำลังอัปโหลด...' : formData.image_url ? 'เปลี่ยนรูปหน้าปก' : 'อัปโหลดรูปหน้าปก'}</span>
                                             <input type="file" accept="image/*" className="hidden" onChange={(e) => onSelectFile(e, 'cover')} disabled={uploadingState !== null} />
                                         </label>
                                     </div>
 
-                                    <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <label className="text-xs font-black text-slate-500 uppercase">Mobile Gallery ({"<"}50KB)</label>
-                                            <label className="cursor-pointer text-blue-600 bg-blue-50 px-3 py-1 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-100 transition-colors">
-                                                {uploadingState === 'mobile' ? 'Wait...' : '+ Add'}
+                                    {/* Mobile Gallery Card */}
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                        <div className="flex justify-between items-center mb-2.5">
+                                            <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                                                📱 มือถือ (Mobile Gallery)
+                                            </span>
+                                            <label className="cursor-pointer text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-colors flex items-center gap-1">
+                                                <IconPlus size={12} /> {uploadingState === 'mobile' ? 'รอสักครู่...' : 'เพิ่มรูป'}
                                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => onSelectFile(e, 'mobile')} disabled={uploadingState !== null} />
                                             </label>
                                         </div>
-                                        <div className="flex gap-2 overflow-x-auto pb-2">
+                                        <div className="flex gap-2 overflow-x-auto pb-1 min-h-[64px] items-center">
                                             {formData.gallery.mobile.map((img, idx) => (
-                                                <div key={idx} className="relative flex-shrink-0 w-14 h-24 group">
-                                                    <img src={getImageUrl(img) || ""} className="w-full h-full object-cover rounded-lg border border-slate-200" />
-                                                    <button type="button" onClick={() => removeImage('mobile', idx)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100"><IconTrash size={10}/></button>
+                                                <div key={idx} className="relative flex-shrink-0 w-12 h-20 rounded-lg overflow-hidden border border-slate-200 group bg-slate-100 shadow-2xs">
+                                                    <img src={getImageUrl(img) || ""} className="w-full h-full object-cover" />
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => removeImage('mobile', idx)} 
+                                                        className="absolute inset-0 bg-red-600/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="ลบรูปภาพ"
+                                                    >
+                                                        <IconTrash size={12}/>
+                                                    </button>
                                                 </div>
                                             ))}
-                                            {formData.gallery.mobile.length === 0 && <span className="text-[10px] text-slate-300">No images</span>}
+                                            {formData.gallery.mobile.length === 0 && (
+                                                <div className="text-[11px] text-slate-400 py-3 text-center w-full border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                                    ยังไม่มีรูปในแกลเลอรีมือถือ
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <label className="text-xs font-black text-slate-500 uppercase">iPad Gallery ({"<"}50KB)</label>
-                                            <label className="cursor-pointer text-purple-600 bg-purple-50 px-3 py-1 rounded-lg text-[10px] font-bold uppercase hover:bg-purple-100 transition-colors">
-                                                {uploadingState === 'ipad' ? 'Wait...' : '+ Add'}
+                                    {/* iPad Gallery Card */}
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                        <div className="flex justify-between items-center mb-2.5">
+                                            <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                                                📟 แท็บเล็ต (iPad Gallery)
+                                            </span>
+                                            <label className="cursor-pointer text-purple-600 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-colors flex items-center gap-1">
+                                                <IconPlus size={12} /> {uploadingState === 'ipad' ? 'รอสักครู่...' : 'เพิ่มรูป'}
                                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => onSelectFile(e, 'ipad')} disabled={uploadingState !== null} />
                                             </label>
                                         </div>
-                                        <div className="flex gap-2 overflow-x-auto pb-2">
+                                        <div className="flex gap-2 overflow-x-auto pb-1 min-h-[64px] items-center">
                                             {formData.gallery.ipad.map((img, idx) => (
-                                                <div key={idx} className="relative flex-shrink-0 w-16 h-20 group">
-                                                    <img src={getImageUrl(img) || ""} className="w-full h-full object-cover rounded-lg border border-slate-200" />
-                                                    <button type="button" onClick={() => removeImage('ipad', idx)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100"><IconTrash size={10}/></button>
+                                                <div key={idx} className="relative flex-shrink-0 w-16 h-18 rounded-lg overflow-hidden border border-slate-200 group bg-slate-100 shadow-2xs">
+                                                    <img src={getImageUrl(img) || ""} className="w-full h-full object-cover" />
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => removeImage('ipad', idx)} 
+                                                        className="absolute inset-0 bg-red-600/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="ลบรูปภาพ"
+                                                    >
+                                                        <IconTrash size={12}/>
+                                                    </button>
                                                 </div>
                                             ))}
-                                            {formData.gallery.ipad.length === 0 && <span className="text-[10px] text-slate-300">No images</span>}
+                                            {formData.gallery.ipad.length === 0 && (
+                                                <div className="text-[11px] text-slate-400 py-3 text-center w-full border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                                                    ยังไม่มีรูปในแกลเลอรี iPad
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* RIGHT COL: INFO FORM */}
-                                <div className="lg:col-span-8 space-y-6">
-                                    <div className="bg-white p-8 rounded-[30px] border border-slate-200 shadow-sm space-y-6">
-                                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Theme Information</h3>
-                                        
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Category</label>
-                                                <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-500" value={formData.category_id} onChange={e => setFormData({...formData, category_id: e.target.value})} required>
-                                                    <option value="">Select Category...</option>
+                                {/* RIGHT COL: FORM FIELDS (7 cols) */}
+                                <div className="lg:col-span-7 space-y-4">
+                                    
+                                    {/* Section 1: ข้อมูลทั่วไป */}
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
+                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                                                1. ข้อมูลทั่วไปของธีม (General Info)
+                                            </h3>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                                                    หมวดหมู่ (Category) <span className="text-red-500">*</span>
+                                                </label>
+                                                <select 
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" 
+                                                    value={formData.category_id} 
+                                                    onChange={e => setFormData({...formData, category_id: e.target.value})} 
+                                                    required
+                                                >
+                                                    <option value="">เลือกหมวดหมู่...</option>
                                                     {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                                                 </select>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Theme Name</label>
-                                                <input type="text" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-500" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required placeholder="Ex. Dark Cafe" />
+
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                                                    ชื่อธีม (Theme Name) <span className="text-red-500">*</span>
+                                                </label>
+                                                <input 
+                                                    type="text" 
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" 
+                                                    value={formData.name} 
+                                                    onChange={e => setFormData({...formData, name: e.target.value})} 
+                                                    required 
+                                                    placeholder="เช่น Minimal Cafe, Luxury Shop" 
+                                                />
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Slug (Unique ID)</label>
-                                                <input type="text" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-500" value={formData.slug} onChange={e => setFormData({...formData, slug: e.target.value})} required />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                                                    Slug (Unique ID) <span className="text-red-500">*</span>
+                                                </label>
+                                                <input 
+                                                    type="text" 
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" 
+                                                    value={formData.slug} 
+                                                    onChange={e => setFormData({...formData, slug: e.target.value})} 
+                                                    required 
+                                                    placeholder="theme-slug"
+                                                />
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Mode</label>
-                                                <input type="text" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 uppercase" value={formData.theme_mode} onChange={e => setFormData({...formData, theme_mode: e.target.value})} placeholder="STD" required />
+
+                                            <div className="space-y-1.5">
+                                                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                                                    ธีมโหมด (Mode) <span className="text-red-500">*</span>
+                                                </label>
+                                                <input 
+                                                    type="text" 
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-slate-800 uppercase focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none" 
+                                                    value={formData.theme_mode} 
+                                                    onChange={e => setFormData({...formData, theme_mode: e.target.value})} 
+                                                    placeholder="STD / LUXURY / MINIMAL" 
+                                                    required 
+                                                />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Short Description</label>
-                                            <textarea className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 min-h-[80px]" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                                                คำอธิบายสั้น (Short Description)
+                                            </label>
+                                            <textarea 
+                                                rows={2}
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none resize-none" 
+                                                value={formData.description} 
+                                                onChange={e => setFormData({...formData, description: e.target.value})}
+                                                placeholder="เขียนคำอธิบายสั้นๆ เกี่ยวกับธีมนี้..."
+                                            />
                                         </div>
                                     </div>
 
-                                    {/* Pricing Section */}
-                                    <div className="bg-white p-8 rounded-[30px] border border-slate-200 shadow-sm space-y-6">
-                                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Pricing & Plan Setup</h3>
+                                    {/* Section 2: ราคาและเงื่อนไขแพ็กเกจ */}
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
+                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                                                2. กำหนดราคา & สิทธิ์การใช้งาน (Pricing & Access)
+                                            </h3>
+                                        </div>
                                         
-                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-blue-500 uppercase tracking-wide">Monthly Price</label>
-                                                <input type="number" className="w-full p-3 bg-blue-50 border border-blue-100 rounded-xl font-bold text-blue-900 focus:ring-2 focus:ring-blue-500 text-center" value={formData.price_monthly} onChange={e => setFormData({...formData, price_monthly: Number(e.target.value)})} />
+                                        {/* 4 Pricing Boxes */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                            <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-2.5 text-center">
+                                                <label className="text-[10px] font-black text-blue-600 uppercase block mb-1">รายเดือน</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="w-full py-1 px-1 bg-white border border-blue-200 rounded-lg font-black text-xs text-blue-900 text-center outline-none focus:ring-2 focus:ring-blue-500" 
+                                                    value={formData.price_monthly} 
+                                                    onChange={e => setFormData({...formData, price_monthly: Number(e.target.value)})} 
+                                                />
+                                                <span className="text-[9px] text-blue-400 font-bold mt-0.5 block">฿ / เดือน</span>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-purple-500 uppercase tracking-wide">Weekly Price</label>
-                                                <input type="number" className="w-full p-3 bg-purple-50 border border-purple-100 rounded-xl font-bold text-purple-900 focus:ring-2 focus:ring-purple-500 text-center" value={formData.price_weekly} onChange={e => setFormData({...formData, price_weekly: Number(e.target.value)})} />
+
+                                            <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-2.5 text-center">
+                                                <label className="text-[10px] font-black text-purple-600 uppercase block mb-1">รายสัปดาห์</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="w-full py-1 px-1 bg-white border border-purple-200 rounded-lg font-black text-xs text-purple-900 text-center outline-none focus:ring-2 focus:ring-purple-500" 
+                                                    value={formData.price_weekly} 
+                                                    onChange={e => setFormData({...formData, price_weekly: Number(e.target.value)})} 
+                                                />
+                                                <span className="text-[9px] text-purple-400 font-bold mt-0.5 block">฿ / สัปดาห์</span>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-pink-500 uppercase tracking-wide">Yearly Price</label>
-                                                <input type="number" className="w-full p-3 bg-pink-50 border border-pink-100 rounded-xl font-bold text-pink-900 focus:ring-2 focus:ring-pink-500 text-center" value={formData.price_yearly} onChange={e => setFormData({...formData, price_yearly: Number(e.target.value)})} />
+
+                                            <div className="bg-pink-50/50 border border-pink-100 rounded-xl p-2.5 text-center">
+                                                <label className="text-[10px] font-black text-pink-600 uppercase block mb-1">รายปี</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="w-full py-1 px-1 bg-white border border-pink-200 rounded-lg font-black text-xs text-pink-900 text-center outline-none focus:ring-2 focus:ring-pink-500" 
+                                                    value={formData.price_yearly} 
+                                                    onChange={e => setFormData({...formData, price_yearly: Number(e.target.value)})} 
+                                                />
+                                                <span className="text-[9px] text-pink-400 font-bold mt-0.5 block">฿ / ปี</span>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-green-500 uppercase tracking-wide">One Time Price</label>
-                                                <input type="number" className="w-full p-3 bg-green-50 border border-green-100 rounded-xl font-bold text-green-900 focus:ring-2 focus:ring-green-500 text-center" value={formData.price_one_time} onChange={e => setFormData({...formData, price_one_time: Number(e.target.value)})} />
+
+                                            <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-2.5 text-center">
+                                                <label className="text-[10px] font-black text-emerald-600 uppercase block mb-1">ซื้อขาด (ถาวร)</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="w-full py-1 px-1 bg-white border border-emerald-200 rounded-lg font-black text-xs text-emerald-900 text-center outline-none focus:ring-2 focus:ring-emerald-500" 
+                                                    value={formData.price_one_time} 
+                                                    onChange={e => setFormData({...formData, price_one_time: Number(e.target.value)})} 
+                                                />
+                                                <span className="text-[9px] text-emerald-400 font-bold mt-0.5 block">฿ ครั้งเดียว</span>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-100">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold text-amber-500 uppercase tracking-wide">Min Plan Req.</label>
-                                                <select className="w-full p-3 bg-amber-50 border border-amber-100 rounded-xl font-bold text-amber-900 focus:ring-2 focus:ring-amber-500 text-center" value={formData.min_plan || 'ultimate'} onChange={e => setFormData({...formData, min_plan: e.target.value})}>
-                                                    <option value="free">Free</option>
-                                                    <option value="basic">Basic</option>
-                                                    <option value="pro">Pro</option>
-                                                    <option value="ultimate">Ultimate</option>
-                                                </select>
+                                        {/* Min Plan & Free with Plan */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100 items-center">
+                                            <div>
+                                                <label className="text-[11px] font-bold text-slate-600 uppercase block mb-1.5">
+                                                    แพ็กเกจขั้นต่ำที่ใช้ได้ (Min Plan)
+                                                </label>
+                                                <div className="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-xl">
+                                                    {(['free', 'basic', 'pro', 'ultimate'] as const).map(plan => (
+                                                        <button
+                                                            key={plan}
+                                                            type="button"
+                                                            onClick={() => setFormData(prev => ({ ...prev, min_plan: plan }))}
+                                                            className={`py-1.5 text-[10px] font-black uppercase rounded-lg transition-all ${
+                                                                (formData.min_plan || 'ultimate') === plan 
+                                                                ? 'bg-white text-slate-900 shadow-xs ring-1 ring-black/5' 
+                                                                : 'text-slate-500 hover:text-slate-900'
+                                                            }`}
+                                                        >
+                                                            {plan}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col justify-center gap-2 mt-4">
-                                                <div className="flex items-center gap-3">
-                                                     <input type="checkbox" id="freeWithPlan" className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" checked={formData.is_free_with_plan} onChange={(e) => setFormData({...formData, is_free_with_plan: e.target.checked})} />
-                                                     <label htmlFor="freeWithPlan" className="text-sm font-bold text-slate-700 cursor-pointer">Free with Plan?</label>
+
+                                            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                                                <div>
+                                                    <label htmlFor="freeWithPlan" className="text-xs font-bold text-slate-700 cursor-pointer block">
+                                                        ฟรีเมื่อมีแพ็กเกจ?
+                                                    </label>
+                                                    <span className="text-[10px] text-slate-400">Free with active subscription</span>
                                                 </div>
-                                                <div className="flex items-center gap-3">
-                                                     <input type="checkbox" id="isActive" className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500" checked={formData.is_active} onChange={(e) => setFormData({...formData, is_active: e.target.checked})} />
-                                                     <label htmlFor="isActive" className="text-sm font-bold text-slate-700 cursor-pointer">เปิดขายสินค้า (Active)</label>
-                                                </div>
+                                                <input 
+                                                    type="checkbox" 
+                                                    id="freeWithPlan" 
+                                                    checked={formData.is_free_with_plan} 
+                                                    onChange={(e) => setFormData({...formData, is_free_with_plan: e.target.checked})} 
+                                                    className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                                                />
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
                             </form>
                         </div>
 
-                        <div className="px-8 py-5 border-t border-slate-100 bg-white flex justify-end gap-3 sticky bottom-0 z-20">
-                            <button onClick={closeModal} className="px-6 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-2xl transition-colors text-xs uppercase tracking-wider">Cancel</button>
-                            <button onClick={handleSave} disabled={isSubmitting || uploadingState !== null} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black shadow-lg hover:bg-slate-800 transition-all uppercase tracking-widest disabled:opacity-50 text-xs flex items-center gap-2">
-                                {isSubmitting ? 'Saving...' : (editingId ? 'Save Changes' : 'Publish Theme')}
-                            </button>
+                        {/* Modal Footer */}
+                        <div className="px-6 py-3.5 border-t border-slate-100 bg-white flex justify-between items-center sticky bottom-0 z-20">
+                            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400">
+                                <span>💡</span>
+                                <span>ไฟล์รูปภาพจะถูกบีบอัดให้ &lt; 50KB อัตโนมัติเมื่อครอบตัด (Crop)</span>
+                            </div>
+                            <div className="flex items-center gap-2.5 ml-auto">
+                                <button 
+                                    type="button"
+                                    onClick={closeModal} 
+                                    className="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors text-xs uppercase tracking-wider"
+                                >
+                                    ยกเลิก
+                                </button>
+                                <button 
+                                    type="submit"
+                                    form="theme-form"
+                                    disabled={isSubmitting || uploadingState !== null} 
+                                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black shadow-md transition-all uppercase tracking-wider disabled:opacity-50 text-xs flex items-center gap-2 active:scale-98"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                            <span>กำลังบันทึก...</span>
+                                        </>
+                                    ) : (
+                                        editingId ? 'บันทึกการแก้ไข' : 'เผยแพร่ธีม'
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                     </div>
