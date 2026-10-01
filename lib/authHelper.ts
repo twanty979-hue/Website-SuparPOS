@@ -180,7 +180,7 @@ export async function getAuthContext(
   if (user?.id) {
     const { data: profile } = await adminClient
       .from('profiles')
-      .select('brand_id, role, brands(timezone, plan, expiry_basic, expiry_pro, expiry_ultimate)')
+      .select('brand_id, role, brands(timezone, plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate)')
       .eq('id', user.id)
       .single();
 
@@ -197,7 +197,7 @@ export async function getAuthContext(
     brandId = String(explicitBrandId);
     const { data: bData } = await adminClient
       .from('brands')
-      .select('timezone, plan, expiry_basic, expiry_pro, expiry_ultimate')
+      .select('timezone, plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate')
       .eq('id', brandId)
       .single();
     brandData = bData;
@@ -207,7 +207,7 @@ export async function getAuthContext(
   if (!brandId && fallbackOptions?.id && fallbackOptions?.tableName && serviceRoleKey) {
     const { data: entityData } = await adminClient
       .from(fallbackOptions.tableName)
-      .select('brand_id, brands(timezone, plan, expiry_basic, expiry_pro, expiry_ultimate)')
+      .select('brand_id, brands(timezone, plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate)')
       .eq('id', fallbackOptions.id)
       .single();
     if (entityData?.brand_id) {

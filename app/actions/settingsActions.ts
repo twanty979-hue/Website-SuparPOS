@@ -60,6 +60,7 @@ function calculateEffectivePlan(brand: any) {
     if (brand.expiry_ultimate && dayjs(brand.expiry_ultimate).isAfter(now)) return 'ultimate';
     if (brand.expiry_pro && dayjs(brand.expiry_pro).isAfter(now)) return 'pro';
     if (brand.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) return 'basic';
+    if (brand.expiry_go && dayjs(brand.expiry_go).isAfter(now)) return 'go';
     return 'free'; 
 }
 
@@ -80,6 +81,7 @@ export async function getAvailablePlansAction(brandId: string) {
             .from('subscription_plans')
             .select('*')
             .eq('is_active', true)
+            .neq('plan_key', 'ultimate')
             .order('price_monthly', { ascending: true });
 
         if (planError) throw planError;
@@ -287,7 +289,8 @@ export async function processFreeUpgradeFromApi(
         if (!brand) throw new Error("Brand not found");
 
         let updateData: any = { updated_at: new Date().toISOString() };
-        if (newPlan === 'basic') updateData.expiry_basic = calculateNewExpiryForTier(brand.expiry_basic, period);
+        if (newPlan === 'go') updateData.expiry_go = calculateNewExpiryForTier(brand.expiry_go, period);
+        else if (newPlan === 'basic') updateData.expiry_basic = calculateNewExpiryForTier(brand.expiry_basic, period);
         else if (newPlan === 'pro') updateData.expiry_pro = calculateNewExpiryForTier(brand.expiry_pro, period);
         else if (newPlan === 'ultimate') updateData.expiry_ultimate = calculateNewExpiryForTier(brand.expiry_ultimate, period);
 

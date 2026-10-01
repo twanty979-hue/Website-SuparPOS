@@ -15,6 +15,7 @@ function calculateEffectivePlan(brand: any) {
   if (brand.expiry_ultimate && dayjs(brand.expiry_ultimate).isAfter(now)) return { plan: 'ultimate', expiry: brand.expiry_ultimate };
   if (brand.expiry_pro && dayjs(brand.expiry_pro).isAfter(now)) return { plan: 'pro', expiry: brand.expiry_pro };
   if (brand.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) return { plan: 'basic', expiry: brand.expiry_basic };
+  if (brand.expiry_go && dayjs(brand.expiry_go).isAfter(now)) return { plan: 'go', expiry: brand.expiry_go };
   return { plan: 'free', expiry: null };
 }
 
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
     // 2. ดึงข้อมูลสถานะแบรนด์และวันหมดอายุ Plan หลัก
     const { data: brand } = await supabase
       .from('brands')
-      .select('slug, theme_mode, plan, expiry_basic, expiry_pro, expiry_ultimate')
+      .select('slug, theme_mode, plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate')
       .eq('id', brandId)
       .single();
 
@@ -60,18 +61,18 @@ export async function GET(request: Request) {
       .in('purchase_type', PURCHASED_THEME_TYPES)
       .order('created_at', { ascending: false });
 
-    const { data: freeMarketplaceThemes } = await supabase
+    // ตอนนี้เปิดให้ทุกคนใช้ได้ทุกธีมฟรี ดึงธีมทั้งหมดที่เปิดใช้งาน (is_active: true)
+    const { data: allActiveMarketplaceThemes } = await supabase
       .from('marketplace_themes')
       .select(`
         id, name, slug, image_url, theme_mode, category_id, description,
         marketplace_categories ( name )
       `)
       .eq('is_active', true)
-      .eq('min_plan', 'free')
       .order('created_at', { ascending: false });
 
     const ownedThemeIds = new Set((ownedThemes || []).map((t: any) => t.marketplace_theme_id));
-    const freeThemeRows = (freeMarketplaceThemes || [])
+    const freeThemeRows = (allActiveMarketplaceThemes || [])
       .filter((theme: any) => !ownedThemeIds.has(theme.id))
       .map((theme: any) => ({
         id: `free-${theme.id}`,

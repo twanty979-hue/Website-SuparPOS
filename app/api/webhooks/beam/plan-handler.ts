@@ -27,6 +27,7 @@ function calculateEffectivePlan(brand: any) {
     if (brand.expiry_ultimate && dayjs(brand.expiry_ultimate).isAfter(now)) return 'ultimate';
     if (brand.expiry_pro && dayjs(brand.expiry_pro).isAfter(now)) return 'pro';
     if (brand.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) return 'basic';
+    if (brand.expiry_go && dayjs(brand.expiry_go).isAfter(now)) return 'go';
     return 'free';
 }
 
@@ -69,6 +70,7 @@ export async function handleUpgradePlan(supabaseAdmin: any, charge: any, metadat
         if (fetchError || !brand) return;
 
         const newExpiryDate = calculateNewExpiryForTier(
+            new_plan === 'go' ? brand.expiry_go :
             new_plan === 'basic' ? brand.expiry_basic : 
             new_plan === 'pro' ? brand.expiry_pro : brand.expiry_ultimate, 
             period
@@ -77,7 +79,8 @@ export async function handleUpgradePlan(supabaseAdmin: any, charge: any, metadat
         if (!newExpiryDate) return;
 
         let updateData: any = { updated_at: new Date().toISOString() };
-        if (new_plan === 'basic') updateData.expiry_basic = newExpiryDate;
+        if (new_plan === 'go') updateData.expiry_go = newExpiryDate;
+        else if (new_plan === 'basic') updateData.expiry_basic = newExpiryDate;
         else if (new_plan === 'pro') updateData.expiry_pro = newExpiryDate;
         else if (new_plan === 'ultimate') updateData.expiry_ultimate = newExpiryDate;
 
@@ -87,7 +90,8 @@ export async function handleUpgradePlan(supabaseAdmin: any, charge: any, metadat
         const effectivePlan = calculateEffectivePlan(updatedBrand);
         
         let bonusCoins = 0;
-        if (new_plan === 'basic') bonusCoins = 100;
+        if (new_plan === 'go') bonusCoins = 0;
+        else if (new_plan === 'basic') bonusCoins = 100;
         else if (new_plan === 'pro') bonusCoins = 150;
         else if (new_plan === 'ultimate') bonusCoins = 200;
 

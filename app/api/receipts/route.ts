@@ -21,6 +21,7 @@ function calculateEffectivePlan(brand: any) {
   }
   if (brand?.plan === 'pro' && isActive(brand.expiry_pro)) return 'pro';
   if (brand?.plan === 'basic' && isActive(brand.expiry_basic)) return 'basic';
+  if (brand?.plan === 'go' && isActive(brand.expiry_go)) return 'go';
   return 'free';
 }
 
@@ -61,6 +62,7 @@ export async function GET(request: Request) {
     // 🛡️ โหลดการตั้งค่าสิทธิ์จาก system_settings
     const DEFAULT_DASHBOARD_PERMISSIONS: Record<string, { max_days: number; allow_advanced: boolean; receipt_max_days: number }> = {
       free: { max_days: 30, allow_advanced: false, receipt_max_days: 7 },
+      go: { max_days: 180, allow_advanced: false, receipt_max_days: 30 },
       basic: { max_days: 0, allow_advanced: false, receipt_max_days: 0 },
       pro: { max_days: 0, allow_advanced: true, receipt_max_days: 0 },
       ultimate: { max_days: 0, allow_advanced: true, receipt_max_days: 0 }

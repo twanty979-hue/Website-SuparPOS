@@ -5,10 +5,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendBrandNotification } from '@/lib/brandNotifications';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
-type PlanKey = 'basic' | 'pro' | 'ultimate';
+type PlanKey = 'go' | 'basic' | 'pro' | 'ultimate';
 type BillingPeriod = 'monthly' | 'yearly';
 
-const PLAN_KEYS: PlanKey[] = ['basic', 'pro', 'ultimate'];
+const PLAN_KEYS: PlanKey[] = ['go', 'basic', 'pro', 'ultimate'];
 const SUCCESS_EVENTS = new Set([
   'INITIAL_PURCHASE',
   'RENEWAL',
@@ -156,18 +156,21 @@ function inferPlan(event: any, productId: string): PlanKey | null {
   if (entitlementPlans.includes('ultimate')) return 'ultimate';
   if (entitlementPlans.includes('pro')) return 'pro';
   if (entitlementPlans.includes('basic')) return 'basic';
+  if (entitlementPlans.includes('go')) return 'go';
 
   // 2. ดักจาก Offering (ชื่อกล่องที่เราตั้ง)
   const offering = String(event.presented_offering_id ?? event.presentedOfferingIdentifier ?? '').toLowerCase();
   if (offering.includes('ultimate')) return 'ultimate';
   if (offering.includes('basic')) return 'basic';
   if (/\bpro\b/.test(offering)) return 'pro'; // \b คือบังคับว่าต้องเป็นคำว่า pro โดดๆ
+  if (/\bgo\b/.test(offering)) return 'go';
 
   // 3. ดักจาก Product ID
   const idSource = String(productId).trim().toLowerCase();
   if (idSource.includes('ultimate')) return 'ultimate';
   if (idSource.includes('basic')) return 'basic';
   if (/\bpro\b/.test(idSource)) return 'pro';
+  if (/\bgo\b/.test(idSource)) return 'go';
 
   // 4. ท่าไม้ตายสำหรับ Test Store ที่ชอบส่งมาแค่คำว่า monthly/yearly
   // Never guess a plan from a period-only ID. Guessing used to grant Basic
@@ -190,6 +193,7 @@ function planFromIdentifier(value: unknown): PlanKey | null {
   if (normalized.includes('ultimate')) return 'ultimate';
   if (normalized.includes('pro')) return 'pro';
   if (normalized.includes('basic')) return 'basic';
+  if (normalized.includes('go')) return 'go';
   return null;
 }
 
@@ -434,6 +438,7 @@ async function refreshEffectivePlan(brandId: string) {
 }
 
 function expiryColumnFor(plan: PlanKey) {
+  if (plan === 'go') return 'expiry_go';
   if (plan === 'basic') return 'expiry_basic';
   if (plan === 'pro') return 'expiry_pro';
   return 'expiry_ultimate';
@@ -444,6 +449,7 @@ function calculateEffectivePlan(brand: any) {
   if (brand.expiry_ultimate && dayjs(brand.expiry_ultimate).isAfter(now)) return 'ultimate';
   if (brand.expiry_pro && dayjs(brand.expiry_pro).isAfter(now)) return 'pro';
   if (brand.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) return 'basic';
+  if (brand.expiry_go && dayjs(brand.expiry_go).isAfter(now)) return 'go';
   return 'free';
 }
 

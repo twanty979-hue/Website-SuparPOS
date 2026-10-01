@@ -75,17 +75,109 @@ interface PlanDashboardPerm {
 
 interface DashboardPermissions {
   free: PlanDashboardPerm;
+  go: PlanDashboardPerm;
   basic: PlanDashboardPerm;
   pro: PlanDashboardPerm;
   ultimate: PlanDashboardPerm;
 }
 
 const DEFAULT_DASHBOARD_PERMISSIONS: DashboardPermissions = {
-  free: { max_days: 30, allow_advanced: false, receipt_max_days: 7, max_food_items: 50, max_products: 50, max_tables: 10, max_orders: 1000 },
+  free: { max_days: 30, allow_advanced: false, receipt_max_days: 7, max_food_items: 50, max_products: 0, max_tables: 10, max_orders: 300 },
+  go: { max_days: 180, allow_advanced: false, receipt_max_days: 30, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 1000 },
   basic: { max_days: 0, allow_advanced: false, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 },
   pro: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 },
   ultimate: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 },
 };
+
+type PlanKeyType = 'free' | 'go' | 'basic' | 'pro' | 'ultimate';
+
+interface PlanConfig {
+  key: PlanKeyType;
+  name: string;
+  badge: string;
+  priceTag: string;
+  badgeClass: string;
+  tabActiveClass: string;
+  accentText: string;
+  borderClass: string;
+  bgCardClass: string;
+  dotColor: string;
+  focusBorder: string;
+  featuresPlaceholder: string;
+}
+
+const PLAN_CONFIGS: PlanConfig[] = [
+  {
+    key: 'free',
+    name: 'Free Plan',
+    badge: 'ฟรี',
+    priceTag: 'ฟรีตลอดชีพ',
+    badgeClass: 'bg-slate-200 text-slate-700',
+    tabActiveClass: 'bg-slate-800 text-white shadow-sm ring-1 ring-slate-800',
+    accentText: 'text-slate-800',
+    borderClass: 'border-slate-300',
+    bgCardClass: 'bg-[#FAFAFA]',
+    dotColor: 'bg-slate-400',
+    focusBorder: 'focus:border-slate-500',
+    featuresPlaceholder: 'คิดเงินหน้าร้านไม่จำกัด\nสแกนสั่งอาหาร 300 ออเดอร์/เดือน\nดูรายงาน Dashboard ย้อนหลัง 30 วัน\nจัดการอาหาร / เมนู สูงสุด 50 รายการ\nสินค้าทั่วไป ไม่จำกัด\nรองรับโต๊ะสูงสุด 10 โต๊ะ\nเลือกใช้ธีมร้านค้าได้ฟรี',
+  },
+  {
+    key: 'go',
+    name: 'Go Plan',
+    badge: 'โก (99฿)',
+    priceTag: '99 บาท/เดือน',
+    badgeClass: 'bg-teal-100 text-teal-800',
+    tabActiveClass: 'bg-teal-700 text-white shadow-sm ring-1 ring-teal-700',
+    accentText: 'text-teal-900',
+    borderClass: 'border-teal-300',
+    bgCardClass: 'bg-teal-50/40',
+    dotColor: 'bg-teal-500',
+    focusBorder: 'focus:border-teal-500',
+    featuresPlaceholder: 'คิดเงินหน้าร้านไม่จำกัด\nสแกนสั่งอาหาร 1,000 ออเดอร์/เดือน\nดูรายงาน Dashboard ย้อนหลัง 60 วัน\nประวัติการขายย้อนหลัง 30 วัน\nไม่จำกัดจำนวนเมนูและสินค้า\nไม่จำกัดจำนวนโต๊ะ\nเลือกใช้ธีมร้านค้าได้ฟรี',
+  },
+  {
+    key: 'basic',
+    name: 'Basic Plan',
+    badge: 'เบสิก (250฿)',
+    priceTag: '250 บาท/เดือน',
+    badgeClass: 'bg-blue-100 text-blue-800',
+    tabActiveClass: 'bg-blue-700 text-white shadow-sm ring-1 ring-blue-700',
+    accentText: 'text-blue-900',
+    borderClass: 'border-blue-300',
+    bgCardClass: 'bg-blue-50/40',
+    dotColor: 'bg-blue-500',
+    focusBorder: 'focus:border-blue-500',
+    featuresPlaceholder: 'คิดเงินหน้าร้านไม่จำกัด\nออเดอร์ไม่จำกัด (Unlimited Orders)\nดูรายงาน Dashboard ย้อนหลังไม่จำกัด\nประวัติการขายไม่จำกัดย้อนหลัง\nสร้าง QR Code โต๊ะไม่จำกัด\nไม่จำกัดจำนวนเมนู สินค้า และโต๊ะ\nเลือกใช้ธีมร้านค้าได้ฟรี',
+  },
+  {
+    key: 'pro',
+    name: 'Pro Plan',
+    badge: 'โปร (500฿)',
+    priceTag: '500 บาท/เดือน',
+    badgeClass: 'bg-emerald-100 text-emerald-800',
+    tabActiveClass: 'bg-emerald-700 text-white shadow-sm ring-1 ring-emerald-700',
+    accentText: 'text-emerald-950',
+    borderClass: 'border-emerald-300',
+    bgCardClass: 'bg-emerald-50/40',
+    dotColor: 'bg-emerald-600',
+    focusBorder: 'focus:border-emerald-500',
+    featuresPlaceholder: 'คิดเงินหน้าร้านและออเดอร์ไม่จำกัด\nดูรายงาน Dashboard ขั้นสูง & วิเคราะห์ยอดขาย\nExport รายงาน Excel (สูงสุดย้อนหลัง 3 เดือน)\nระบบจัดการพนักงานสูงสุด 3 คน\nกำหนดสิทธิ์การเข้าถึงของพนักงาน\nสร้าง QR Code โต๊ะไม่จำกัด\nไม่จำกัดจำนวนเมนู สินค้า และโต๊ะ\nเลือกใช้ธีมร้านค้าได้ฟรี',
+  },
+  {
+    key: 'ultimate',
+    name: 'Ultimate Plan',
+    badge: 'คุ้มค่าที่สุด',
+    priceTag: '1,999 บาท/เดือน',
+    badgeClass: 'bg-purple-100 text-purple-800',
+    tabActiveClass: 'bg-purple-700 text-white shadow-sm ring-1 ring-purple-700',
+    accentText: 'text-purple-950',
+    borderClass: 'border-purple-300',
+    bgCardClass: 'bg-purple-50/40',
+    dotColor: 'bg-purple-600',
+    focusBorder: 'focus:border-purple-500',
+    featuresPlaceholder: 'ทุกฟังก์ชันของ Pro Plan\nสิทธิ์ใช้งานธีมพรีเมียมทั้งหมด (55+ ธีม)\nDashboard ขั้นสูง & สถิติเชิงลึก\nExport รายงาน Excel (สูงสุดย้อนหลัง 3 เดือน)\nระบบจัดการพนักงานสูงสุด 10 คน\nกำหนดสิทธิ์พนักงานได้ไม่จำกัด',
+  },
+];
 
 export default function AppSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -95,6 +187,9 @@ export default function AppSettingsPage() {
   const [needsColumnMigration, setNeedsColumnMigration] = useState(false);
   const [migrationSql, setMigrationSql] = useState('');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null);
+
+  const [activePlanTab, setActivePlanTab] = useState<PlanKeyType | 'compare'>('free');
+  const [planViewMode, setPlanViewMode] = useState<'tab' | 'grid'>('tab');
 
   const [settings, setSettings] = useState({
     maintenance_mode: false,
@@ -112,7 +207,7 @@ export default function AppSettingsPage() {
   });
 
   const [dashboardPermissions, setDashboardPermissions] = useState<DashboardPermissions>(DEFAULT_DASHBOARD_PERMISSIONS);
-  const [planContents, setPlanContents] = useState<Record<'free' | 'basic' | 'pro' | 'ultimate', PlanContent>>(DEFAULT_PLAN_CONTENTS);
+  const [planContents, setPlanContents] = useState<Record<'free' | 'go' | 'basic' | 'pro' | 'ultimate', PlanContent>>(DEFAULT_PLAN_CONTENTS);
   const [needsPlanContentsMigration, setNeedsPlanContentsMigration] = useState(false);
   const [planContentsMigrationSql, setPlanContentsMigrationSql] = useState(PLAN_CONTENTS_MIGRATION_SQL);
   const [notif, setNotif] = useState({ title: '', body: '' });
@@ -146,6 +241,7 @@ export default function AppSettingsPage() {
         if (s.dashboard_permissions) {
           setDashboardPermissions({
             free: { ...DEFAULT_DASHBOARD_PERMISSIONS.free, ...s.dashboard_permissions.free },
+            go: { ...DEFAULT_DASHBOARD_PERMISSIONS.go, ...s.dashboard_permissions.go },
             basic: { ...DEFAULT_DASHBOARD_PERMISSIONS.basic, ...s.dashboard_permissions.basic },
             pro: { ...DEFAULT_DASHBOARD_PERMISSIONS.pro, ...s.dashboard_permissions.pro },
             ultimate: { ...DEFAULT_DASHBOARD_PERMISSIONS.ultimate, ...s.dashboard_permissions.ultimate },
@@ -177,7 +273,7 @@ export default function AppSettingsPage() {
       setSaving(true);
       setStatusMsg(null);
       const sanitizedPlanContents = { ...planContents };
-      for (const k of ['free', 'basic', 'pro', 'ultimate'] as const) {
+      for (const k of ['free', 'go', 'basic', 'pro', 'ultimate'] as const) {
         if (sanitizedPlanContents[k]) {
           sanitizedPlanContents[k] = {
             ...sanitizedPlanContents[k],
@@ -269,7 +365,7 @@ export default function AppSettingsPage() {
     }));
   };
 
-  const updatePlanContent = (plan: 'free' | 'basic' | 'pro' | 'ultimate', field: keyof PlanContent, value: any) => {
+  const updatePlanContent = (plan: 'free' | 'go' | 'basic' | 'pro' | 'ultimate', field: keyof PlanContent, value: any) => {
     setPlanContents(prev => {
       const current = prev[plan] || DEFAULT_PLAN_CONTENTS[plan];
       return {
@@ -335,6 +431,462 @@ VALUES ('global') ON CONFLICT (id) DO NOTHING;`)}
       </button>
     </div>
   );
+
+  const renderPlanForm = (cfg: PlanConfig, isGrid = false) => {
+    const content = planContents[cfg.key] || DEFAULT_PLAN_CONTENTS[cfg.key];
+    const perm = dashboardPermissions[cfg.key];
+
+    return (
+      <div key={cfg.key} className={`border ${cfg.borderClass} rounded-2xl p-4 sm:p-5 ${cfg.bgCardClass} space-y-4 transition-all shadow-xs`}>
+        {/* Header of Plan */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b pb-3 border-slate-200/80">
+          <div className="flex items-center gap-2.5">
+            <span className={`w-3 h-3 rounded-full ${cfg.dotColor} shrink-0`} />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`text-base font-black ${cfg.accentText}`}>{content.name || cfg.name}</span>
+                <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold ${cfg.badgeClass}`}>
+                  {content.badge || cfg.badge}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                {content.subtitle || 'กำหนดข้อความและสิทธิ์สำหรับแผนนี้'} • <span className="font-bold text-slate-700">{cfg.priceTag}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+            <span className="bg-white border border-slate-200 px-2 py-0.5 rounded-lg font-medium text-slate-700">
+              โควต้า: <strong className="text-slate-900">{(perm.max_orders ?? 0) === 0 ? 'ไม่จำกัด' : `${(perm.max_orders ?? 0).toLocaleString()} บิล/ด.`}</strong>
+            </span>
+            <span className="bg-white border border-slate-200 px-2 py-0.5 rounded-lg font-medium text-slate-700">
+              Dashboard: <strong className="text-slate-900">{(perm.max_days ?? 0) === 0 ? 'ตลอดไป' : `${perm.max_days} วัน`}</strong>
+            </span>
+            {perm.allow_advanced && (
+              <span className="bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg font-bold text-emerald-800">
+                รายงานขั้นสูง
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 2-column layout in Tab mode, 1-column layout in Grid mode */}
+        <div className={`grid ${isGrid ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'} gap-4 items-start`}>
+          {/* Left Column: Plan Content & Texts */}
+          <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between border-b pb-2 border-slate-100">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${cfg.dotColor}`} />
+                ข้อความและการแสดงผลในแอป (Plan Content)
+              </span>
+              <span className="text-[10px] text-slate-400">แสดงในหน้ารายการแพ็กเกจ</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">ชื่อแพ็กเกจ</label>
+                <input
+                  type="text"
+                  value={content.name || ''}
+                  onChange={e => updatePlanContent(cfg.key, 'name', e.target.value)}
+                  placeholder={cfg.name}
+                  className={`w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none ${cfg.focusBorder}`}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">ป้ายกำกับ (Badge)</label>
+                <input
+                  type="text"
+                  value={content.badge || ''}
+                  onChange={e => updatePlanContent(cfg.key, 'badge', e.target.value)}
+                  placeholder={cfg.badge}
+                  className={`w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none ${cfg.focusBorder}`}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-semibold text-slate-600 mb-1">คำโปรยย่อย (Subtitle)</label>
+              <input
+                type="text"
+                value={content.subtitle || ''}
+                onChange={e => updatePlanContent(cfg.key, 'subtitle', e.target.value)}
+                placeholder="คำโปรยสั้นๆ แนะนำแพ็กเกจ"
+                className={`w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none ${cfg.focusBorder}`}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">เมตริก 1 (หัวข้อ)</label>
+                <input
+                  type="text"
+                  value={content.metric_1_label || ''}
+                  onChange={e => updatePlanContent(cfg.key, 'metric_1_label', e.target.value)}
+                  placeholder="เช่น ORDERS หรือ THEMES"
+                  className={`w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none ${cfg.focusBorder}`}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">เมตริก 1 (ค่าที่แสดง)</label>
+                <input
+                  type="text"
+                  value={content.metric_1_value || ''}
+                  onChange={e => updatePlanContent(cfg.key, 'metric_1_value', e.target.value)}
+                  placeholder="เช่น 1,000 /เดือน หรือ ฟรีทุกธีม"
+                  className={`w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none ${cfg.focusBorder}`}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">เมตริก 2 (หัวข้อ)</label>
+                <input
+                  type="text"
+                  value={content.metric_2_label || ''}
+                  onChange={e => updatePlanContent(cfg.key, 'metric_2_label', e.target.value)}
+                  placeholder="เช่น SPEED หรือ STAFF"
+                  className={`w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none ${cfg.focusBorder}`}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-1">เมตริก 2 (ค่าที่แสดง)</label>
+                <input
+                  type="text"
+                  value={content.metric_2_value || ''}
+                  onChange={e => updatePlanContent(cfg.key, 'metric_2_value', e.target.value)}
+                  placeholder="เช่น รวดเร็ว คล่องตัว"
+                  className={`w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none ${cfg.focusBorder}`}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] font-semibold text-slate-600">
+                  รายการฟีเจอร์ (Features) • <span className="text-emerald-700 font-bold">{content.features?.length || 0} ข้อ</span>
+                </label>
+                <span className="text-[9px] text-slate-400">1 บรรทัด = 1 ข้อ</span>
+              </div>
+              <textarea
+                rows={isGrid ? 5 : 6}
+                value={(content.features || []).join('\n')}
+                onChange={e => updatePlanContent(cfg.key, 'features', e.target.value.split('\n'))}
+                placeholder={cfg.featuresPlaceholder}
+                className={`w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none ${cfg.focusBorder} font-mono leading-relaxed resize-y`}
+              />
+            </div>
+          </div>
+
+          {/* Right Column: Permissions & Limits */}
+          <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 space-y-2.5 shadow-2xs">
+            <div className="flex items-center justify-between border-b pb-2 border-slate-100">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-slate-500" />
+                สิทธิ์การใช้งานและโควต้า (Permissions & Limits)
+              </span>
+              <span className="text-[10px] text-slate-400">0 = ไม่จำกัด</span>
+            </div>
+
+            {/* โควต้าสแกนสั่งอาหาร */}
+            <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div>
+                <p className="text-xs font-bold text-slate-800">โควต้าสแกนสั่งอาหาร</p>
+                <p className="text-[10px] text-slate-500">จำกัดจำนวนบิลออเดอร์ต่อเดือน</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] font-bold text-slate-700">
+                  {(perm.max_orders ?? 0) === 0 ? 'ไม่จำกัด' : `${(perm.max_orders ?? 0).toLocaleString()} บิล/ด.`}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={perm.max_orders ?? 0}
+                  onChange={e => updatePlanPerm(cfg.key, 'max_orders', Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-24 text-xs p-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-right focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* ดู Dashboard ย้อนหลัง */}
+            <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div>
+                <p className="text-xs font-bold text-slate-800">ดู Dashboard ย้อนหลัง</p>
+                <p className="text-[10px] text-slate-500">กราฟยอดขายและสรุปสถิติ (วัน)</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] font-bold text-slate-700">
+                  {perm.max_days === 0 ? 'ตลอดไป' : `${perm.max_days} วัน`}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={perm.max_days ?? 0}
+                  onChange={e => updatePlanPerm(cfg.key, 'max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-24 text-xs p-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-right focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* ประวัติการขายย้อนหลัง */}
+            <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div>
+                <p className="text-xs font-bold text-slate-800">ประวัติการขายย้อนหลัง</p>
+                <p className="text-[10px] text-slate-500">ค้นหาบิลและใบเสร็จ (วัน)</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] font-bold text-slate-700">
+                  {perm.receipt_max_days === 0 ? 'ตลอดไป' : `${perm.receipt_max_days} วัน`}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={perm.receipt_max_days ?? 0}
+                  onChange={e => updatePlanPerm(cfg.key, 'receipt_max_days', Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-24 text-xs p-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-right focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* รายงานขั้นสูง */}
+            <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div>
+                <p className="text-xs font-bold text-slate-800">รายงานขั้นสูง (ส่วนล่าง)</p>
+                <p className="text-[10px] text-slate-500">ยอดขายรายชั่วโมง, วิธีชำระเงิน, โต๊ะ, พนักงาน</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={perm.allow_advanced}
+                  onChange={e => updatePlanPerm(cfg.key, 'allow_advanced', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+              </label>
+            </div>
+
+            {/* อาหาร/เมนู สูงสุด */}
+            <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div>
+                <p className="text-xs font-bold text-slate-800">จำนวนอาหาร / เมนู สูงสุด</p>
+                <p className="text-[10px] text-slate-500">จำกัดจำนวนรายการเมนู</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] font-bold text-slate-700">
+                  {perm.max_food_items === 0 ? 'ไม่จำกัด' : `${perm.max_food_items} รายการ`}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={perm.max_food_items ?? 0}
+                  onChange={e => updatePlanPerm(cfg.key, 'max_food_items', Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-24 text-xs p-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-right focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* สินค้าทั่วไป สูงสุด */}
+            <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div>
+                <p className="text-xs font-bold text-slate-800">จำนวนสินค้าทั่วไป สูงสุด</p>
+                <p className="text-[10px] text-slate-500">จำกัดจำนวนสินค้า</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] font-bold text-slate-700">
+                  {perm.max_products === 0 ? 'ไม่จำกัด' : `${perm.max_products} รายการ`}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={perm.max_products ?? 0}
+                  onChange={e => updatePlanPerm(cfg.key, 'max_products', Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-24 text-xs p-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-right focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* โต๊ะสูงสุด */}
+            <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div>
+                <p className="text-xs font-bold text-slate-800">จำนวนโต๊ะสูงสุด</p>
+                <p className="text-[10px] text-slate-500">จำกัดจำนวนโต๊ะในร้านค้า</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] font-bold text-slate-700">
+                  {perm.max_tables === 0 ? 'ไม่จำกัด' : `${perm.max_tables} โต๊ะ`}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={perm.max_tables ?? 0}
+                  onChange={e => updatePlanPerm(cfg.key, 'max_tables', Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-24 text-xs p-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-right focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderComparisonTable = () => {
+    return (
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">ตารางเปรียบเทียบสิทธิ์และฟังก์ชันทุกแพ็กเกจ (Plan Comparison Overview)</h3>
+            <p className="text-[11px] text-slate-500">ดูภาพรวมความแตกต่างระหว่างแพลนได้ทันทีในหน้าเดียว</p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700">
+                <th className="p-3 font-bold w-48">ฟังก์ชัน / สิทธิ์การใช้งาน</th>
+                {PLAN_CONFIGS.map(c => (
+                  <th key={c.key} className="p-3 font-extrabold text-center min-w-[130px]">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className={c.accentText}>{c.name}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${c.badgeClass}`}>{c.priceTag}</span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+              <tr>
+                <td className="p-3 font-semibold bg-slate-50/50">โควต้าสแกนสั่งอาหาร</td>
+                {PLAN_CONFIGS.map(c => {
+                  const o = dashboardPermissions[c.key]?.max_orders;
+                  return (
+                    <td key={c.key} className="p-3 text-center">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${o === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
+                        {o === 0 ? 'ไม่จำกัด' : `${o?.toLocaleString()} บิล/ด.`}
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr>
+                <td className="p-3 font-semibold bg-slate-50/50">ดู Dashboard ย้อนหลัง</td>
+                {PLAN_CONFIGS.map(c => {
+                  const d = dashboardPermissions[c.key]?.max_days;
+                  return (
+                    <td key={c.key} className="p-3 text-center">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${d === 0 ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-700'}`}>
+                        {d === 0 ? 'ไม่จำกัด' : `${d} วัน`}
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr>
+                <td className="p-3 font-semibold bg-slate-50/50">ประวัติการขายย้อนหลัง</td>
+                {PLAN_CONFIGS.map(c => {
+                  const h = dashboardPermissions[c.key]?.receipt_max_days;
+                  return (
+                    <td key={c.key} className="p-3 text-center font-bold">
+                      {h === 0 ? 'ตลอดไป' : `${h} วัน`}
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr>
+                <td className="p-3 font-semibold bg-slate-50/50">รายงานขั้นสูง (ยอดชั่วโมง/พนักงาน)</td>
+                {PLAN_CONFIGS.map(c => {
+                  const adv = dashboardPermissions[c.key]?.allow_advanced;
+                  return (
+                    <td key={c.key} className="p-3 text-center">
+                      {adv ? (
+                        <span className="text-emerald-600 font-bold flex items-center justify-center gap-1">
+                          <IconCheck size={14} /> เปิดใช้งาน
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">ปิด</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr className="bg-amber-50/40">
+                <td className="p-3 font-extrabold text-amber-950">Export รายงาน Excel 📊</td>
+                {PLAN_CONFIGS.map(c => {
+                  const hasExcel = c.key === 'pro' || c.key === 'ultimate';
+                  return (
+                    <td key={c.key} className="p-3 text-center">
+                      {hasExcel ? (
+                        <span className="bg-emerald-600 text-white px-2.5 py-1 rounded-full text-[10px] font-extrabold shadow-2xs">
+                          สูงสุด 3 เดือน
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-bold">-</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr>
+                <td className="p-3 font-semibold bg-slate-50/50">จำนวนโต๊ะสูงสุด</td>
+                {PLAN_CONFIGS.map(c => {
+                  const t = dashboardPermissions[c.key]?.max_tables;
+                  return (
+                    <td key={c.key} className="p-3 text-center">
+                      {t === 0 ? 'ไม่จำกัด' : `${t} โต๊ะ`}
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr>
+                <td className="p-3 font-semibold bg-slate-50/50">จำนวนอาหาร / เมนู สูงสุด</td>
+                {PLAN_CONFIGS.map(c => {
+                  const m = dashboardPermissions[c.key]?.max_food_items;
+                  return (
+                    <td key={c.key} className="p-3 text-center">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${m === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                        {m === 0 ? 'ไม่จำกัด' : `${m} รายการ`}
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr>
+                <td className="p-3 font-semibold bg-slate-50/50">จำนวนสินค้าทั่วไป สูงสุด</td>
+                {PLAN_CONFIGS.map(c => {
+                  const p = dashboardPermissions[c.key]?.max_products;
+                  return (
+                    <td key={c.key} className="p-3 text-center">
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${p === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
+                        {p === 0 ? 'ไม่จำกัด' : `${p} รายการ`}
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+              <tr>
+                <td className="p-3 font-semibold bg-slate-50/50">จัดการแก้ไข</td>
+                {PLAN_CONFIGS.map(c => (
+                  <td key={c.key} className="p-3 text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePlanTab(c.key);
+                        setPlanViewMode('tab');
+                      }}
+                      className="text-[11px] font-bold text-slate-700 hover:text-emerald-700 underline cursor-pointer"
+                    >
+                      แก้ไข {c.name}
+                    </button>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -412,977 +964,92 @@ VALUES ('global') ON CONFLICT (id) DO NOTHING;`)}
           </div>
 
           <div className="p-5 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Control Bar: Tabs & View Toggle */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2 border-b border-slate-200/80">
+              {/* Plan Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+                {PLAN_CONFIGS.map(c => {
+                  const isActive = planViewMode === 'tab' && activePlanTab === c.key;
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      onClick={() => {
+                        setActivePlanTab(c.key);
+                        setPlanViewMode('tab');
+                      }}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                        isActive
+                          ? c.tabActiveClass
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${c.dotColor}`} />
+                      <span>{c.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${isActive ? 'bg-white/20 text-white' : c.badgeClass}`}>
+                        {c.badge}
+                      </span>
+                    </button>
+                  );
+                })}
 
-              {/* Free Plan */}
-              <div className="border border-slate-200 rounded-2xl p-4 bg-[#FAFAFA] space-y-3.5">
-                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                    <span className="text-sm font-extrabold text-slate-800">{planContents.free?.name || 'Free Plan'}</span>
-                  </div>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold">{planContents.free?.badge || 'ฟรี'}</span>
-                </div>
-
-                {/* Plan Content Section */}
-                <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                      ข้อความและการแสดงผล (Plan Content)
-                    </span>
-                    <span className="text-[9.5px] text-slate-400">แสดงในหน้าแอปมือถือ</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">ชื่อแพ็กเกจ</label>
-                      <input
-                        type="text"
-                        value={planContents.free?.name || ''}
-                        onChange={e => updatePlanContent('free', 'name', e.target.value)}
-                        placeholder="Free Plan"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-[#5F8565]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">ป้ายกำกับ (Badge)</label>
-                      <input
-                        type="text"
-                        value={planContents.free?.badge || ''}
-                        onChange={e => updatePlanContent('free', 'badge', e.target.value)}
-                        placeholder="ฟรี"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-[#5F8565]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">คำโปรยย่อย (Subtitle)</label>
-                    <input
-                      type="text"
-                      value={planContents.free?.subtitle || ''}
-                      onChange={e => updatePlanContent('free', 'subtitle', e.target.value)}
-                      placeholder="ใช้งานได้ตลอดชีพ"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-[#5F8565]"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 1 (หัวข้อ)</label>
-                      <input
-                        type="text"
-                        value={planContents.free?.metric_1_label || ''}
-                        onChange={e => updatePlanContent('free', 'metric_1_label', e.target.value)}
-                        placeholder="POS"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-[#5F8565]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 1 (ค่าที่แสดง)</label>
-                      <input
-                        type="text"
-                        value={planContents.free?.metric_1_value || ''}
-                        onChange={e => updatePlanContent('free', 'metric_1_value', e.target.value)}
-                        placeholder="ขายหน้าร้านไม่จำกัด"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-[#5F8565]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 2 (หัวข้อ)</label>
-                      <input
-                        type="text"
-                        value={planContents.free?.metric_2_label || ''}
-                        onChange={e => updatePlanContent('free', 'metric_2_label', e.target.value)}
-                        placeholder="สแกนสั่งอาหาร"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-[#5F8565]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 2 (ข้อความต่อท้าย)</label>
-                      <input
-                        type="text"
-                        value={planContents.free?.metric_2_value || ''}
-                        onChange={e => updatePlanContent('free', 'metric_2_value', e.target.value)}
-                        placeholder="ต่อเดือน"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-[#5F8565]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <label className="text-[10px] font-semibold text-slate-600">รายการฟีเจอร์ (Features)</label>
-                      <span className="text-[9px] text-slate-400">1 บรรทัด = 1 ข้อ</span>
-                    </div>
-                    <textarea
-                      rows={3}
-                      value={(planContents.free?.features || []).join('\n')}
-                      onChange={e => updatePlanContent('free', 'features', e.target.value.split('\n'))}
-                      placeholder="คิดเงินหน้าร้านไม่จำกัด&#10;1000 ออเดอร์/เดือน&#10;Dashboard ย้อนหลัง 30 วัน"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-[#5F8565] font-mono leading-relaxed resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/80">
-                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5 mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                    สิทธิ์การใช้งานและโควต้า (Permissions & Limits)
-                  </span>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">ดูข้อมูลย้อนหลังได้ (วัน)</label>
-                    <span className="text-[11px] text-slate-500 font-medium">{dashboardPermissions.free.max_days === 0 ? 'ตลอดไป' : `${dashboardPermissions.free.max_days} วัน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.free.max_days}
-                      onChange={e => updatePlanPerm('free', 'max_days', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-700">รายงานขั้นสูง (ส่วนล่าง)</p>
-                    <p className="text-[10px] text-slate-500">ยอดขายรายชั่วโมง, วิธีชำระเงิน, โต๊ะ, ยอดขายพนักงาน</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={dashboardPermissions.free.allow_advanced}
-                      onChange={e => updatePlanPerm('free', 'allow_advanced', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-[#5F8565] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
-                  </label>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">ประวัติการขายดูย้อนหลังได้ (วัน)</label>
-                    <span className="text-[11px] text-slate-500 font-medium">{(dashboardPermissions.free.receipt_max_days ?? 7) === 0 ? 'ตลอดไป' : `${dashboardPermissions.free.receipt_max_days ?? 7} วัน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.free.receipt_max_days ?? 7}
-                      onChange={e => updatePlanPerm('free', 'receipt_max_days', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนอาหาร / เมนู สูงสุด (รายการ)</label>
-                    <span className="text-[11px] text-slate-500 font-medium">{(dashboardPermissions.free.max_food_items ?? 50) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.free.max_food_items ?? 50} รายการ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.free.max_food_items ?? 50}
-                      onChange={e => updatePlanPerm('free', 'max_food_items', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนสินค้าทั่วไป สูงสุด (รายการ)</label>
-                    <span className="text-[11px] text-slate-500 font-medium">{(dashboardPermissions.free.max_products ?? 50) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.free.max_products ?? 50} รายการ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.free.max_products ?? 50}
-                      onChange={e => updatePlanPerm('free', 'max_products', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนโต๊ะสูงสุด (โต๊ะ)</label>
-                    <span className="text-[11px] text-slate-500 font-medium">{(dashboardPermissions.free.max_tables ?? 10) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.free.max_tables ?? 10} โต๊ะ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.free.max_tables ?? 10}
-                      onChange={e => updatePlanPerm('free', 'max_tables', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนสแกนสั่งอาหาร สูงสุด (บิล/เดือน)</label>
-                    <span className="text-[11px] text-slate-500 font-medium">{(dashboardPermissions.free.max_orders ?? 1000) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.free.max_orders ?? 1000} บิล/เดือน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.free.max_orders ?? 1000}
-                      onChange={e => updatePlanPerm('free', 'max_orders', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#5F8565] font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActivePlanTab('compare');
+                    setPlanViewMode('tab');
+                  }}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                    planViewMode === 'tab' && activePlanTab === 'compare'
+                      ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-600'
+                      : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80'
+                  }`}
+                >
+                  <span>📊 ตารางเปรียบเทียบ</span>
+                </button>
               </div>
 
-              {/* Basic Plan */}
-              <div className="border-2 border-blue-200 rounded-2xl p-4 bg-blue-50/40 space-y-3.5">
-                <div className="flex items-center justify-between border-b border-blue-200/80 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                    <span className="text-sm font-extrabold text-blue-950">{planContents.basic?.name || 'Basic Plan'}</span>
-                  </div>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold">{planContents.basic?.badge || 'เบสิก'}</span>
-                </div>
-
-                {/* Plan Content Section */}
-                <div className="bg-white p-3 rounded-xl border border-blue-200/80 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-blue-950 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                      ข้อความและการแสดงผล (Plan Content)
-                    </span>
-                    <span className="text-[9.5px] text-blue-400">แสดงในหน้าแอปมือถือ</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">ชื่อแพ็กเกจ</label>
-                      <input
-                        type="text"
-                        value={planContents.basic?.name || ''}
-                        onChange={e => updatePlanContent('basic', 'name', e.target.value)}
-                        placeholder="Basic Plan"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">ป้ายกำกับ (Badge)</label>
-                      <input
-                        type="text"
-                        value={planContents.basic?.badge || ''}
-                        onChange={e => updatePlanContent('basic', 'badge', e.target.value)}
-                        placeholder="เบสิก"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">คำโปรยย่อย (Subtitle)</label>
-                    <input
-                      type="text"
-                      value={planContents.basic?.subtitle || ''}
-                      onChange={e => updatePlanContent('basic', 'subtitle', e.target.value)}
-                      placeholder="เริ่มต้นทำธุรกิจ"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 1 (หัวข้อ)</label>
-                      <input
-                        type="text"
-                        value={planContents.basic?.metric_1_label || ''}
-                        onChange={e => updatePlanContent('basic', 'metric_1_label', e.target.value)}
-                        placeholder="THEMES"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 1 (ค่าที่แสดง)</label>
-                      <input
-                        type="text"
-                        value={planContents.basic?.metric_1_value || ''}
-                        onChange={e => updatePlanContent('basic', 'metric_1_value', e.target.value)}
-                        placeholder="4 ธีม"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 2 (หัวข้อ)</label>
-                      <input
-                        type="text"
-                        value={planContents.basic?.metric_2_label || ''}
-                        onChange={e => updatePlanContent('basic', 'metric_2_label', e.target.value)}
-                        placeholder="ORDERS"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 2 (ค่าที่แสดง)</label>
-                      <input
-                        type="text"
-                        value={planContents.basic?.metric_2_value || ''}
-                        onChange={e => updatePlanContent('basic', 'metric_2_value', e.target.value)}
-                        placeholder="ไม่จำกัด"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <label className="text-[10px] font-semibold text-slate-600">รายการฟีเจอร์ (Features)</label>
-                      <span className="text-[9px] text-slate-400">1 บรรทัด = 1 ข้อ</span>
-                    </div>
-                    <textarea
-                      rows={3}
-                      value={(planContents.basic?.features || []).join('\n')}
-                      onChange={e => updatePlanContent('basic', 'features', e.target.value.split('\n'))}
-                      placeholder="คิดเงินได้ไม่จำกัด&#10;ออเดอร์ไม่จำกัด&#10;Dashboard ไม่จำกัดย้อนหลัง"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 font-mono leading-relaxed resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-blue-200/80">
-                  <span className="text-[11px] font-bold text-blue-950 flex items-center gap-1.5 mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                    สิทธิ์การใช้งานและโควต้า (Permissions & Limits)
-                  </span>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">ดูข้อมูลย้อนหลังได้ (วัน)</label>
-                    <span className="text-[11px] text-blue-700 font-bold">{dashboardPermissions.basic.max_days === 0 ? 'ตลอดไป (ไม่จำกัด)' : `${dashboardPermissions.basic.max_days} วัน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.basic.max_days}
-                      onChange={e => updatePlanPerm('basic', 'max_days', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(ค่าเริ่มต้น 0 = ตลอดไป)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-blue-950">รายงานขั้นสูง (ส่วนล่าง)</p>
-                    <p className="text-[10px] text-blue-700/80">เปิดสิทธิ์ให้ Basic ดูสถิติรายชั่วโมง, โต๊ะ และพนักงานได้</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={dashboardPermissions.basic.allow_advanced}
-                      onChange={e => updatePlanPerm('basic', 'allow_advanced', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
-                  </label>
-                </div>
-
-                <div className="pt-2 border-t border-blue-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">ประวัติการขายดูย้อนหลังได้ (วัน)</label>
-                    <span className="text-[11px] text-blue-700 font-bold">{(dashboardPermissions.basic.receipt_max_days ?? 0) === 0 ? 'ตลอดไป (ไม่จำกัด)' : `${dashboardPermissions.basic.receipt_max_days} วัน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.basic.receipt_max_days ?? 0}
-                      onChange={e => updatePlanPerm('basic', 'receipt_max_days', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(ค่าเริ่มต้น 0 = ตลอดไป)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-blue-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนอาหาร / เมนู สูงสุด (รายการ)</label>
-                    <span className="text-[11px] text-blue-700 font-bold">{(dashboardPermissions.basic.max_food_items ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.basic.max_food_items} รายการ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.basic.max_food_items ?? 0}
-                      onChange={e => updatePlanPerm('basic', 'max_food_items', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-blue-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนสินค้าทั่วไป สูงสุด (รายการ)</label>
-                    <span className="text-[11px] text-blue-700 font-bold">{(dashboardPermissions.basic.max_products ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.basic.max_products} รายการ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.basic.max_products ?? 0}
-                      onChange={e => updatePlanPerm('basic', 'max_products', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-blue-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนโต๊ะสูงสุด (โต๊ะ)</label>
-                    <span className="text-[11px] text-blue-700 font-bold">{(dashboardPermissions.basic.max_tables ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.basic.max_tables} โต๊ะ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.basic.max_tables ?? 0}
-                      onChange={e => updatePlanPerm('basic', 'max_tables', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-blue-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนสแกนสั่งอาหาร สูงสุด (บิล/เดือน)</label>
-                    <span className="text-[11px] text-blue-700 font-bold">{(dashboardPermissions.basic.max_orders ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.basic.max_orders} บิล/เดือน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.basic.max_orders ?? 0}
-                      onChange={e => updatePlanPerm('basic', 'max_orders', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shrink-0 self-end md:self-auto text-xs font-semibold text-slate-600">
+                <button
+                  type="button"
+                  onClick={() => setPlanViewMode('tab')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${planViewMode === 'tab' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'hover:text-slate-900'}`}
+                >
+                  แท็บทีละแผน (กระชับ)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlanViewMode('grid')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${planViewMode === 'grid' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'hover:text-slate-900'}`}
+                >
+                  แสดงทั้งหมด (กริด)
+                </button>
               </div>
-
-              {/* Pro Plan */}
-              <div className="border border-emerald-200 rounded-2xl p-4 bg-emerald-50/40 space-y-3.5">
-                <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                    <span className="text-sm font-extrabold text-emerald-950">{planContents.pro?.name || 'Pro Plan'}</span>
-                  </div>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">{planContents.pro?.badge || 'โปร'}</span>
-                </div>
-
-                {/* Plan Content Section */}
-                <div className="bg-white p-3 rounded-xl border border-emerald-200/80 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-emerald-950 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                      ข้อความและการแสดงผล (Plan Content)
-                    </span>
-                    <span className="text-[9.5px] text-emerald-600">แสดงในหน้าแอปมือถือ</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">ชื่อแพ็กเกจ</label>
-                      <input
-                        type="text"
-                        value={planContents.pro?.name || ''}
-                        onChange={e => updatePlanContent('pro', 'name', e.target.value)}
-                        placeholder="Pro Plan"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">ป้ายกำกับ (Badge)</label>
-                      <input
-                        type="text"
-                        value={planContents.pro?.badge || ''}
-                        onChange={e => updatePlanContent('pro', 'badge', e.target.value)}
-                        placeholder="โปร"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">คำโปรยย่อย (Subtitle)</label>
-                    <input
-                      type="text"
-                      value={planContents.pro?.subtitle || ''}
-                      onChange={e => updatePlanContent('pro', 'subtitle', e.target.value)}
-                      placeholder="ยอดนิยมสำหรับร้านอาหาร"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 1 (หัวข้อ)</label>
-                      <input
-                        type="text"
-                        value={planContents.pro?.metric_1_label || ''}
-                        onChange={e => updatePlanContent('pro', 'metric_1_label', e.target.value)}
-                        placeholder="THEMES"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 1 (ค่าที่แสดง)</label>
-                      <input
-                        type="text"
-                        value={planContents.pro?.metric_1_value || ''}
-                        onChange={e => updatePlanContent('pro', 'metric_1_value', e.target.value)}
-                        placeholder="7 ธีม"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 2 (หัวข้อ)</label>
-                      <input
-                        type="text"
-                        value={planContents.pro?.metric_2_label || ''}
-                        onChange={e => updatePlanContent('pro', 'metric_2_label', e.target.value)}
-                        placeholder="ORDERS"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 2 (ค่าที่แสดง)</label>
-                      <input
-                        type="text"
-                        value={planContents.pro?.metric_2_value || ''}
-                        onChange={e => updatePlanContent('pro', 'metric_2_value', e.target.value)}
-                        placeholder="ไม่จำกัด"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <label className="text-[10px] font-semibold text-slate-600">รายการฟีเจอร์ (Features)</label>
-                      <span className="text-[9px] text-slate-400">1 บรรทัด = 1 ข้อ</span>
-                    </div>
-                    <textarea
-                      rows={4}
-                      value={(planContents.pro?.features || []).join('\n')}
-                      onChange={e => updatePlanContent('pro', 'features', e.target.value.split('\n'))}
-                      placeholder="คิดเงินได้ไม่จำกัด&#10;ออเดอร์ไม่จำกัด&#10;Dashboard ขั้นสูง&#10;Export รายงาน (Excel)&#10;ระบบพนักงานสูงสุด 3 คน"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500 font-mono leading-relaxed resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-emerald-200/80">
-                  <span className="text-[11px] font-bold text-emerald-950 flex items-center gap-1.5 mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                    สิทธิ์การใช้งานและโควต้า (Permissions & Limits)
-                  </span>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">ดูข้อมูลย้อนหลังได้ (วัน)</label>
-                    <span className="text-[11px] text-emerald-700 font-bold">{dashboardPermissions.pro.max_days === 0 ? 'ตลอดไป' : `${dashboardPermissions.pro.max_days} วัน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.pro.max_days}
-                      onChange={e => updatePlanPerm('pro', 'max_days', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-emerald-950">รายงานขั้นสูง (ส่วนล่าง)</p>
-                    <p className="text-[10px] text-emerald-700/80">ยอดขายรายชั่วโมง, วิธีชำระเงิน, โต๊ะ, ยอดขายพนักงาน</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={dashboardPermissions.pro.allow_advanced}
-                      onChange={e => updatePlanPerm('pro', 'allow_advanced', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
-                  </label>
-                </div>
-
-                <div className="pt-2 border-t border-emerald-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">ประวัติการขายดูย้อนหลังได้ (วัน)</label>
-                    <span className="text-[11px] text-emerald-700 font-bold">{(dashboardPermissions.pro.receipt_max_days ?? 0) === 0 ? 'ตลอดไป' : `${dashboardPermissions.pro.receipt_max_days} วัน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.pro.receipt_max_days ?? 0}
-                      onChange={e => updatePlanPerm('pro', 'receipt_max_days', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-emerald-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนอาหาร / เมนู สูงสุด (รายการ)</label>
-                    <span className="text-[11px] text-emerald-700 font-bold">{(dashboardPermissions.pro.max_food_items ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.pro.max_food_items} รายการ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.pro.max_food_items ?? 0}
-                      onChange={e => updatePlanPerm('pro', 'max_food_items', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-emerald-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนสินค้าทั่วไป สูงสุด (รายการ)</label>
-                    <span className="text-[11px] text-emerald-700 font-bold">{(dashboardPermissions.pro.max_products ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.pro.max_products} รายการ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.pro.max_products ?? 0}
-                      onChange={e => updatePlanPerm('pro', 'max_products', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-emerald-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนโต๊ะสูงสุด (โต๊ะ)</label>
-                    <span className="text-[11px] text-emerald-700 font-bold">{(dashboardPermissions.pro.max_tables ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.pro.max_tables} โต๊ะ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.pro.max_tables ?? 0}
-                      onChange={e => updatePlanPerm('pro', 'max_tables', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-emerald-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนสแกนสั่งอาหาร สูงสุด (บิล/เดือน)</label>
-                    <span className="text-[11px] text-emerald-700 font-bold">{(dashboardPermissions.pro.max_orders ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.pro.max_orders} บิล/เดือน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.pro.max_orders ?? 0}
-                      onChange={e => updatePlanPerm('pro', 'max_orders', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ultimate Plan */}
-              <div className="border border-purple-200 rounded-2xl p-4 bg-purple-50/40 space-y-3.5">
-                <div className="flex items-center justify-between border-b border-purple-200/80 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
-                    <span className="text-sm font-extrabold text-purple-950">{planContents.ultimate?.name || 'Ultimate Plan'}</span>
-                  </div>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-bold">{planContents.ultimate?.badge || 'อัลติเมท'}</span>
-                </div>
-
-                {/* Plan Content Section */}
-                <div className="bg-white p-3 rounded-xl border border-purple-200/80 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-purple-950 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
-                      ข้อความและการแสดงผล (Plan Content)
-                    </span>
-                    <span className="text-[9.5px] text-purple-600">แสดงในหน้าแอปมือถือ</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">ชื่อแพ็กเกจ</label>
-                      <input
-                        type="text"
-                        value={planContents.ultimate?.name || ''}
-                        onChange={e => updatePlanContent('ultimate', 'name', e.target.value)}
-                        placeholder="Ultimate Plan"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">ป้ายกำกับ (Badge)</label>
-                      <input
-                        type="text"
-                        value={planContents.ultimate?.badge || ''}
-                        onChange={e => updatePlanContent('ultimate', 'badge', e.target.value)}
-                        placeholder="อัลติเมท"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">คำโปรยย่อย (Subtitle)</label>
-                    <input
-                      type="text"
-                      value={planContents.ultimate?.subtitle || ''}
-                      onChange={e => updatePlanContent('ultimate', 'subtitle', e.target.value)}
-                      placeholder="ฟูลออปชั่น ทุกฟังก์ชัน"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 1 (หัวข้อ)</label>
-                      <input
-                        type="text"
-                        value={planContents.ultimate?.metric_1_label || ''}
-                        onChange={e => updatePlanContent('ultimate', 'metric_1_label', e.target.value)}
-                        placeholder="THEMES"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 1 (ค่าที่แสดง)</label>
-                      <input
-                        type="text"
-                        value={planContents.ultimate?.metric_1_value || ''}
-                        onChange={e => updatePlanContent('ultimate', 'metric_1_value', e.target.value)}
-                        placeholder="55 ธีม + พรีเมียม"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 2 (หัวข้อ)</label>
-                      <input
-                        type="text"
-                        value={planContents.ultimate?.metric_2_label || ''}
-                        onChange={e => updatePlanContent('ultimate', 'metric_2_label', e.target.value)}
-                        placeholder="ORDERS"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">เมตริก 2 (ค่าที่แสดง)</label>
-                      <input
-                        type="text"
-                        value={planContents.ultimate?.metric_2_value || ''}
-                        onChange={e => updatePlanContent('ultimate', 'metric_2_value', e.target.value)}
-                        placeholder="ไม่จำกัด"
-                        className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <label className="text-[10px] font-semibold text-slate-600">รายการฟีเจอร์ (Features)</label>
-                      <span className="text-[9px] text-slate-400">1 บรรทัด = 1 ข้อ</span>
-                    </div>
-                    <textarea
-                      rows={4}
-                      value={(planContents.ultimate?.features || []).join('\n')}
-                      onChange={e => updatePlanContent('ultimate', 'features', e.target.value.split('\n'))}
-                      placeholder="สิทธิ์ใช้งานได้ทุกธีม&#10;Dashboard ขั้นสูง&#10;Export รายงาน (Excel)&#10;ระบบพนักงานสูงสุด 10 คน"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500 font-mono leading-relaxed resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-purple-200/80">
-                  <span className="text-[11px] font-bold text-purple-950 flex items-center gap-1.5 mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
-                    สิทธิ์การใช้งานและโควต้า (Permissions & Limits)
-                  </span>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">ดูข้อมูลย้อนหลังได้ (วัน)</label>
-                    <span className="text-[11px] text-purple-700 font-bold">{dashboardPermissions.ultimate.max_days === 0 ? 'ตลอดไป' : `${dashboardPermissions.ultimate.max_days} วัน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.ultimate.max_days}
-                      onChange={e => updatePlanPerm('ultimate', 'max_days', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-purple-200/60 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-purple-950">รายงานขั้นสูง (ส่วนล่าง)</p>
-                    <p className="text-[10px] text-purple-700/80">ยอดขายรายชั่วโมง, วิธีชำระเงิน, โต๊ะ, ยอดขายพนักงาน</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={dashboardPermissions.ultimate.allow_advanced}
-                      onChange={e => updatePlanPerm('ultimate', 'allow_advanced', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
-                  </label>
-                </div>
-
-                <div className="pt-2 border-t border-purple-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">ประวัติการขายดูย้อนหลังได้ (วัน)</label>
-                    <span className="text-[11px] text-purple-700 font-bold">{(dashboardPermissions.ultimate.receipt_max_days ?? 0) === 0 ? 'ตลอดไป' : `${dashboardPermissions.ultimate.receipt_max_days} วัน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.ultimate.receipt_max_days ?? 0}
-                      onChange={e => updatePlanPerm('ultimate', 'receipt_max_days', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ดูได้ตลอดไป)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-purple-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนอาหาร / เมนู สูงสุด (รายการ)</label>
-                    <span className="text-[11px] text-purple-700 font-bold">{(dashboardPermissions.ultimate.max_food_items ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.ultimate.max_food_items} รายการ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.ultimate.max_food_items ?? 0}
-                      onChange={e => updatePlanPerm('ultimate', 'max_food_items', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-purple-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนสินค้าทั่วไป สูงสุด (รายการ)</label>
-                    <span className="text-[11px] text-purple-700 font-bold">{(dashboardPermissions.ultimate.max_products ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.ultimate.max_products} รายการ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.ultimate.max_products ?? 0}
-                      onChange={e => updatePlanPerm('ultimate', 'max_products', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-purple-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนโต๊ะสูงสุด (โต๊ะ)</label>
-                    <span className="text-[11px] text-purple-700 font-bold">{(dashboardPermissions.ultimate.max_tables ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.ultimate.max_tables} โต๊ะ`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.ultimate.max_tables ?? 0}
-                      onChange={e => updatePlanPerm('ultimate', 'max_tables', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-purple-200/60">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700">จำนวนสแกนสั่งอาหาร สูงสุด (บิล/เดือน)</label>
-                    <span className="text-[11px] text-purple-700 font-bold">{(dashboardPermissions.ultimate.max_orders ?? 0) === 0 ? 'ไม่จำกัด' : `${dashboardPermissions.ultimate.max_orders} บิล/เดือน`}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={dashboardPermissions.ultimate.max_orders ?? 0}
-                      onChange={e => updatePlanPerm('ultimate', 'max_orders', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-28 text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-semibold"
-                    />
-                    <span className="text-[11px] text-slate-500">(0 = ไม่จำกัด)</span>
-                  </div>
-                </div>
-              </div>
-
             </div>
+
+            {/* Content Area */}
+            {planViewMode === 'tab' ? (
+              activePlanTab === 'compare' ? (
+                renderComparisonTable()
+              ) : (
+                (() => {
+                  const currentCfg = PLAN_CONFIGS.find(c => c.key === activePlanTab) || PLAN_CONFIGS[0];
+                  return renderPlanForm(currentCfg);
+                })()
+              )
+            ) : (
+              <div className="space-y-6">
+                {renderComparisonTable()}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {PLAN_CONFIGS.map(cfg => renderPlanForm(cfg, true))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ── Maintenance ── */}
+        {/* ── Maintenance ── */}        {/* ── Maintenance ── */}
         <div className="bg-white border border-[#EFECE6] rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 bg-[#FAF9F5] border-b border-[#EFECE6]">
             <div className="flex items-center gap-3">

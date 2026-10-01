@@ -1,10 +1,12 @@
 import 'server-only';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 import { mergePlanContents, DEFAULT_PUBLIC_PLANS, type PublicPlanItem } from '@/lib/planContents';
+import { DEFAULT_PLAN_PERMISSIONS, type PlanPermissions, type PlanKey } from '@/lib/planPermissions';
 import type { PlanOfferItem } from '@/lib/seo';
 
 export async function getPublicPricingPlans(): Promise<{
   plans: PublicPlanItem[];
+  permissions: Record<PlanKey, PlanPermissions>;
   seoOffers: PlanOfferItem[];
 }> {
   try {
@@ -12,6 +14,7 @@ export async function getPublicPricingPlans(): Promise<{
     const [
       { data: dbPlans, error: dbPlansError },
       { data: planContentsRows, error: contentsError },
+      { data: sysSettings, error: sysError },
     ] = await Promise.all([
       supabaseAdmin
         .from('subscription_plans')
@@ -21,6 +24,11 @@ export async function getPublicPricingPlans(): Promise<{
       supabaseAdmin
         .from('plan_contents')
         .select('*'),
+      supabaseAdmin
+        .from('system_settings')
+        .select('dashboard_permissions')
+        .eq('id', 'global')
+        .maybeSingle(),
     ]);
 
     if (dbPlansError) {
@@ -29,11 +37,23 @@ export async function getPublicPricingPlans(): Promise<{
     if (contentsError) {
       console.warn('Could not query plan_contents, fallback to defaults:', contentsError.message);
     }
+    if (sysError) {
+      console.warn('Could not query system_settings, fallback to defaults:', sysError.message);
+    }
 
     const planContents = mergePlanContents(planContentsRows);
 
-    // ซ่อน Ultimate Plan ชั่วคราว (ฟีเจอร์ยังไม่พร้อมขาย) แสดงเฉพาะ free, basic, pro
-    const planKeys: ('free' | 'basic' | 'pro')[] = ['free', 'basic', 'pro'];
+    const savedPerms = sysSettings?.dashboard_permissions || {};
+    const permissions: Record<PlanKey, PlanPermissions> = {
+      free: { ...DEFAULT_PLAN_PERMISSIONS.free, ...(savedPerms.free || {}) },
+      go: { ...DEFAULT_PLAN_PERMISSIONS.go, ...(savedPerms.go || {}) },
+      basic: { ...DEFAULT_PLAN_PERMISSIONS.basic, ...(savedPerms.basic || {}) },
+      pro: { ...DEFAULT_PLAN_PERMISSIONS.pro, ...(savedPerms.pro || {}) },
+      ultimate: { ...DEFAULT_PLAN_PERMISSIONS.ultimate, ...(savedPerms.ultimate || {}) },
+    };
+
+    // ซ่อน Ultimate Plan (ยังไม่เปิดขาย ทำเตรียมไว้เฉยๆ) แสดงเฉพาะ 4 แผนหลักที่เปิดขายจริง: free, go, basic, pro
+    const planKeys: PlanKey[] = ['free', 'go', 'basic', 'pro'];
 
     const plans: PublicPlanItem[] = planKeys.map((key) => {
       const dbPlan = (dbPlans || []).find((p: any) => p.plan_key === key || p.plan_type === key);
@@ -41,9 +61,9 @@ export async function getPublicPricingPlans(): Promise<{
       // ฐานราคามาตรฐาน (ราคาในแอป / ฐานราคาปกติก่อนลด)
       const baseMonthly = key === 'free'
         ? 0
-        : (dbPlan ? Number(dbPlan.price_monthly || 0) / 100 : (key === 'basic' ? 250 : key === 'pro' ? 500 : 1999));
+        : (dbPlan ? Number(dbPlan.price_monthly || 0) / 100 : (key === 'go' ? 99 : key === 'basic' ? 250 : key === 'pro' ? 500 : 1999));
       const originalMonthly = baseMonthly;
-      const originalYearly = baseMonthly * 12;
+      const originalYearly = dbPlan && dbPlan.price_yearly ? Number(dbPlan.price_yearly) / 100 : baseMonthly * 12;
 
       // ราคาพิเศษเฉพาะบนเว็บ: ซื้อผ่านเว็บลด 15% รายเดือน
       const priceMonthly = key === 'free'
@@ -61,9 +81,9 @@ export async function getPublicPricingPlans(): Promise<{
       return {
         id: dbPlan?.id || key,
         plan_key: key,
-        name: content?.name || (key === 'free' ? 'Free Plan' : key === 'basic' ? 'Basic Plan' : key === 'pro' ? 'Pro Plan' : 'Ultimate Plan'),
+        name: content?.name || (key === 'free' ? 'Free Plan' : key === 'go' ? 'Go Plan' : key === 'basic' ? 'Basic Plan' : key === 'pro' ? 'Pro Plan' : 'Ultimate Plan'),
         subtitle: content?.subtitle || '',
-        badge: content?.badge || (key === 'free' ? 'ฟรี' : key === 'basic' ? 'เบสิก' : key === 'pro' ? 'ยอดนิยม' : 'คุ้มค่าที่สุด'),
+        badge: content?.badge || (key === 'free' ? 'ฟรี' : key === 'go' ? 'โก' : key === 'basic' ? 'เบสิก' : key === 'pro' ? 'ยอดนิยม' : 'คุ้มค่าที่สุด'),
         price_monthly: priceMonthly,
         original_price_monthly: originalMonthly,
         price_yearly: priceYearly,
@@ -79,28 +99,33 @@ export async function getPublicPricingPlans(): Promise<{
       };
     });
 
-    const seoOffers: PlanOfferItem[] = plans.map((p) => ({
-      name: `${p.name} (${p.badge})`,
-      price: p.price_monthly,
-      priceCurrency: 'THB',
-      description: `${p.subtitle ? p.subtitle + ' - ' : ''}${p.features.join(', ')}`,
-      billingDuration: p.plan_key === 'free' ? 'LIFETIME' : 'MONTH',
-      url: 'https://suparpos.com/pricing',
-    }));
-
-    return { plans, seoOffers };
-  } catch (error) {
-    console.error('Error in getPublicPricingPlans, using defaults:', error);
-    return {
-      plans: DEFAULT_PUBLIC_PLANS,
-      seoOffers: DEFAULT_PUBLIC_PLANS.map((p) => ({
+    const seoOffers: PlanOfferItem[] = plans
+      .filter((p) => p.plan_key !== 'ultimate')
+      .map((p) => ({
         name: `${p.name} (${p.badge})`,
         price: p.price_monthly,
         priceCurrency: 'THB',
         description: `${p.subtitle ? p.subtitle + ' - ' : ''}${p.features.join(', ')}`,
         billingDuration: p.plan_key === 'free' ? 'LIFETIME' : 'MONTH',
         url: 'https://suparpos.com/pricing',
-      })),
+      }));
+
+    return { plans, permissions, seoOffers };
+  } catch (error) {
+    console.error('Error in getPublicPricingPlans, using defaults:', error);
+    return {
+      plans: DEFAULT_PUBLIC_PLANS,
+      permissions: DEFAULT_PLAN_PERMISSIONS,
+      seoOffers: DEFAULT_PUBLIC_PLANS
+        .filter((p) => p.plan_key !== 'ultimate')
+        .map((p) => ({
+          name: `${p.name} (${p.badge})`,
+          price: p.price_monthly,
+          priceCurrency: 'THB',
+          description: `${p.subtitle ? p.subtitle + ' - ' : ''}${p.features.join(', ')}`,
+          billingDuration: p.plan_key === 'free' ? 'LIFETIME' : 'MONTH',
+          url: 'https://suparpos.com/pricing',
+        })),
     };
   }
 }

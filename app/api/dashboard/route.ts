@@ -40,6 +40,10 @@ function calculateEffectivePlan(brand: any) {
     const exp = parseExpiry(brand.expiry_basic);
     if (exp && exp.isValid() && exp.isAfter(now)) return 'basic';
   }
+  if (brand?.plan === 'go') {
+    const exp = parseExpiry(brand.expiry_go);
+    if (exp && exp.isValid() && exp.isAfter(now)) return 'go';
+  }
   return 'free';
 }
 
@@ -67,6 +71,7 @@ export async function GET(request: Request) {
     // 🛡️ โหลดการตั้งค่าสิทธิ์ Dashboard จาก system_settings
     const DEFAULT_DASHBOARD_PERMISSIONS: Record<string, { max_days: number; allow_advanced: boolean }> = {
       free: { max_days: 30, allow_advanced: false },
+      go: { max_days: 180, allow_advanced: false },
       basic: { max_days: 0, allow_advanced: false },
       pro: { max_days: 0, allow_advanced: true },
       ultimate: { max_days: 0, allow_advanced: true }

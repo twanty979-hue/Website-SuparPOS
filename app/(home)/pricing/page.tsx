@@ -16,13 +16,13 @@ export const revalidate = 60;
 // 1. Static Metadata for Pricing Page
 export const metadata: Metadata = {
   title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan | เริ่มต้นฟรี",
-  description: "เช็คราคาโปรแกรม POS และระบบสแกนสั่งอาหาร POS Foodscan เริ่มต้นใช้งานฟรีแผน Starter (1,000 ออเดอร์/เดือน) หรือเลือกสมัครแผน Basic เริ่มต้น 212.5 บาท และแผน Pro 425 บาทต่อเดือน (ลดพิเศษ 15% ซื้อผ่านเว็บ และลด 25% รายปี) ไม่มีสัญญาผูกมัด",
+  description: "เช็คราคาโปรแกรม POS และระบบสแกนสั่งอาหาร POS Foodscan เริ่มต้นใช้งานฟรี Free Plan (300 ออเดอร์/เดือน) หรือเลือกสมัครแผน Go (1,000 ออเดอร์/เดือน เพียง 99 บาท) แผน Basic เริ่มต้น 212.5 บาท และแผน Pro 425 บาทต่อเดือน (ลดพิเศษ 15% ซื้อผ่านเว็บ และลด 25% รายปี) ไม่มีสัญญาผูกมัด",
   alternates: {
     canonical: "https://suparpos.com/pricing"
   },
   openGraph: {
     title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan | เริ่มต้นฟรี",
-    description: "เช็คราคาโปรแกรม POS และระบบสแกนสั่งอาหาร POS Foodscan เริ่มต้นใช้งานฟรีแผน Starter (1,000 ออเดอร์/เดือน) หรือเลือกสมัครแผน Basic เริ่มต้น 212.5 บาท และแผน Pro 425 บาทต่อเดือน (ลดพิเศษ 15% ซื้อผ่านเว็บ และลด 25% รายปี) ไม่มีสัญญาผูกมัด",
+    description: "เช็คราคาโปรแกรม POS และระบบสแกนสั่งอาหาร POS Foodscan เริ่มต้นใช้งานฟรี Free Plan (300 ออเดอร์/เดือน) หรือเลือกสมัครแผน Go (1,000 ออเดอร์/เดือน เพียง 99 บาท) แผน Basic เริ่มต้น 212.5 บาท และแผน Pro 425 บาทต่อเดือน (ลดพิเศษ 15% ซื้อผ่านเว็บ และลด 25% รายปี) ไม่มีสัญญาผูกมัด",
     url: "https://suparpos.com/pricing",
     siteName: "POS Foodscan",
     locale: "th_TH",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "ราคาโปรแกรม POS และแพ็กเกจ POS Foodscan | เริ่มต้นฟรี",
-    description: "เช็คราคาโปรแกรม POS และระบบสแกนสั่งอาหาร POS Foodscan เริ่มต้นใช้งานฟรีแผน Starter (1,000 ออเดอร์/เดือน) หรือเลือกสมัครแผน Basic เริ่มต้น 212.5 บาท และแผน Pro 425 บาทต่อเดือน (ลดพิเศษ 15% ซื้อผ่านเว็บ และลด 25% รายปี) ไม่มีสัญญาผูกมัด",
+    description: "เช็คราคาโปรแกรม POS และระบบสแกนสั่งอาหาร POS Foodscan เริ่มต้นใช้งานฟรี Free Plan (300 ออเดอร์/เดือน) หรือเลือกสมัครแผน Go (1,000 ออเดอร์/เดือน เพียง 99 บาท) แผน Basic เริ่มต้น 212.5 บาท และแผน Pro 425 บาทต่อเดือน (ลดพิเศษ 15% ซื้อผ่านเว็บ และลด 25% รายปี) ไม่มีสัญญาผูกมัด",
     images: ["/opengraph-image.png"],
   }
 };
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
 const PRICING_FAQS = [
   {
     question: "แพ็กเกจแต่ละแผนราคาของ POS Foodscan ต่างกันอย่างไร?",
-    answer: "ทุกแพ็กเกจสามารถเลือกใช้งานธีมร้านค้าได้ฟรีทั้งหมด โดยแผน Free ให้บริการฟรีตลอดชีพสำหรับการเริ่มต้น คิดเงินหน้าร้านไม่จำกัด สแกนสั่งอาหาร 1,000 ออเดอร์/เดือน และดู Dashboard ย้อนหลัง 30 วัน, แผน Basic (ปกติ 250 บ. พิเศษซื้อผ่านเว็บลด 15% เหลือ 212.5 บ./เดือน หรือรายปีลด 25% เหลือ 2,250 บ./ปี) ปลดล็อกออเดอร์ไม่จำกัด และ Export Excel, และแผน Pro (ปกติ 500 บ. พิเศษซื้อผ่านเว็บลด 15% เหลือ 425 บ./เดือน หรือรายปีลด 25% เหลือ 4,500 บ./ปี) เพิ่มระบบจัดการพนักงาน 3 คน และ Dashboard ขั้นสูง"
+    answer: "ทุกแพ็กเกจสามารถคิดเงินหน้าร้าน POS ได้ไม่จำกัด และเลือกใช้ธีมร้านค้าได้ฟรี โดยแผน Free ให้บริการฟรีตลอดชีพสำหรับการเริ่มต้น สแกนสั่งอาหาร 300 ออเดอร์/เดือน จัดการอาหาร 50 รายการ สินค้าไม่จำกัด, แผน Go (ปกติ 99 บ./ด. ซื้อผ่านเว็บเหลือ 84.2 บ./ด. หรือรายปี 990 บ./ปี) สแกนสั่งอาหาร 1,000 ออเดอร์/เดือน และดู Dashboard ย้อนหลัง 180 วัน, แผน Basic (ปกติ 250 บ./ด. ซื้อผ่านเว็บเหลือ 212.5 บ./ด.) ออเดอร์ไม่จำกัด, และแผน Pro (ปกติ 500 บ./ด. ซื้อผ่านเว็บเหลือ 425 บ./ด.) เพิ่มระบบจัดการพนักงาน 3 คน Dashboard ขั้นสูง และ Export รายงาน Excel ย้อนหลังได้สูงสุด 3 เดือน"
   },
   {
     question: "การทดลองใช้ฟรีจำเป็นต้องใช้บัตรเครดิตหรือไม่?",
@@ -64,7 +64,7 @@ const PRICING_FAQS = [
 ];
 
 export default async function PricingPage() {
-  const { plans, seoOffers } = await getPublicPricingPlans();
+  const { plans, permissions, seoOffers } = await getPublicPricingPlans();
 
   const breadcrumbSchema = generateBreadcrumbJsonLd([
     { name: "หน้าแรก", item: "https://suparpos.com" },
@@ -102,8 +102,8 @@ export default async function PricingPage() {
             </p>
           </div>
 
-          {/* Dynamic 4 Cards Grid with Monthly / Yearly Toggle */}
-          <PricingCards plans={plans} />
+          {/* Dynamic Cards Grid with Monthly / Yearly Toggle & Comparison Table */}
+          <PricingCards plans={plans} permissions={permissions} />
 
           {/* Visual FAQ Section for Pricing Page */}
           <div className="max-w-3xl mx-auto mt-24 border-t border-slate-200/80 pt-16">

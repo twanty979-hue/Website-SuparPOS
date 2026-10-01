@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export type PlanKey = 'free' | 'basic' | 'pro' | 'ultimate';
+export type PlanKey = 'free' | 'go' | 'basic' | 'pro' | 'ultimate';
 
 export type PlanPermissions = {
   max_days: number;
@@ -20,8 +20,17 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
     allow_advanced: false,
     receipt_max_days: 7,
     max_food_items: 50,
-    max_products: 50,
+    max_products: 0,
     max_tables: 10,
+    max_orders: 300,
+  },
+  go: {
+    max_days: 180,
+    allow_advanced: false,
+    receipt_max_days: 30,
+    max_food_items: 0,
+    max_products: 0,
+    max_tables: 0,
     max_orders: 1000,
   },
   basic: {
@@ -53,7 +62,7 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
   },
 };
 
-const PLAN_KEYS = new Set<PlanKey>(['free', 'basic', 'pro', 'ultimate']);
+const PLAN_KEYS = new Set<PlanKey>(['free', 'go', 'basic', 'pro', 'ultimate']);
 
 const toLimit = (value: unknown, fallback: number) => {
   const parsed = Number(value);
@@ -127,7 +136,7 @@ export async function getBrandPlanPermissions(
 ): Promise<{ plan: PlanKey; limits: PlanPermissions }> {
   const { data: brand, error } = await db
     .from('brands')
-    .select('plan, expiry_basic, expiry_pro, expiry_ultimate')
+    .select('plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate')
     .eq('id', brandId)
     .maybeSingle();
 

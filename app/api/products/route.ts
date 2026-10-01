@@ -25,6 +25,7 @@ function calculateEffectivePlan(brand: any) {
   if (brand?.plan === 'ultimate' && isActive(brand.expiry_ultimate)) return 'ultimate';
   if (brand?.plan === 'pro' && isActive(brand.expiry_pro)) return 'pro';
   if (brand?.plan === 'basic' && isActive(brand.expiry_basic)) return 'basic';
+  if (brand?.plan === 'go' && isActive(brand.expiry_go)) return 'go';
   return 'free';
 }
 
@@ -148,7 +149,7 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
-    const maxFoodItems = Number(rawPerms.max_food_items ?? rawPerms.max_products ?? (effectivePlan === 'free' ? 50 : 0));
+    const maxFoodItems = Number(rawPerms.max_food_items ?? (effectivePlan === 'free' ? 50 : 0));
 
     // 🧹 ทำความสะอาดหมวดหมู่ที่ซ้ำกันอัตโนมัติ
     const cleanCategories = await deduplicateAndCleanCategories(supabase, brandId, categoriesRes.data || []);
@@ -221,7 +222,7 @@ export async function POST(request: Request) {
 
       const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
       const maxFood = Number(
-        rawPerms.max_food_items ?? rawPerms.max_products ?? (effectivePlan === 'free' ? 50 : 0)
+        rawPerms.max_food_items ?? (effectivePlan === 'free' ? 50 : 0)
       );
 
       if (maxFood > 0) {

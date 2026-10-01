@@ -4,7 +4,8 @@ import { getFirebaseAdmin } from '@/lib/firebaseAdmin';
 import { mergePlanContents, DEFAULT_PLAN_CONTENTS, PLAN_CONTENTS_MIGRATION_SQL } from '@/lib/planContents';
 
 const DEFAULT_DASHBOARD_PERMISSIONS = {
-  free: { max_days: 30, allow_advanced: false, receipt_max_days: 7, max_food_items: 50, max_products: 50, max_tables: 10, max_orders: 1000 },
+  free: { max_days: 30, allow_advanced: false, receipt_max_days: 7, max_food_items: 50, max_products: 0, max_tables: 10, max_orders: 300 },
+  go: { max_days: 180, allow_advanced: false, receipt_max_days: 30, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 1000 },
   basic: { max_days: 0, allow_advanced: false, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 },
   pro: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 },
   ultimate: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 }
@@ -14,6 +15,7 @@ const mergePermissions = (saved: any) => {
   if (!saved) return DEFAULT_DASHBOARD_PERMISSIONS;
   return {
     free: { ...DEFAULT_DASHBOARD_PERMISSIONS.free, ...(saved.free || {}) },
+    go: { ...DEFAULT_DASHBOARD_PERMISSIONS.go, ...(saved.go || {}) },
     basic: { ...DEFAULT_DASHBOARD_PERMISSIONS.basic, ...(saved.basic || {}) },
     pro: { ...DEFAULT_DASHBOARD_PERMISSIONS.pro, ...(saved.pro || {}) },
     ultimate: { ...DEFAULT_DASHBOARD_PERMISSIONS.ultimate, ...(saved.ultimate || {}) },

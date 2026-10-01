@@ -35,6 +35,7 @@ function calculateEffectivePlan(brand: any) {
   if (brand?.plan === 'ultimate' && isActive(brand.expiry_ultimate)) return 'ultimate';
   if (brand?.plan === 'pro' && isActive(brand.expiry_pro)) return 'pro';
   if (brand?.plan === 'basic' && isActive(brand.expiry_basic)) return 'basic';
+  if (brand?.plan === 'go' && isActive(brand.expiry_go)) return 'go';
   return 'free';
 }
 

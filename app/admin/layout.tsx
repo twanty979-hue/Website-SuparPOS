@@ -121,17 +121,17 @@ export default function AdminLayout({
   const currentMenu = menuItems.find(m => m.href === pathname) || { name: 'Admin Portal' };
 
   return (
-    <div className="flex min-h-screen bg-[#F4F7F4] text-[#1E3A27] font-sans antialiased">
+    <div className="flex h-screen h-dvh overflow-hidden bg-[#F4F7F4] text-[#1E3A27] font-sans antialiased">
       
       {/* Sidebar - สามารถปิด/ซ่อนได้ตามใจชอบ */}
       <aside
-        className={`transition-all duration-300 ease-in-out border-r border-[#D0DDD0] bg-[#E2ECE2] flex flex-col justify-between shrink-0 z-30 ${
+        className={`h-full transition-all duration-300 ease-in-out border-r border-[#D0DDD0] bg-[#E2ECE2] flex flex-col justify-between shrink-0 z-30 ${
           isCollapsed ? 'w-0 -translate-x-full opacity-0 pointer-events-none' : 'w-64 translate-x-0 opacity-100'
         }`}
       >
-        <div className="p-5 flex flex-col h-full overflow-y-auto">
+        <div className="p-5 flex flex-col flex-1 min-h-0 overflow-y-auto">
           {/* Header & Close Button */}
-          <div className="flex items-center justify-between gap-2 pb-5 mb-4 border-b border-[#D0DDD0]/80">
+          <div className="flex items-center justify-between gap-2 pb-5 mb-4 border-b border-[#D0DDD0]/80 shrink-0">
             <Link href="/admin/products" className="flex items-center gap-2.5 group">
               <div className="w-8 h-8 rounded-xl bg-[#2C4A34] text-white flex items-center justify-center font-bold text-xs shadow-sm group-hover:scale-105 transition-transform">
                 AP
@@ -186,7 +186,7 @@ export default function AdminLayout({
         </div>
 
         {/* Sidebar Footer */}
-        <div className="p-3.5 border-t border-[#D0DDD0] bg-[#DBE6DB] flex items-center justify-between">
+        <div className="p-3.5 border-t border-[#D0DDD0] bg-[#DBE6DB] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 overflow-hidden">
             <div className="w-8 h-8 rounded-xl bg-[#2C4A34] flex items-center justify-center text-white text-xs font-bold shrink-0">
               AD
@@ -208,9 +208,9 @@ export default function AdminLayout({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#FAF9F5] transition-all">
+      <div className="flex-1 flex flex-col min-w-0 h-full bg-[#FAF9F5] transition-all overflow-hidden">
         {/* Top Navbar with Toggle Sidebar Button */}
-        <header className="h-16 border-b border-[#EFECE6] bg-white flex items-center justify-between px-4 md:px-8 shadow-xs sticky top-0 z-20">
+        <header className="h-16 shrink-0 border-b border-[#EFECE6] bg-white flex items-center justify-between px-4 md:px-8 shadow-xs z-20">
           <div className="flex items-center gap-3">
             <button
               onClick={toggleSidebar}
@@ -243,7 +243,7 @@ export default function AdminLayout({
         </header>
 
         {/* Content Container */}
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto min-h-0">
           {children}
         </main>
       </div>

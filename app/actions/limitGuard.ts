@@ -4,9 +4,7 @@
 import 'server-only';
 import { createClient } from '@supabase/supabase-js';
 import dayjs from 'dayjs';
-
-// 🔧 CONFIG: กำหนดโควต้าสแกนสั่งอาหารสำหรับแพ็กเกจฟรี (บิล/เดือน) - ปรับเปลี่ยนตัวเลขตรงนี้ได้เลย
-const MAX_FREE_ORDERS = 1000;
+import { getBrandPlanPermissions } from '@/lib/planPermissions';
 
 // Helper สร้าง Supabase
 async function getSupabase() {
@@ -24,18 +22,10 @@ export async function checkOrderLimitOrThrow(brandId: string) {
     const supabase = await getSupabase();
     const now = dayjs();
 
-    // 1. ดึง Plan
-    const { data: brand } = await supabase.from('brands').select('plan, expiry_basic, expiry_pro, expiry_ultimate').eq('id', brandId).single();
-    if (!brand) throw new Error("Brand not found");
+    const { plan, limits } = await getBrandPlanPermissions(supabase, brandId);
 
-    // 2. คำนวณ Plan (Logic เดิม)
-    let effectivePlan = 'free';
-    if (brand.expiry_ultimate && dayjs(brand.expiry_ultimate).isAfter(now)) effectivePlan = 'ultimate';
-    else if (brand.expiry_pro && dayjs(brand.expiry_pro).isAfter(now)) effectivePlan = 'pro';
-    else if (brand.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) effectivePlan = 'basic';
-
-    // ✅ ถ้าไม่ใช่ 'free' (จ่ายเงินแล้ว) -> ผ่านตลอด ไม่จำกัด
-    if (effectivePlan !== 'free') return true; 
+    // ✅ ถ้า max_orders เป็น 0 (Unlimited) -> ผ่านตลอด ไม่จำกัด
+    if (limits.max_orders === 0) return true; 
 
     // 3. เริ่มนับยอดขาย 30 วันย้อนหลัง
     const startOfPeriod = now.subtract(30, 'day').startOf('day').toISOString();
@@ -68,8 +58,8 @@ export async function checkOrderLimitOrThrow(brandId: string) {
     }
 
     // 4. ตัดสิน: ถ้าเกิน Limit -> ระเบิด Error
-    if (usage >= MAX_FREE_ORDERS) {
-        throw new Error(`🚫 แพ็กเกจฟรีจำกัดสแกนสั่งอาหาร ${MAX_FREE_ORDERS} บิล/เดือน (ใช้ไปแล้ว ${usage}) กรุณาอัปเกรด!`);
+    if (usage >= limits.max_orders) {
+        throw new Error(`🚫 แพ็กเกจ ${plan.toUpperCase()} จำกัดสแกนสั่งอาหาร ${limits.max_orders} บิล/เดือน (ใช้ไปแล้ว ${usage}) กรุณาอัปเกรด!`);
     }
 
     return true; 
@@ -82,21 +72,14 @@ export async function getOrderUsage(brandId: string, customSupabase?: any) {
     const supabase = customSupabase || await getSupabase();
     const now = dayjs();
 
-    const { data: brand } = await supabase.from('brands').select('plan, expiry_basic, expiry_pro, expiry_ultimate').eq('id', brandId).single();
-    if (!brand) return { usage: 0, limit: 0, isLocked: false, plan: 'unknown' };
+    const { plan, limits } = await getBrandPlanPermissions(supabase, brandId);
 
-    // คำนวณ Plan เหมือนข้างบน
-    let effectivePlan = 'free';
-    if (brand.expiry_ultimate && dayjs(brand.expiry_ultimate).isAfter(now)) effectivePlan = 'ultimate';
-    else if (brand.expiry_pro && dayjs(brand.expiry_pro).isAfter(now)) effectivePlan = 'pro';
-    else if (brand.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) effectivePlan = 'basic';
-
-    // กรณีจ่ายเงิน (Infinity)
-    if (effectivePlan !== 'free') {
-        return { usage: 0, limit: Infinity, isLocked: false, plan: effectivePlan, history: [] };
+    // กรณีแพ็กเกจที่ไม่จำกัดออเดอร์ (Infinity)
+    if (limits.max_orders === 0) {
+        return { usage: 0, limit: Infinity, isLocked: false, plan, history: [] };
     }
 
-    // กรณีฟรี (Free) -> นับยอด 30 วันย้อนหลัง
+    // กรณีกำหนดขีดจำกัดออเดอร์ (Free 300, Go 1,000) -> นับยอด 30 วันย้อนหลัง
     const startOfPeriod = now.subtract(30, 'day').startOf('day').toISOString();
     const endOfPeriod = now.endOf('day').toISOString();
     
@@ -144,9 +127,9 @@ export async function getOrderUsage(brandId: string, customSupabase?: any) {
 
     return { 
         usage, 
-        limit: MAX_FREE_ORDERS, 
-        isLocked: usage >= MAX_FREE_ORDERS, 
-        plan: 'free',
+        limit: limits.max_orders, 
+        isLocked: usage >= limits.max_orders, 
+        plan,
         history
     };
 }

@@ -33,7 +33,7 @@ type Step = 'register' | 'otp' | 'store_setup';
 
 const DEFAULT_ONBOARDING_PREVIEW_LIMITS = {
   max_food_items: 50,
-  max_products: 50,
+  max_products: 0,
   max_tables: 10,
 };
 

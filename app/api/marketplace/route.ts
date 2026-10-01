@@ -9,6 +9,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 type BrandRow = {
   coins?: number | null;
   plan?: string | null;
+  expiry_go?: string | null;
   expiry_basic?: string | null;
   expiry_pro?: string | null;
   expiry_ultimate?: string | null;
@@ -60,6 +61,7 @@ const calculateEffectivePlan = (brand: BrandRow) => {
   if (isFutureDate(brand?.expiry_ultimate)) return 'ultimate';
   if (isFutureDate(brand?.expiry_pro)) return 'pro';
   if (isFutureDate(brand?.expiry_basic)) return 'basic';
+  if (isFutureDate(brand?.expiry_go)) return 'go';
   return 'free';
 };
 
@@ -183,7 +185,7 @@ export async function GET(request: Request) {
     const [brandRes, ownedThemesRes] = await Promise.all([
       supabase
         .from('brands')
-        .select('coins, plan, expiry_basic, expiry_pro, expiry_ultimate')
+        .select('coins, plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate')
         .eq('id', brandId)
         .single(),
       supabase

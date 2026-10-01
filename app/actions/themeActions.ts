@@ -38,6 +38,9 @@ function calculateEffectivePlan(brand: any) {
     if (brand.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) {
         return { plan: 'basic', expiry: brand.expiry_basic };
     }
+    if (brand.expiry_go && dayjs(brand.expiry_go).isAfter(now)) {
+        return { plan: 'go', expiry: brand.expiry_go };
+    }
     return { plan: 'free', expiry: null }; 
 }
 
@@ -73,7 +76,7 @@ export async function getThemesDataAction() {
     // 2. ดึงข้อมูล Plan
     let { data: brand } = await supabase
         .from('brands')
-        .select('slug, theme_mode, plan, expiry_basic, expiry_pro, expiry_ultimate') 
+        .select('slug, theme_mode, plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate') 
         .eq('id', brandId)
         .single();
 
@@ -98,19 +101,18 @@ export async function getThemesDataAction() {
         .in('purchase_type', PURCHASED_THEME_TYPES)
         .order('created_at', { ascending: false });
 
-    // 5.1 ดึงธีมฟรีจาก Marketplace มาแสดงอัตโนมัติ โดยไม่สร้างสิทธิ์ตาม plan
-    const { data: freeMarketplaceThemes } = await supabase
+    // 5.1 ตอนนี้เปิดให้ทุกคนใช้ได้ทุกธีมฟรี ดึงธีมทั้งหมดที่เปิดใช้งาน (is_active: true)
+    const { data: allActiveMarketplaceThemes } = await supabase
         .from('marketplace_themes')
         .select(`
           id, name, slug, image_url, theme_mode, category_id, description,
           marketplace_categories ( name )
         `)
         .eq('is_active', true)
-        .eq('min_plan', 'free')
         .order('created_at', { ascending: false });
 
     const ownedThemeIds = new Set((ownedThemes || []).map((t: any) => t.marketplace_theme_id));
-    const freeThemeRows = (freeMarketplaceThemes || [])
+    const freeThemeRows = (allActiveMarketplaceThemes || [])
         .filter((theme: any) => !ownedThemeIds.has(theme.id))
         .map((theme: any) => ({
             id: `free-${theme.id}`,
@@ -191,7 +193,6 @@ export async function applyThemeAction(slug: string, themeMode: string) {
                     .select('id')
                     .eq('theme_mode', themeMode)
                     .eq('is_active', true)
-                    .eq('min_plan', 'free')
                     .maybeSingle();
 
                  if (!freeTheme) throw new Error("Theme not owned");

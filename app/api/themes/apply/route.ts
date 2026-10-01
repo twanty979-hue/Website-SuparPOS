@@ -42,7 +42,6 @@ export async function POST(request: Request) {
           .select('id')
           .eq('theme_mode', themeMode)
           .eq('is_active', true)
-          .eq('min_plan', 'free')
           .maybeSingle();
 
         if (!freeTheme) {

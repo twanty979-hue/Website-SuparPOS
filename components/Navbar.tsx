@@ -19,7 +19,6 @@ export default function Navbar() {
     { href: '/', label: 'หน้าแรก' },
     { href: '/features', label: 'จุดเด่น' },
     { href: '/pricing', label: 'ราคา' },
-    { href: '/shop', label: 'สินค้า', hasShopIcon: true },
     { href: '/manual', label: 'วิธีใช้งาน' },
     { href: '/download', label: 'ดาวน์โหลด', hasIcon: true },
   ];
@@ -53,9 +52,6 @@ export default function Navbar() {
               >
                 {link.hasIcon && (
                   <i className="fa-solid fa-cloud-arrow-down text-emerald-500 text-xs"></i>
-                )}
-                {link.hasShopIcon && (
-                  <i className="fa-solid fa-store text-emerald-500 text-xs"></i>
                 )}
                 {link.label}
                 <span

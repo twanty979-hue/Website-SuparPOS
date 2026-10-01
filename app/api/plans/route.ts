@@ -33,6 +33,7 @@ export async function GET(request: Request) {
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
+        .neq('plan_key', 'ultimate')
         .order('price_monthly', { ascending: true }),
       supabaseAdmin
         .from('payment_logs')
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
         .limit(1),
       supabaseAdmin
         .from('brands')
-        .select('plan, expiry_basic, expiry_pro, expiry_ultimate')
+        .select('plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate')
         .eq('id', brandId)
         .single(),
       supabaseAdmin
@@ -103,7 +104,8 @@ export async function GET(request: Request) {
       let rawExpiry = null;
 
       // เลือกคอลัมน์วันหมดอายุให้ตรงตามแพลนปัจจุบันของร้านค้า
-      if (currentPlan === 'basic') rawExpiry = brand.expiry_basic;
+      if (currentPlan === 'go') rawExpiry = brand.expiry_go;
+      else if (currentPlan === 'basic') rawExpiry = brand.expiry_basic;
       else if (currentPlan === 'pro') rawExpiry = brand.expiry_pro;
       else if (currentPlan === 'ultimate') rawExpiry = brand.expiry_ultimate;
 

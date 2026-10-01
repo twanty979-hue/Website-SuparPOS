@@ -26,6 +26,7 @@ function calculateEffectivePlan(brand: any) {
   if (brand?.plan === 'ultimate' && isActive(brand.expiry_ultimate)) return 'ultimate';
   if (brand?.plan === 'pro' && isActive(brand.expiry_pro)) return 'pro';
   if (brand?.plan === 'basic' && isActive(brand.expiry_basic)) return 'basic';
+  if (brand?.plan === 'go' && isActive(brand.expiry_go)) return 'go';
   return 'free';
 }
 
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
-    const maxProducts = Number(rawPerms.max_products ?? (effectivePlan === 'free' ? 50 : 0));
+    const maxProducts = Number(rawPerms.max_products ?? 0);
 
     return new NextResponse(JSON.stringify({ 
       success: true, 
@@ -147,7 +148,7 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
-      const maxProducts = Number(rawPerms.max_products ?? (effectivePlan === 'free' ? 50 : 0));
+      const maxProducts = Number(rawPerms.max_products ?? 0);
 
       if (maxProducts > 0) {
         const { count: productCount, error: countError } = await adminClient

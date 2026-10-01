@@ -59,6 +59,9 @@ function calculateEffectivePlan(brand: any) {
     if (brand.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) {
         return { plan: 'basic', expiry: brand.expiry_basic };
     }
+    if (brand.expiry_go && dayjs(brand.expiry_go).isAfter(now)) {
+        return { plan: 'go', expiry: brand.expiry_go };
+    }
     return { plan: 'free', expiry: null }; 
 }
 

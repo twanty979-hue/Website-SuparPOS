@@ -79,7 +79,8 @@ export function useSettings() {
                 if (res.brand) {
                     let currentExpiry = null;
                     const p = res.brand.plan;
-                    if (p === 'basic') currentExpiry = res.brand.expiry_basic;
+                    if (p === 'go') currentExpiry = res.brand.expiry_go;
+                    else if (p === 'basic') currentExpiry = res.brand.expiry_basic;
                     else if (p === 'pro') currentExpiry = res.brand.expiry_pro;
                     else if (p === 'ultimate') currentExpiry = res.brand.expiry_ultimate;
 
