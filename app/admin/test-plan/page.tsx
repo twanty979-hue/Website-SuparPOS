@@ -2,7 +2,32 @@
 
 import { useState, useEffect, useRef } from 'react';
 
-const TARGET_BRAND_ID = '9fd8c2f8-cc19-4869-8ea0-f1df2e314a13';
+// รายการร้านทดสอบที่ปลอดภัย (ป้องกันกดโดนร้านจริงของลูกค้า)
+const TEST_STORES = [
+  {
+    id: 'ef5af840-e267-42e3-a965-ff931e617df0',
+    name: 'นอนน',
+    desc: 'เครื่อง iPhone 17 Simulator กำลังเปิดร้านนี้อยู่',
+    icon: '📱',
+    badge: 'กำลังเปิดในแอป Simulator',
+    isCurrentApp: true,
+  },
+  {
+    id: '9fd8c2f8-cc19-4869-8ea0-f1df2e314a13',
+    name: 'h',
+    desc: 'ร้านทดสอบที่นายส่ง ID มา',
+    icon: '🍽️',
+    badge: 'ร้านทดสอบ h',
+    isCurrentApp: false,
+  },
+];
+
+const DURATION_OPTIONS = [
+  { label: '5 นาที (ตามที่นายขอ)', minutes: 5 },
+  { label: '15 นาที', minutes: 15 },
+  { label: '1 ชั่วโมง', minutes: 60 },
+  { label: '1 วัน (24 ชม.)', minutes: 1440 },
+];
 
 type BrandInfo = {
   id: string;
@@ -20,6 +45,8 @@ type BrandInfo = {
 };
 
 export default function AdminTestPlanPage() {
+  const [selectedBrandId, setSelectedBrandId] = useState<string>(TEST_STORES[0].id);
+  const [durationMinutes, setDurationMinutes] = useState<number>(5);
   const [brand, setBrand] = useState<BrandInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -28,10 +55,10 @@ export default function AdminTestPlanPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // ดึงข้อมูลร้านค้าทดสอบ
-  const fetchBrandData = async () => {
+  const fetchBrandData = async (brandId = selectedBrandId) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/brands/test-plan?brandId=${TARGET_BRAND_ID}`);
+      const res = await fetch(`/api/admin/brands/test-plan?brandId=${brandId}`);
       const data = await res.json();
       if (data.success && data.brand) {
         setBrand(data.brand);
@@ -47,8 +74,8 @@ export default function AdminTestPlanPage() {
   };
 
   useEffect(() => {
-    fetchBrandData();
-  }, []);
+    fetchBrandData(selectedBrandId);
+  }, [selectedBrandId]);
 
   // นับถอยหลังแบบเรียลไทม์
   useEffect(() => {
@@ -59,8 +86,7 @@ export default function AdminTestPlanPage() {
         setSecondsLeft((prev) => {
           if (prev <= 1) {
             if (timerRef.current) clearInterval(timerRef.current);
-            // เมื่อหมดเวลา ให้ดึงสถานะใหม่เพื่ออัปเดตเป็น Free
-            fetchBrandData();
+            fetchBrandData(selectedBrandId);
             return 0;
           }
           return prev - 1;
@@ -71,7 +97,7 @@ export default function AdminTestPlanPage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [secondsLeft]);
+  }, [secondsLeft, selectedBrandId]);
 
   // สลับแพลน
   const handleSwitchPlan = async (targetPlan: 'free' | 'go' | 'basic' | 'pro' | 'ultimate') => {
@@ -82,22 +108,22 @@ export default function AdminTestPlanPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          brandId: TARGET_BRAND_ID,
+          brandId: selectedBrandId,
           plan: targetPlan,
-          durationMinutes: 5,
+          durationMinutes: durationMinutes,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
+        const durationText = durationMinutes >= 60 ? `${durationMinutes / 60} ชั่วโมง` : `${durationMinutes} นาที`;
         setStatusMsg({
           type: 'success',
           text: targetPlan === 'free'
             ? `✅ รีเซ็ตกลับเป็น Free สำเร็จ! (ลบแพลนเก่าทั้งหมดเรียบร้อย)`
-            : `🎉 เปลี่ยนเป็น ${targetPlan.toUpperCase()} สำเร็จ! (มีอายุใช้งาน 5 นาที)`,
+            : `🎉 เปลี่ยนร้าน "${brand?.name}" เป็น ${targetPlan.toUpperCase()} สำเร็จ! (มีอายุใช้งาน ${durationText})`,
         });
-        // โหลดข้อมูลใหม่เพื่อเริ่มนับถอยหลัง 5 นาที
-        await fetchBrandData();
+        await fetchBrandData(selectedBrandId);
       } else {
         setStatusMsg({ type: 'error', text: data.error || 'เปลี่ยนแพลนไม่สำเร็จ' });
       }
@@ -108,10 +134,14 @@ export default function AdminTestPlanPage() {
     }
   };
 
-  // แปลงวินาทีเป็น MM:SS
+  // แปลงวินาทีเป็น HH:MM:SS หรือ MM:SS
   const formatCountdown = (totalSecs: number) => {
-    const mins = Math.floor(totalSecs / 60);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
     const secs = totalSecs % 60;
+    if (hours > 0) {
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
@@ -130,9 +160,9 @@ export default function AdminTestPlanPage() {
     {
       key: 'go' as const,
       name: 'Go Plan',
-      badge: '5 นาที',
+      badge: 'จำลองสิทธิ์',
       desc: '1,000 บิล/ด., เมนูไม่จำกัด, โต๊ะไม่จำกัด, 1 พนักงาน',
-      btnText: '⚡ เปลี่ยนเป็น Go Plan (5 นาที)',
+      btnText: `⚡ เปลี่ยนเป็น Go (${durationMinutes >= 60 ? `${durationMinutes/60} ชม.` : `${durationMinutes} นาที`})`,
       borderColor: 'border-teal-300 hover:border-teal-500',
       activeBorder: 'border-teal-600 bg-teal-50/60',
       btnColor: 'bg-teal-600 hover:bg-teal-700',
@@ -141,9 +171,9 @@ export default function AdminTestPlanPage() {
     {
       key: 'basic' as const,
       name: 'Basic Plan',
-      badge: '5 นาที',
+      badge: 'จำลองสิทธิ์',
       desc: 'บิลไม่จำกัด, เมนูไม่จำกัด, โต๊ะไม่จำกัด, 1 พนักงาน',
-      btnText: '💼 เปลี่ยนเป็น Basic Plan (5 นาที)',
+      btnText: `💼 เปลี่ยนเป็น Basic (${durationMinutes >= 60 ? `${durationMinutes/60} ชม.` : `${durationMinutes} นาที`})`,
       borderColor: 'border-blue-300 hover:border-blue-500',
       activeBorder: 'border-blue-600 bg-blue-50/60',
       btnColor: 'bg-blue-600 hover:bg-blue-700',
@@ -152,9 +182,9 @@ export default function AdminTestPlanPage() {
     {
       key: 'pro' as const,
       name: 'Pro Plan',
-      badge: '5 นาที (แนะนำ)',
+      badge: 'ยอดนิยม',
       desc: 'บิลไม่จำกัด, พนักงาน 3 คน, Dashboard ขั้นสูง, Excel Export',
-      btnText: '👑 เปลี่ยนเป็น Pro Plan (5 นาที)',
+      btnText: `👑 เปลี่ยนเป็น Pro (${durationMinutes >= 60 ? `${durationMinutes/60} ชม.` : `${durationMinutes} นาที`})`,
       borderColor: 'border-purple-300 hover:border-purple-500',
       activeBorder: 'border-purple-600 bg-purple-50/60',
       btnColor: 'bg-purple-600 hover:bg-purple-700',
@@ -163,9 +193,9 @@ export default function AdminTestPlanPage() {
     {
       key: 'ultimate' as const,
       name: 'Ultimate Plan',
-      badge: '5 นาที (สูงสุด)',
+      badge: 'สูงสุด 100%',
       desc: 'ปลดล็อกทุกสิทธิ์ 100%, พนักงานไม่จำกัด, 55 ธีมพรีเมียม',
-      btnText: '💎 เปลี่ยนเป็น Ultimate Plan (5 นาที)',
+      btnText: `💎 เปลี่ยนเป็น Ultimate (${durationMinutes >= 60 ? `${durationMinutes/60} ชม.` : `${durationMinutes} นาที`})`,
       borderColor: 'border-amber-300 hover:border-amber-500',
       activeBorder: 'border-amber-600 bg-amber-50/60',
       btnColor: 'bg-amber-600 hover:bg-amber-700',
@@ -188,13 +218,13 @@ export default function AdminTestPlanPage() {
                 ห้องทดลองเปลี่ยนแพลน (Test Plan Simulator)
               </h1>
               <p className="text-[#608367] text-xs font-semibold mt-0.5">
-                จำลองเปลี่ยนแพลนร้านค้าทดสอบ โดยแพลนจะมีอายุเพียง 5 นาที เพื่อทดสอบระบบ
+                จำลองเปลี่ยนแพลนร้านค้าทดสอบ โดยแพลนจะหมดอายุและถอยกลับเป็น Free อัตโนมัติ
               </p>
             </div>
           </div>
 
           <button
-            onClick={fetchBrandData}
+            onClick={() => fetchBrandData()}
             disabled={loading || actionLoading}
             className="px-4 py-2.5 bg-[#E2ECE2] hover:bg-[#2C4A34] hover:text-white text-[#2C4A34] rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
             title="รีเฟรชข้อมูลล่าสุด"
@@ -204,16 +234,95 @@ export default function AdminTestPlanPage() {
           </button>
         </div>
 
-        {/* 🛡️ Safety Warning: Locked Store Only */}
-        <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4.5 flex items-start gap-3 text-xs leading-relaxed text-emerald-950">
-          <span className="text-xl">🛡️</span>
-          <div>
-            <h4 className="font-black text-emerald-900 text-sm mb-0.5">
-              โหมดความปลอดภัยสูงสุด: ล็อคเฉพาะร้านทดสอบนี้ร้านเดียวเท่านั้น
-            </h4>
-            <p className="text-emerald-800 font-medium">
-              หน้านี้ถูกตั้งค่าให้ควบคุมเฉพาะร้านค้า ID: <code className="bg-white px-2 py-0.5 rounded font-mono font-bold text-emerald-900 border border-emerald-200">{TARGET_BRAND_ID}</code> เพื่อป้องกันความผิดพลาด ไม่สามารถกดโดนร้านค้าจริงของลูกค้าได้ 100% ครับนาย
-            </p>
+        {/* 🏬 Step 1: เลือกร้านค้าทดสอบ (Store Selector) */}
+        <div className="bg-white rounded-3xl p-6 border border-[#D0DDD0] shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black text-[#2C4A34] uppercase tracking-wider flex items-center gap-2">
+              <span>🏪</span>
+              <span>ขั้นตอนที่ 1: เลือกร้านค้าทดสอบ</span>
+            </h3>
+            <span className="text-[11px] font-bold text-[#8FAF96]">
+              ล็อคความปลอดภัย ป้องกันโดนร้านจริง
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {TEST_STORES.map((s) => {
+              const isSelected = selectedBrandId === s.id;
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => setSelectedBrandId(s.id)}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
+                    isSelected
+                      ? 'border-[#2C4A34] bg-emerald-50/50 shadow-sm ring-2 ring-emerald-500/20'
+                      : 'border-[#E2ECE2] bg-[#FAF9F5] hover:border-[#8FAF96]'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">{s.icon}</span>
+                      <div>
+                        <h4 className="font-black text-sm text-[#2C4A34] flex items-center gap-2">
+                          <span>ร้าน &ldquo;{s.name}&rdquo;</span>
+                          {s.isCurrentApp && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-xs animate-pulse">
+                              🔥 เปิดในแอป Simulator ตอนนี้
+                            </span>
+                          )}
+                        </h4>
+                        <p className="text-[11px] text-[#608367] mt-0.5">
+                          {s.desc}
+                        </p>
+                      </div>
+                    </div>
+                    <input
+                      type="radio"
+                      checked={isSelected}
+                      onChange={() => setSelectedBrandId(s.id)}
+                      className="mt-1 h-4 w-4 text-[#2C4A34] accent-[#2C4A34] cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="text-[10px] font-mono text-[#8FAF96] truncate bg-white px-2.5 py-1 rounded-lg border border-[#E2ECE2]">
+                    ID: {s.id}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ⏱️ Step 2: เลือกระยะเวลาการทดสอบ (Duration Selector) */}
+        <div className="bg-white rounded-3xl p-6 border border-[#D0DDD0] shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black text-[#2C4A34] uppercase tracking-wider flex items-center gap-2">
+              <span>⏱️</span>
+              <span>ขั้นตอนที่ 2: เลือกระยะเวลาที่ต้องการทดสอบ</span>
+            </h3>
+            <span className="text-[11px] text-[#608367] font-semibold">
+              เมื่อครบเวลาจะถอยกลับเป็น Free อัตโนมัติ
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {DURATION_OPTIONS.map((d) => {
+              const isSelected = durationMinutes === d.minutes;
+              return (
+                <button
+                  key={d.minutes}
+                  type="button"
+                  onClick={() => setDurationMinutes(d.minutes)}
+                  className={`py-3 px-3 rounded-2xl font-bold text-xs transition-all border cursor-pointer text-center ${
+                    isSelected
+                      ? 'bg-[#2C4A34] text-white border-[#2C4A34] shadow-sm ring-2 ring-emerald-500/20'
+                      : 'bg-[#FAF9F5] text-[#2C4A34] border-[#D0DDD0] hover:border-[#8FAF96]'
+                  }`}
+                >
+                  {d.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -236,17 +345,19 @@ export default function AdminTestPlanPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#E2ECE2]">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#8FAF96]">
-                ร้านค้าที่กำลังทดสอบ (Target Store)
+                ร้านค้าที่ถูกเลือก (Selected Store)
               </span>
               <h2 className="text-2xl font-black text-[#2C4A34] flex items-center gap-2 mt-0.5">
                 <span>🍽️</span>
-                <span>{brand?.name || 'ร้านทดสอบ'}</span>
-                <span className="text-xs font-mono font-normal text-[#8FAF96]">
-                  (slug: {brand?.slug || 'shop'})
-                </span>
+                <span>{brand?.name || 'กำลังโหลด...'}</span>
+                {selectedBrandId === TEST_STORES[0].id && (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold border border-rose-200">
+                    📱 ใน iPhone Simulator
+                  </span>
+                )}
               </h2>
               <p className="text-xs font-mono text-[#608367] mt-1">
-                ID: {TARGET_BRAND_ID}
+                ID: {selectedBrandId}
               </p>
             </div>
 
@@ -292,7 +403,7 @@ export default function AdminTestPlanPage() {
             <div className="flex items-center gap-2 font-semibold">
               <span>💡</span>
               <span>
-                เมื่อกดเลือกแพลน ระบบจะ<strong>ลบวันหมดอายุแพลนเก่าออกทั้งหมด</strong> แล้วเริ่มนับเวลาแพลนใหม่ <strong>5 นาที</strong> ทันที
+                เมื่อกดเลือกแพลน ระบบจะ<strong>ลบวันหมดอายุแพลนเก่าออกทั้งหมด</strong> แล้วเริ่มนับเวลาแพลนใหม่ <strong>{durationMinutes >= 60 ? `${durationMinutes/60} ชั่วโมง` : `${durationMinutes} นาที`}</strong> ทันที
               </span>
             </div>
             {actionLoading && (
@@ -304,10 +415,10 @@ export default function AdminTestPlanPage() {
           </div>
         </div>
 
-        {/* 🎛️ Plan Switching Cards (5 Options) */}
+        {/* 🎛️ Step 3: Plan Switching Cards (5 Options) */}
         <div>
           <h3 className="text-sm font-black text-[#2C4A34] uppercase tracking-wider mb-3">
-            เลือกแพลนที่ต้องการสลับ (อายุ 5 นาที):
+            ขั้นตอนที่ 3: กดเปลี่ยนแพลนตามที่ต้องการทดสอบ:
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -362,23 +473,23 @@ export default function AdminTestPlanPage() {
         <div className="bg-white rounded-3xl p-6 border border-[#D0DDD0] shadow-sm space-y-3">
           <h3 className="text-sm font-black text-[#2C4A34] flex items-center gap-2">
             <span>📱</span>
-            <span>วิธีตรวจสอบความถูกต้องบนแอป POS (iPhone / Android)</span>
+            <span>วิธีตรวจสอบความถูกต้องบนแอป POS</span>
           </h3>
           <div className="text-xs text-[#608367] leading-relaxed space-y-2">
             <p>
-              1. <strong>กดปุ่มเปลี่ยนแพลน</strong> ที่การ์ดด้านบน (เช่น กดเปลี่ยนเป็น Pro Plan หรือ Free Plan)
+              1. <strong>สังเกตชื่อร้านที่กำลังเปิดใน Simulator</strong> — ปัจจุบันคือ <strong>ร้าน &ldquo;นอนน&rdquo;</strong> (หรือสามารถกดสลับร้านด้านบนได้)
             </p>
             <p>
-              2. <strong>เปิดแอป POS</strong> ที่รันอยู่ในเครื่องหรือ Terminal แล้วกดแป้นพิมพ์ <strong>`r`</strong> (Hot Reload) หรือ <strong>`R`</strong> (Hot Restart)
+              2. <strong>กดปุ่มเปลี่ยนแพลนที่ต้องการ</strong> (เช่น Pro Plan หรือ Go Plan)
             </p>
             <p>
-              3. เข้าไปที่เมนู <strong>ตั้งค่าร้านค้า 👉 แพ็กเกจ (Package)</strong>
+              3. <strong>ในแอป POS</strong> ให้เข้าไปที่เมนู <strong>ตั้งค่าร้านค้า 👉 แพ็กเกจ (Package)</strong> (หรือกดดึงหน้าจอลงเพื่อรีเฟรช)
             </p>
             <p>
-              4. จะเห็นว่าหัวการ์ดแพลนเปลี่ยนเป็นแพลนใหม่ทันที และช่องโควต้า 6 รายการจะปรับเปลี่ยนตามสิทธิ์ของแพลนนั้นๆ อย่างแม่นยำ
+              4. จะเห็นว่าหัวการ์ดแพลนเปลี่ยนเป็นแพลนใหม่ทันที และโควต้า 6 รายการจะปรับเปลี่ยนตามสิทธิ์ของแพลนนั้นๆ อย่างแม่นยำ
             </p>
             <p>
-              5. เมื่อเวลาผ่านไปครบ <strong>5 นาที</strong> ระบบจะตัดวันหมดอายุและกลับเป็น <strong>Free Plan</strong> โดยอัตโนมัติครับนาย
+              5. เมื่อเวลาผ่านไปครบกำหนด ระบบจะตัดวันหมดอายุและกลับเป็น <strong>Free Plan</strong> โดยอัตโนมัติครับนาย
             </p>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 import { mergePlanContents, DEFAULT_PLAN_CONTENTS } from '@/lib/planContents';
 import { getAuthContext } from '@/lib/authHelper';
+import dayjs from 'dayjs';
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -98,26 +99,34 @@ export async function GET(request: Request) {
 
     let daysLeft = 0;
     let expiryDate: string | null = null;
-    const currentPlan = brand?.plan || 'free';
+    
+    // 🌟 คำนวณ Effective Plan แบบเรียลไทม์ตามวันหมดอายุ
+    const now = dayjs();
+    let effectivePlan = 'free';
+    if (brand?.expiry_ultimate && dayjs(brand.expiry_ultimate).isAfter(now)) {
+      effectivePlan = 'ultimate';
+      expiryDate = brand.expiry_ultimate;
+    } else if (brand?.expiry_pro && dayjs(brand.expiry_pro).isAfter(now)) {
+      effectivePlan = 'pro';
+      expiryDate = brand.expiry_pro;
+    } else if (brand?.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) {
+      effectivePlan = 'basic';
+      expiryDate = brand.expiry_basic;
+    } else if (brand?.expiry_go && dayjs(brand.expiry_go).isAfter(now)) {
+      effectivePlan = 'go';
+      expiryDate = brand.expiry_go;
+    }
 
-    if (brand && currentPlan !== 'free') {
-      let rawExpiry = null;
+    if (brand && brand.plan !== effectivePlan) {
+      await supabaseAdmin.from('brands').update({ plan: effectivePlan }).eq('id', brandId);
+      brand.plan = effectivePlan;
+    }
 
-      // เลือกคอลัมน์วันหมดอายุให้ตรงตามแพลนปัจจุบันของร้านค้า
-      if (currentPlan === 'go') rawExpiry = brand.expiry_go;
-      else if (currentPlan === 'basic') rawExpiry = brand.expiry_basic;
-      else if (currentPlan === 'pro') rawExpiry = brand.expiry_pro;
-      else if (currentPlan === 'ultimate') rawExpiry = brand.expiry_ultimate;
+    const currentPlan = effectivePlan;
 
-      if (rawExpiry) {
-        expiryDate = rawExpiry;
-        const expiry = new Date(rawExpiry);
-        const now = new Date();
-        
-        // คำนวณส่วนต่างมิลลิวินาทีแปลงออกมาเป็นจำนวนวัน
-        const diffTime = expiry.getTime() - now.getTime();
-        daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-      }
+    if (expiryDate) {
+      const diffMs = dayjs(expiryDate).diff(now);
+      daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
     }
 
     // 🚀 ส่งข้อมูลแพลนปัจจุบัน วันหมดอายุ และจำนวนวันคงเหลือกลับไปพร้อมกันทีเดียว
