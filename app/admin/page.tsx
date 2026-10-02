@@ -80,6 +80,10 @@ export default function AdminClearDataPage() {
   const [selectedBackupFilename, setSelectedBackupFilename] = useState<string>('');
   const [selectedBackupCounts, setSelectedBackupCounts] = useState<Record<string, number>>({});
 
+  // ⚡ Test Plan Simulator State (5 นาที)
+  const [testPlanTarget, setTestPlanTarget] = useState<'free' | 'go' | 'basic' | 'pro' | 'ultimate'>('pro');
+  const [testPlanLoading, setTestPlanLoading] = useState(false);
+
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -325,6 +329,43 @@ export default function AdminClearDataPage() {
     }
   };
 
+  // ⚡ ฟังก์ชันเปลี่ยนแพลนทดสอบ 5 นาที
+  const handleApplyTestPlan = async () => {
+    if (!selectedBrandId) {
+      alert('กรุณาเลือกแบรนด์ก่อนครับ');
+      return;
+    }
+    setTestPlanLoading(true);
+    setStatusMsg(null);
+    try {
+      const res = await fetch('/api/admin/brands/test-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandId: selectedBrandId,
+          plan: testPlanTarget,
+          durationMinutes: 5,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const timeStr = data.data?.expiresAt
+          ? new Date(data.data.expiresAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+          : '';
+        setStatusMsg({
+          type: 'success',
+          text: `⚡ ${data.message} ${timeStr ? `(หมดอายุเวลา ${timeStr} น.)` : ''}`,
+        });
+      } else {
+        setStatusMsg({ type: 'error', text: data.error || 'เปลี่ยนแพลนไม่สำเร็จ' });
+      }
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์' });
+    } finally {
+      setTestPlanLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-2">
       {/* Header */}
@@ -563,6 +604,85 @@ export default function AdminClearDataPage() {
                 </button>
               </div>
 
+            </div>
+          </div>
+
+          {/* ⚡ SECTION 3: TEST PLAN SIMULATOR (5 นาที) */}
+          <div className="bg-white p-6 rounded-2xl border border-amber-300 space-y-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-bold text-base text-amber-950 flex items-center gap-2">
+                  <span className="p-1.5 bg-amber-100 text-amber-800 rounded-lg text-sm">⚡</span>
+                  ทดสอบเปลี่ยนแพลนร้านค้า (Test Plan Simulator - 5 นาที)
+                </h3>
+                <p className="text-xs text-amber-800 font-medium mt-1">
+                  ล้างแพลนเก่าออก แล้วจำลองแพลนใหม่ที่มีอายุ 5 นาที เพื่อทดสอบสิทธิ์และโควต้าของแบรนด์ที่เลือก
+                </p>
+              </div>
+              <span className="px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-full text-[10px] font-black shrink-0">
+                อายุ 5 นาที
+              </span>
+            </div>
+
+            {/* Target Plan Selector */}
+            <div className="space-y-2">
+              <label className="text-xs font-black text-[#608367]">เลือกแพลนที่ต้องการทดสอบ:</label>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {[
+                  { key: 'free', label: 'Free', badge: 'ฟรี', color: 'gray' },
+                  { key: 'go', label: 'Go', badge: '1,000 QR', color: 'teal' },
+                  { key: 'basic', label: 'Basic', badge: 'ไม่จำกัด', color: 'blue' },
+                  { key: 'pro', label: 'Pro', badge: '3 พนักงาน', color: 'purple' },
+                  { key: 'ultimate', label: 'Ultimate', badge: 'สูงสุด', color: 'amber' },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setTestPlanTarget(item.key as any)}
+                    className={`p-2.5 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                      testPlanTarget === item.key
+                        ? 'border-amber-500 bg-amber-50 text-amber-950 font-black shadow-xs scale-[1.02]'
+                        : 'border-[#E2ECE2] hover:border-amber-300 bg-white text-[#2C4A34] font-bold'
+                    }`}
+                  >
+                    <div className="text-xs font-black uppercase">{item.label}</div>
+                    <div className="text-[10px] text-[#608367] mt-0.5">{item.badge}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit Action */}
+            <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="text-xs text-amber-900 leading-relaxed">
+                ร้านที่เลือก:{' '}
+                <strong className="text-amber-950 font-black">
+                  {brands.find(b => b.id === selectedBrandId)?.name || 'ยังไม่ได้เลือกแบรนด์'}
+                </strong>
+                <br />
+                เมื่อกดแล้ว แพลน <strong>{testPlanTarget.toUpperCase()}</strong> จะมีอายุ <strong>5 นาที</strong> หลังจากนั้นจะกลับเป็น Free อัตโนมัติ
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyTestPlan}
+                disabled={testPlanLoading || !selectedBrandId}
+                className={`px-5 py-3 rounded-xl font-black text-xs text-white transition-all flex items-center gap-2 justify-center shadow active:scale-95 shrink-0 ${
+                  testPlanLoading || !selectedBrandId
+                    ? 'bg-gray-400 opacity-50 cursor-not-allowed'
+                    : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'
+                }`}
+              >
+                {testPlanLoading ? (
+                  <>
+                    <span className="animate-spin"><IconRefresh size={14} /></span>
+                    <span>กำลังบันทึก...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>⚡ เปลี่ยนเป็น {testPlanTarget.toUpperCase()} (5 นาที)</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 

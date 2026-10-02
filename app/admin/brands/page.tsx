@@ -235,6 +235,15 @@ export default function SuperAdminBrands() {
   const [viewingTablesBrand, setViewingTablesBrand] = useState<BrandReport | null>(null);
   const [tableSearchTerm, setTableSearchTerm] = useState('');
 
+  // ⚡ Test Plan Modal State (ทดสอบแพลน 5 นาที)
+  const [testPlanModalOpen, setTestPlanModalOpen] = useState(false);
+  const [testPlanBrandId, setTestPlanBrandId] = useState<string>('');
+  const [testPlanTarget, setTestPlanTarget] = useState<'free' | 'go' | 'basic' | 'pro' | 'ultimate'>('pro');
+  const [testPlanDuration, setTestPlanDuration] = useState<number>(5);
+  const [testPlanLoading, setTestPlanLoading] = useState(false);
+  const [testPlanResult, setTestPlanResult] = useState<{ type: 'success' | 'error'; message: string; expiresAt?: string | null } | null>(null);
+  const [testPlanBrandSearch, setTestPlanBrandSearch] = useState('');
+
   useEffect(() => {
     fetchBrands();
   }, []);
@@ -297,6 +306,62 @@ export default function SuperAdminBrands() {
       setTimeout(() => setCopiedKey(null), 2000);
     } else {
       alert('คัดลอกเรียบร้อยแล้ว!');
+    }
+  };
+
+  // ⚡ ฟังก์ชันเปิด Modal ทดสอบแพลนสำหรับร้านที่เลือก
+  const openTestPlanForBrand = (brand: BrandReport) => {
+    setTestPlanBrandId(brand.id);
+    setTestPlanTarget('pro');
+    setTestPlanDuration(5);
+    setTestPlanResult(null);
+    setTestPlanBrandSearch('');
+    setTestPlanModalOpen(true);
+  };
+
+  // ⚡ ฟังก์ชันส่งคำขอเปลี่ยนแพลนทดสอบไปยัง API
+  const handleApplyTestPlan = async () => {
+    if (!testPlanBrandId) {
+      alert('กรุณาเลือกร้านค้าที่ต้องการทดสอบ');
+      return;
+    }
+    setTestPlanLoading(true);
+    setTestPlanResult(null);
+    try {
+      const res = await fetch('/api/admin/brands/test-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandId: testPlanBrandId,
+          plan: testPlanTarget,
+          durationMinutes: testPlanDuration,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestPlanResult({
+          type: 'success',
+          message: data.message,
+          expiresAt: data.data?.expiresAt,
+        });
+        // อัปเดต state หน้าร้านค้าทันที
+        setBrands(prev => prev.map(b => b.id === testPlanBrandId ? { ...b, plan: testPlanTarget as any } : b));
+        if (selectedBrand && selectedBrand.id === testPlanBrandId) {
+          setSelectedBrand(prev => prev ? { ...prev, plan: testPlanTarget as any } : null);
+        }
+      } else {
+        setTestPlanResult({
+          type: 'error',
+          message: data.error || 'เกิดข้อผิดพลาดในการเปลี่ยนแพลน',
+        });
+      }
+    } catch (err: any) {
+      setTestPlanResult({
+        type: 'error',
+        message: err.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์',
+      });
+    } finally {
+      setTestPlanLoading(false);
     }
   };
 
@@ -369,6 +434,20 @@ export default function SuperAdminBrands() {
           </div>
           
           <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={() => {
+                setTestPlanModalOpen(true);
+                setTestPlanResult(null);
+                if (!testPlanBrandId && brands.length > 0) {
+                  setTestPlanBrandId(brands[0].id);
+                }
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all active:scale-95 text-sm cursor-pointer"
+              title="ทดสอบเปลี่ยนแพลนร้านค้า (อายุ 5 นาที)"
+            >
+              <span>⚡</span>
+              <span>ทดสอบแพลน (5 นาที)</span>
+            </button>
             <button
               onClick={fetchBrands}
               disabled={loading}
@@ -602,9 +681,19 @@ export default function SuperAdminBrands() {
                               <span className={'w-1.5 h-1.5 rounded-full ' + (brand.status === 'active' ? 'bg-green-500' : brand.status === 'trial' ? 'bg-amber-500' : 'bg-red-500')}></span>
                               {brand.status}
                             </span>
-                            <span className="text-[10px] font-bold text-[#3B5E44] uppercase tracking-wider bg-[#E2ECE2] px-2 py-0.5 rounded-md">
-                              {brand.plan || 'Free'}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-bold text-[#3B5E44] uppercase tracking-wider bg-[#E2ECE2] px-2 py-0.5 rounded-md">
+                                {brand.plan || 'Free'}
+                              </span>
+                              <button
+                                onClick={() => openTestPlanForBrand(brand)}
+                                className="px-1.5 py-0.5 bg-amber-100 hover:bg-amber-500 hover:text-white text-amber-900 border border-amber-300 rounded text-[10px] font-black transition-colors cursor-pointer flex items-center gap-0.5"
+                                title="ทดสอบเปลี่ยนแพลน 5 นาทีสำหรับร้านนี้"
+                              >
+                                <span>⚡</span>
+                                <span>เทส</span>
+                              </button>
+                            </div>
                           </div>
                         </td>
 
@@ -731,6 +820,15 @@ export default function SuperAdminBrands() {
                             >
                               <IconUser size={13} />
                               <span>โปรไฟล์</span>
+                            </button>
+
+                            <button 
+                              onClick={() => openTestPlanForBrand(brand)}
+                              className="px-2.5 py-2 bg-amber-50 hover:bg-amber-500 hover:text-white text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                              title="ทดสอบเปลี่ยนแพลน 5 นาทีสำหรับร้านนี้"
+                            >
+                              <span>⚡</span>
+                              <span>เทสแพลน</span>
                             </button>
 
                             <button className="p-2 bg-[#F4F7F4] text-[#608367] rounded-xl hover:bg-[#2C4A34] hover:text-white transition-all shadow-xs" title="แก้ไขข้อมูล">
@@ -974,6 +1072,14 @@ export default function SuperAdminBrands() {
                   <span className="text-[10px] font-bold bg-[#E2ECE2] text-[#3B5E44] px-2 py-0.5 rounded-md uppercase">
                     Plan: {selectedBrand.plan}
                   </span>
+                  <button
+                    onClick={() => openTestPlanForBrand(selectedBrand)}
+                    className="text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-0.5 rounded-md flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                    title="ทดสอบเปลี่ยนแพลน 5 นาทีสำหรับร้านนี้"
+                  >
+                    <span>⚡</span>
+                    <span>ทดสอบแพลน (5 นาที)</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1392,6 +1498,285 @@ export default function SuperAdminBrands() {
                 className="px-6 py-2 rounded-xl bg-[#2C4A34] hover:bg-[#3B5E44] text-white font-bold text-xs transition-colors cursor-pointer"
               >
                 ปิดหน้าต่าง
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ⚡ Modal ทดสอบเปลี่ยนแพลน (อายุ 5 นาที) */}
+      {testPlanModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-[#D0DDD0] shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Header */}
+            <div className="p-5 sm:p-6 bg-gradient-to-r from-amber-500 to-amber-600 text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl shadow-inner">
+                  ⚡
+                </span>
+                <div>
+                  <h3 className="text-lg font-black tracking-tight">ทดสอบแพลนร้านค้า (อายุ 5 นาที)</h3>
+                  <p className="text-amber-100 text-xs font-medium mt-0.5">
+                    ล้างแพลนเก่าออก แล้วจำลองแพลนใหม่ 5 นาทีเพื่อทดสอบระบบ
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setTestPlanModalOpen(false)}
+                className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <IconClose size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-5">
+              
+              {/* ผลลัพธ์ (ถ้ามี) */}
+              {testPlanResult && (
+                <div
+                  className={`p-4 rounded-2xl border text-sm font-bold flex items-start gap-3 ${
+                    testPlanResult.type === 'success'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                      : 'bg-rose-50 border-rose-300 text-rose-900'
+                  }`}
+                >
+                  <span className="text-xl">
+                    {testPlanResult.type === 'success' ? '✅' : '❌'}
+                  </span>
+                  <div className="flex-1">
+                    <p>{testPlanResult.message}</p>
+                    {testPlanResult.expiresAt && (
+                      <p className="text-xs font-semibold text-emerald-700 mt-1">
+                        ⏰ วันหมดอายุ: {formatDateTime(testPlanResult.expiresAt)} (อีก 5 นาที)
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 1. เลือกร้านค้า */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#2C4A34] mb-2">
+                  1. เลือกร้านค้าที่จะทดสอบ
+                </label>
+                
+                {/* Search Box สำหรับกรองร้านค้า */}
+                <div className="relative mb-2">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8FAF96]">
+                    <IconSearch size={14} />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="พิมพ์เพื่อค้นหาชื่อร้านค้า..."
+                    value={testPlanBrandSearch}
+                    onChange={(e) => setTestPlanBrandSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 bg-[#F4F7F4] border border-[#D0DDD0] rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/30 text-[#2C4A34]"
+                  />
+                </div>
+
+                <select
+                  value={testPlanBrandId}
+                  onChange={(e) => {
+                    setTestPlanBrandId(e.target.value);
+                    setTestPlanResult(null);
+                  }}
+                  className="w-full p-3 bg-white border border-[#D0DDD0] rounded-xl text-sm font-bold text-[#2C4A34] focus:outline-none focus:ring-2 focus:ring-amber-500/30 cursor-pointer"
+                >
+                  <option value="">-- เลือกร้านค้า --</option>
+                  {brands
+                    .filter((b) =>
+                      !testPlanBrandSearch ||
+                      b.name?.toLowerCase().includes(testPlanBrandSearch.toLowerCase()) ||
+                      b.id?.toLowerCase().includes(testPlanBrandSearch.toLowerCase())
+                    )
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} (แพลนปัจจุบัน: {(b.plan || 'Free').toUpperCase()})
+                      </option>
+                    ))}
+                </select>
+
+                {/* Info Card ของร้านที่เลือก */}
+                {(() => {
+                  const currentSelected = brands.find((b) => b.id === testPlanBrandId);
+                  if (!currentSelected) return null;
+                  return (
+                    <div className="mt-2 p-3 bg-[#F4F7F4] rounded-xl border border-[#D0DDD0] flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-bold text-[#2C4A34]">{currentSelected.name}</span>
+                        <span className="text-[#8FAF96] font-mono text-[10px] ml-2">ID: {currentSelected.id.slice(0, 8)}...</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[#608367]">แพลนเดิม:</span>
+                        <span className="px-2 py-0.5 rounded-md bg-[#2C4A34] text-white font-black text-[10px] uppercase">
+                          {currentSelected.plan || 'Free'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* 2. เลือกแพลนเป้าหมาย */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#2C4A34] mb-2">
+                  2. เลือกแพลนที่ต้องการเปลี่ยน (ทดสอบ)
+                </label>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  
+                  {/* Free */}
+                  <div
+                    onClick={() => setTestPlanTarget('free')}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                      testPlanTarget === 'free'
+                        ? 'border-gray-700 bg-gray-50 shadow-xs'
+                        : 'border-[#E2ECE2] hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-black text-sm text-gray-800 flex items-center gap-1.5">
+                        <span>🆓</span> Free Plan
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
+                        รีเซ็ตกลับเป็นฟรี
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-600">
+                      300 QR บิล/ด., 50 เมนู, 10 โต๊ะ, 1 พนักงาน
+                    </p>
+                  </div>
+
+                  {/* Go */}
+                  <div
+                    onClick={() => setTestPlanTarget('go')}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                      testPlanTarget === 'go'
+                        ? 'border-teal-600 bg-teal-50/50 shadow-xs'
+                        : 'border-[#E2ECE2] hover:border-teal-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-black text-sm text-teal-900 flex items-center gap-1.5">
+                        <span>⚡</span> Go Plan
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                        5 นาที
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-teal-700">
+                      1,000 QR บิล/ด., เมนู/โต๊ะไม่จำกัด, 1 พนักงาน
+                    </p>
+                  </div>
+
+                  {/* Basic */}
+                  <div
+                    onClick={() => setTestPlanTarget('basic')}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                      testPlanTarget === 'basic'
+                        ? 'border-blue-600 bg-blue-50/50 shadow-xs'
+                        : 'border-[#E2ECE2] hover:border-blue-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-black text-sm text-blue-900 flex items-center gap-1.5">
+                        <span>💼</span> Basic Plan
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                        5 นาที
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-blue-700">
+                      QR ไม่จำกัด, เมนู/โต๊ะไม่จำกัด, 1 พนักงาน
+                    </p>
+                  </div>
+
+                  {/* Pro */}
+                  <div
+                    onClick={() => setTestPlanTarget('pro')}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                      testPlanTarget === 'pro'
+                        ? 'border-purple-600 bg-purple-50/50 shadow-xs'
+                        : 'border-[#E2ECE2] hover:border-purple-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-black text-sm text-purple-900 flex items-center gap-1.5">
+                        <span>👑</span> Pro Plan
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                        5 นาที
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-purple-700">
+                      QR ไม่จำกัด, พนักงาน 3 คน, สิทธิ์ขั้นสูง, Excel
+                    </p>
+                  </div>
+
+                  {/* Ultimate */}
+                  <div
+                    onClick={() => setTestPlanTarget('ultimate')}
+                    className={`sm:col-span-2 p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                      testPlanTarget === 'ultimate'
+                        ? 'border-amber-600 bg-amber-50/60 shadow-xs'
+                        : 'border-[#E2ECE2] hover:border-amber-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-black text-sm text-amber-950 flex items-center gap-1.5">
+                        <span>💎</span> Ultimate Plan (ระดับสูงสุด)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
+                        5 นาที
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-800">
+                      ปลดล็อกทุกสิทธิ์ 100%, พนักงานไม่จำกัด, 55 ธีมพรีเมียม
+                    </p>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* 3. คำอธิบายระบบ */}
+              <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 text-xs space-y-1.5 text-amber-950">
+                <div className="flex items-center gap-2 font-black text-amber-900">
+                  <span>⏱️</span>
+                  <span>ระบบตั้งเวลาอัตโนมัติ: มีอายุ 5 นาที</span>
+                </div>
+                <p className="leading-relaxed">
+                  เมื่อกดยืนยัน ระบบจะ<strong>ลบวันหมดอายุของแพลนเดิมทั้งหมดออก</strong> แล้วเปิดใช้งานแพลน <strong>{testPlanTarget.toUpperCase()}</strong> เป็นเวลา <strong>5 นาที</strong> หลังจากนั้นระบบจะตัดกลับเป็น Free อัตโนมัติ สามารถเข้าแอป POS เพื่อทดสอบความเปลี่ยนแปลงได้ทันที
+                </p>
+              </div>
+
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 sm:p-5 bg-[#F4F7F4] border-t border-[#D0DDD0] flex items-center justify-end gap-3 shrink-0">
+              <button
+                onClick={() => setTestPlanModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl border border-[#D0DDD0] hover:bg-white text-[#608367] font-bold text-xs transition-colors cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleApplyTestPlan}
+                disabled={testPlanLoading || !testPlanBrandId}
+                className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-black text-xs flex items-center gap-2 shadow-md shadow-amber-500/20 transition-all cursor-pointer active:scale-95"
+              >
+                {testPlanLoading ? (
+                  <>
+                    <span className="animate-spin"><IconRefresh size={14} /></span>
+                    <span>กำลังบันทึก...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🚀 ยืนยันเปลี่ยนแพลนทดสอบ (5 นาที)</span>
+                  </>
+                )}
               </button>
             </div>
 
