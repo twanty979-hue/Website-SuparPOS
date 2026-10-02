@@ -4,28 +4,88 @@ import dayjs from 'dayjs';
 
 export const dynamic = 'force-dynamic';
 
+export const DEFAULT_TEST_BRAND_ID = '9fd8c2f8-cc19-4869-8ea0-f1df2e314a13';
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
 }
 
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const brandId = searchParams.get('brandId') || DEFAULT_TEST_BRAND_ID;
+
+    const supabase = getSupabaseAdmin();
+    const { data: brand, error } = await supabase
+      .from('brands')
+      .select('id, name, slug, plan, logo_url, expiry_go, expiry_basic, expiry_pro, expiry_ultimate, updated_at')
+      .eq('id', brandId)
+      .maybeSingle();
+
+    if (error || !brand) {
+      return NextResponse.json(
+        { success: false, error: 'ไม่พบข้อมูลร้านค้านี้ในระบบ' },
+        { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } }
+      );
+    }
+
+    const now = dayjs();
+    let effectivePlan = 'free';
+    let activeExpiry: string | null = null;
+
+    if (brand.expiry_ultimate && dayjs(brand.expiry_ultimate).isAfter(now)) {
+      effectivePlan = 'ultimate';
+      activeExpiry = brand.expiry_ultimate;
+    } else if (brand.expiry_pro && dayjs(brand.expiry_pro).isAfter(now)) {
+      effectivePlan = 'pro';
+      activeExpiry = brand.expiry_pro;
+    } else if (brand.expiry_basic && dayjs(brand.expiry_basic).isAfter(now)) {
+      effectivePlan = 'basic';
+      activeExpiry = brand.expiry_basic;
+    } else if (brand.expiry_go && dayjs(brand.expiry_go).isAfter(now)) {
+      effectivePlan = 'go';
+      activeExpiry = brand.expiry_go;
+    }
+
+    // Remaining seconds
+    let remainingSeconds = 0;
+    if (activeExpiry) {
+      const diffMs = dayjs(activeExpiry).diff(now);
+      remainingSeconds = Math.max(0, Math.floor(diffMs / 1000));
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        brand: {
+          ...brand,
+          effectivePlan,
+          activeExpiry,
+          remainingSeconds,
+        },
+      },
+      { headers: { 'Access-Control-Allow-Origin': '*' } }
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message || 'Internal Server Error' },
+      { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { brandId, plan, durationMinutes = 5 } = body;
-
-    if (!brandId) {
-      return NextResponse.json(
-        { success: false, error: 'กรุณาระบุ brandId ของร้านค้า' },
-        { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } }
-      );
-    }
+    const brandId = body.brandId || DEFAULT_TEST_BRAND_ID;
+    const { plan, durationMinutes = 5 } = body;
 
     const normalizedPlan = String(plan || 'free').toLowerCase();
     const validPlans = ['free', 'go', 'basic', 'pro', 'ultimate'];
