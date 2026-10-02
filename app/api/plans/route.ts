@@ -192,14 +192,39 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { plan, period = 'monthly', expirationDate } = body;
+    const { plan, period = 'monthly', expirationDate, action } = body;
 
     const normalizedPlan = String(plan || '').toLowerCase();
+
+    const supabaseAdmin = getSupabaseAdmin();
+
+    if (action === 'cancel' || normalizedPlan === 'free') {
+      await supabaseAdmin
+        .from('brands')
+        .update({
+          plan: 'free',
+          expiry_go: null,
+          expiry_basic: null,
+          expiry_pro: null,
+          expiry_ultimate: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', brandId);
+
+      return NextResponse.json({
+        success: true,
+        currentPlan: 'free',
+        expiryDate: null,
+        daysLeft: 0,
+      }, {
+        status: 200,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
     if (!['go', 'basic', 'pro', 'ultimate'].includes(normalizedPlan)) {
       return NextResponse.json({ success: false, error: 'Invalid plan' }, { status: 400 });
     }
-
-    const supabaseAdmin = getSupabaseAdmin();
     const { data: brand, error: brandError } = await supabaseAdmin
       .from('brands')
       .select('*')
