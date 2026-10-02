@@ -74,9 +74,46 @@ export async function getOrderUsage(brandId: string, customSupabase?: any) {
 
     const { plan, limits } = await getBrandPlanPermissions(supabase, brandId);
 
+    // ดึงจำนวนโต๊ะ สินค้า/อาหาร และพนักงาน แบบขนาน (Direct Count)
+    const [
+      { count: tableCount },
+      { count: productCount },
+      { count: staffCount }
+    ] = await Promise.all([
+      supabase
+        .from('tables')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_id', brandId)
+        .eq('is_active', true),
+      supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_id', brandId)
+        .is('deleted_at', null),
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_id', brandId),
+    ]);
+
+    const staffLimit = plan === 'pro' ? 3 : (plan === 'ultimate' ? 0 : 1);
+
     // กรณีแพ็กเกจที่ไม่จำกัดออเดอร์ (Infinity)
     if (limits.max_orders === 0) {
-        return { usage: 0, limit: Infinity, isLocked: false, plan, history: [] };
+        return { 
+            usage: 0, 
+            limit: Infinity, 
+            isLocked: false, 
+            plan, 
+            history: [],
+            tablesCount: tableCount || 0,
+            tablesLimit: limits.max_tables,
+            foodsCount: productCount || 0,
+            foodsLimit: limits.max_food_items,
+            staffCount: staffCount || 1,
+            staffLimit: staffLimit,
+            permissions: limits,
+        };
     }
 
     // กรณีกำหนดขีดจำกัดออเดอร์ (Free 300, Go 1,000) -> นับยอด 30 วันย้อนหลัง
@@ -128,8 +165,15 @@ export async function getOrderUsage(brandId: string, customSupabase?: any) {
     return { 
         usage, 
         limit: limits.max_orders, 
-        isLocked: usage >= limits.max_orders, 
+        isLocked: limits.max_orders > 0 && usage >= limits.max_orders, 
         plan,
-        history
+        history,
+        tablesCount: tableCount || 0,
+        tablesLimit: limits.max_tables,
+        foodsCount: productCount || 0,
+        foodsLimit: limits.max_food_items,
+        staffCount: staffCount || 1,
+        staffLimit: staffLimit,
+        permissions: limits,
     };
 }
