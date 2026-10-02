@@ -14,8 +14,10 @@ const SUCCESS_EVENTS = new Set([
   'RENEWAL',
   'PRODUCT_CHANGE',
   'UNCANCELLATION',
+  'SUBSCRIPTION_EXTENDED',
+  'NON_RENEWING_PURCHASE',
 ]);
-const EXPIRY_EVENTS = new Set(['EXPIRATION']);
+const EXPIRY_EVENTS = new Set(['EXPIRATION', 'REVOCATION']);
 const NON_BLOCKING_EVENTS = new Set([
   'CANCELLATION',
   'BILLING_ISSUE',
@@ -65,6 +67,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (EXPIRY_EVENTS.has(eventType)) {
+      const plan = inferPlan(event, productId);
+      if (plan) {
+        const supabaseAdmin = getSupabaseAdmin();
+        const expiryCol = expiryColumnFor(plan);
+        await supabaseAdmin.from('brands').update({ [expiryCol]: null }).eq('id', brandId);
+      }
       await refreshEffectivePlan(brandId);
       await logRevenueCatEvent(event, brandId, productId, transactionId, eventType);
       return NextResponse.json({ received: true, expired: true });
@@ -73,14 +81,6 @@ export async function POST(req: NextRequest) {
     if (!SUCCESS_EVENTS.has(eventType)) {
       await logRevenueCatEvent(event, brandId, productId, transactionId, eventType);
       return NextResponse.json({ received: true, ignored: eventType });
-    }
-
-    // RevenueCat Test Store accelerates subscription renewals (a monthly
-    // product renews every few minutes). The first purchase grants the real
-    // business duration below; accelerated sandbox renewals must not stack it.
-    if (eventType === 'RENEWAL' && isSandboxEvent(event)) {
-      await logRevenueCatEvent(event, brandId, productId, transactionId, eventType);
-      return NextResponse.json({ received: true, ignored: 'sandbox_renewal' });
     }
 
     const plan = inferPlan(event, productId);
@@ -304,16 +304,23 @@ async function applyPlanPurchase(params: {
   const expiryColumn = expiryColumnFor(plan);
   const currentExpiry = brand[expiryColumn] ? dayjs(brand[expiryColumn]) : null;
   const incomingExpiry = dayjs(expiryDate);
-  const shouldStackSandboxPurchase =
-    eventType === 'INITIAL_PURCHASE' &&
-    isSandboxEvent(event) &&
-    currentExpiry &&
-    currentExpiry.isAfter(incomingExpiry.subtract(1, period === 'yearly' ? 'year' : 'month'));
-  const nextExpiry = shouldStackSandboxPurchase
-    ? currentExpiry.add(1, period === 'yearly' ? 'year' : 'month').toISOString()
-    : currentExpiry && currentExpiry.isAfter(incomingExpiry)
+  const now = dayjs();
+
+  let nextExpiry: string;
+  if (isSandboxEvent(event)) {
+    // In Sandbox, if customer already has active time remaining on this plan, add to it
+    if (currentExpiry && currentExpiry.isAfter(now)) {
+      nextExpiry = currentExpiry.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
+    } else {
+      nextExpiry = incomingExpiry.toISOString();
+    }
+  } else {
+    // In Production: Apple/Google provides authoritative expiration date (incomingExpiry).
+    // Always ensure nextExpiry is at least incomingExpiry, or extends if currentExpiry is further.
+    nextExpiry = currentExpiry && currentExpiry.isAfter(incomingExpiry)
       ? currentExpiry.toISOString()
       : incomingExpiry.toISOString();
+  }
 
   const { error: expiryUpdateError } = await supabaseAdmin
     .from('brands')

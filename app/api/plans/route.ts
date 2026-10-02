@@ -6,6 +6,14 @@ import { mergePlanContents, DEFAULT_PLAN_CONTENTS } from '@/lib/planContents';
 import { getAuthContext } from '@/lib/authHelper';
 import dayjs from 'dayjs';
 
+const DEFAULT_DASHBOARD_PERMISSIONS = {
+  free: { max_days: 30, allow_advanced: false, receipt_max_days: 7, max_food_items: 50, max_products: 0, max_tables: 10, max_orders: 300 },
+  go: { max_days: 180, allow_advanced: false, receipt_max_days: 30, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 1000 },
+  basic: { max_days: 0, allow_advanced: false, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 },
+  pro: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 },
+  ultimate: { max_days: 0, allow_advanced: true, receipt_max_days: 0, max_food_items: 0, max_products: 0, max_tables: 0, max_orders: 0 }
+};
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
@@ -29,6 +37,7 @@ export async function GET(request: Request) {
       { data: successfulPayments, error: paymentError },
       { data: brand, error: brandError },
       { data: planContentsRows },
+      { data: sysSettings },
     ] = await Promise.all([
       supabaseAdmin
         .from('subscription_plans')
@@ -50,6 +59,11 @@ export async function GET(request: Request) {
       supabaseAdmin
         .from('plan_contents')
         .select('*'),
+      supabaseAdmin
+        .from('system_settings')
+        .select('dashboard_permissions')
+        .eq('id', 'global')
+        .maybeSingle(),
     ]);
 
     if (planError) throw planError;
@@ -57,6 +71,10 @@ export async function GET(request: Request) {
     if (brandError) throw brandError;
 
     const planContents = mergePlanContents(planContentsRows);
+    const dashboardPermissions = {
+      ...DEFAULT_DASHBOARD_PERMISSIONS,
+      ...(sysSettings?.dashboard_permissions || {}),
+    };
 
     const plansWithContent = (plans || []).map((p: any) => {
       const content = planContents[p.plan_key as keyof typeof planContents];
@@ -134,6 +152,7 @@ export async function GET(request: Request) {
         success: true, 
         plans: plansWithContent, 
         planContents,
+        dashboardPermissions,
         isFirstTimeBuyer,
         currentPlan,
         expiryDate,
