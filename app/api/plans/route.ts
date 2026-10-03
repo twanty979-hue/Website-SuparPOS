@@ -192,7 +192,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { plan, period = 'monthly', expirationDate, action } = body;
+    const { plan, period = 'monthly', expirationDate, action, isSandbox = false } = body;
 
     const normalizedPlan = String(plan || '').toLowerCase();
 
@@ -243,15 +243,14 @@ export async function POST(request: Request) {
     if (expirationDate && dayjs(expirationDate).isValid()) {
       const appleExpiry = dayjs(expirationDate);
       if (appleExpiry.isAfter(now)) {
-        const diffDays = appleExpiry.diff(now, 'day');
-        // ถ้าเป็น Apple Sandbox การหมดอายุจะถูกเร่งเวลา เช่น 5 นาที หรือ 1 วัน
-        // ให้คำนวณวันหมดอายุเต็มตามรอบบิลจริง (31 วัน สำหรับ monthly, 365 วัน สำหรับ yearly)
-        if (period === 'yearly' && diffDays < 300) {
-          targetExpiry = now.add(1, 'year').toISOString();
-        } else if (period === 'monthly' && diffDays < 25) {
-          targetExpiry = now.add(1, 'month').toISOString();
-        } else {
+        if (!isSandbox) {
+          // 🌟 PRODUCTION (ลูกค้าจริง): ยึดวันหมดอายุของ Apple เป๊ะๆ 100%
+          // ถ้าใช้ไปแล้ว 30 วัน เหลือ 1 วัน กู้คืนก็ได้แค่ 1 วันเท่าเดิมเด็ดขาด ไม่มีการแถมฟรี!
           targetExpiry = appleExpiry.toISOString();
+        } else {
+          // 🛠️ SANDBOX (สำหรับการเทสเท่านั้น): เนื่องจาก Apple เร่งเวลา 1 เดือนเหลือ 5 นาที
+          // จึงจำลองวันหมดอายุเป็น 31 วันนับจากปัจจุบัน (now) โดยไม่บวกทบซ้ำ
+          targetExpiry = now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
         }
       } else {
         return NextResponse.json({
@@ -261,6 +260,12 @@ export async function POST(request: Request) {
         }, { status: 400 });
       }
     } else {
+      if (!isSandbox) {
+        return NextResponse.json({
+          success: false,
+          error: 'ไม่พบวันหมดอายุที่ถูกต้องจาก Apple',
+        }, { status: 400 });
+      }
       targetExpiry = now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
     }
 
