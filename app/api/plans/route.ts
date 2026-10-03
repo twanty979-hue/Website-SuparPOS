@@ -242,14 +242,12 @@ export async function POST(request: Request) {
     let targetExpiry: string;
     if (expirationDate && dayjs(expirationDate).isValid()) {
       const appleExpiry = dayjs(expirationDate);
-      if (appleExpiry.isAfter(now)) {
-        if (!isSandbox) {
-          // 🌟 PRODUCTION (ลูกค้าจริง): ยึดวันหมดอายุของ Apple เป๊ะๆ 100%
-          // ถ้าใช้ไปแล้ว 30 วัน เหลือ 1 วัน กู้คืนก็ได้แค่ 1 วันเท่าเดิมเด็ดขาด ไม่มีการแถมฟรี!
+        if (action === 'restore' || !isSandbox) {
+          // 🌟 กู้คืนการซื้อ (Restore) หรือ Production: ยึดวันหมดอายุจริงที่ Apple ถืออยู่เป๊ะๆ 100%
+          // เหลือเท่าไหร่ใน Apple ก็ต้องได้เท่านั้นเด็ดขาด! เหลือ 1 วันก็ได้ 1 วันเท่าเดิม ไม่มีการแถม 31 วันใหม่
           targetExpiry = appleExpiry.toISOString();
         } else {
-          // 🛠️ SANDBOX (สำหรับการเทสเท่านั้น): เนื่องจาก Apple เร่งเวลา 1 เดือนเหลือ 5 นาที
-          // จึงจำลองวันหมดอายุเป็น 31 วันนับจากปัจจุบัน (now) โดยไม่บวกทบซ้ำ
+          // ซื้อใหม่ใน Sandbox: จำลองวันหมดอายุเป็น 31 วันนับจากปัจจุบันสำหรับการเทส
           targetExpiry = now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
         }
       } else {
