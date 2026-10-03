@@ -247,7 +247,7 @@ function periodFromIdentifier(value: unknown): BillingPeriod | null {
 
 function inferExpiryDate(event: any, period: BillingPeriod): string {
   const expirationMs = Number(event.expiration_at_ms ?? event.expirationAtMs ?? 0);
-  if (!isSandboxEvent(event) && Number.isFinite(expirationMs) && expirationMs > 0) {
+  if (Number.isFinite(expirationMs) && expirationMs > 0) {
     return new Date(expirationMs).toISOString();
   }
 
@@ -302,22 +302,13 @@ async function applyPlanPurchase(params: {
   }
 
   const expiryColumn = expiryColumnFor(plan);
-  const currentExpiry = brand[expiryColumn] ? dayjs(brand[expiryColumn]) : null;
   const incomingExpiry = dayjs(expiryDate);
   const now = dayjs();
 
-  let nextExpiry: string;
-  if (isSandboxEvent(event)) {
-    // ใน Sandbox: Apple จะเร่งเวลาและต่ออายุอัตโนมัติหลายรอบติดต่อกันในไม่กี่นาที
-    // เพื่อป้องกันไม่ให้วันหมดอายุทบซ้อนจนกลายเป็นหลายร้อยวัน ให้ตั้งวันหมดอายุเป็น 31 วัน (หรือ 365 วัน) นับจากปัจจุบันเสมอ
-    nextExpiry = now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
-  } else {
-    // In Production: Apple/Google provides authoritative expiration date (incomingExpiry).
-    // Always ensure nextExpiry is at least incomingExpiry, or extends if currentExpiry is further.
-    nextExpiry = currentExpiry && currentExpiry.isAfter(incomingExpiry)
-      ? currentExpiry.toISOString()
-      : incomingExpiry.toISOString();
-  }
+  // 🌟 ยึดวันหมดอายุจริงที่ Apple/RevenueCat กำหนดมาตรงๆ (ทั้ง Sandbox และ Production)
+  const nextExpiry: string = incomingExpiry.isValid()
+    ? incomingExpiry.toISOString()
+    : now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
 
   const updatePayload: Record<string, any> = {
     plan,

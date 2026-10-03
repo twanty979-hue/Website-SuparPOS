@@ -243,18 +243,13 @@ export async function POST(request: Request) {
     if (expirationDate && dayjs(expirationDate).isValid()) {
       const appleExpiry = dayjs(expirationDate);
       if (appleExpiry.isAfter(now)) {
-        if (action === 'restore' || !isSandbox) {
-          // 🌟 กู้คืนการซื้อ (Restore) หรือ Production: ยึดวันหมดอายุจริงที่ Apple ถืออยู่เป๊ะๆ 100%
-          // เหลือเท่าไหร่ใน Apple ก็ต้องได้เท่านั้นเด็ดขาด! เหลือ 1 วันก็ได้ 1 วันเท่าเดิม ไม่มีการแถม 31 วันใหม่
-          targetExpiry = appleExpiry.toISOString();
-        } else {
-          // ซื้อใหม่ใน Sandbox: จำลองวันหมดอายุเป็น 31 วันนับจากปัจจุบันสำหรับการเทส
-          targetExpiry = now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
-        }
+        // 🌟 ยึดวันหมดอายุจริงที่ Apple/RevenueCat ถืออยู่เป๊ะๆ 100% (ทั้ง Sandbox และ Production)
+        // ถ้า Sandbox ให้มา 3 นาที ก็บันทึก 3 นาที ถ้า Production ให้มา 30 วัน ก็บันทึก 30 วัน
+        targetExpiry = appleExpiry.toISOString();
       } else {
         return NextResponse.json({
           success: false,
-          error: 'แพ็กเกจนี้หมดอายุแล้ว ไม่สามารถกู้คืนได้',
+          error: 'แพ็กเกจนี้หมดอายุแล้ว ไม่สามารถเปิดใช้งานได้',
           expired: true,
         }, { status: 400 });
       }

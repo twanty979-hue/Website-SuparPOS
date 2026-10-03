@@ -117,7 +117,7 @@ export default function AdminLayout({
       )
     },
     {
-      name: 'ทดสอบแพลน (5 นาที)',
+      name: 'ทดสอบ & ล้างแพลน (Test Plan)',
       href: '/admin/test-plan',
       icon: (
         <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
