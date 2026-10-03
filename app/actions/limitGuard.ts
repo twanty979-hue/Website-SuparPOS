@@ -93,7 +93,8 @@ export async function getOrderUsage(brandId: string, customSupabase?: any) {
       supabase
         .from('profiles')
         .select('id', { count: 'exact', head: true })
-        .eq('brand_id', brandId),
+        .or(`brand_id.eq.${brandId},invited_brand_id.eq.${brandId}`)
+        .neq('role', 'owner'),
     ]);
 
     const staffLimit = plan === 'pro' ? 3 : (plan === 'ultimate' ? 0 : 1);
@@ -110,7 +111,7 @@ export async function getOrderUsage(brandId: string, customSupabase?: any) {
             tablesLimit: limits.max_tables,
             foodsCount: productCount || 0,
             foodsLimit: limits.max_food_items,
-            staffCount: staffCount || 1,
+            staffCount: staffCount || 0,
             staffLimit: staffLimit,
             permissions: limits,
         };
@@ -172,7 +173,7 @@ export async function getOrderUsage(brandId: string, customSupabase?: any) {
         tablesLimit: limits.max_tables,
         foodsCount: productCount || 0,
         foodsLimit: limits.max_food_items,
-        staffCount: staffCount || 1,
+        staffCount: staffCount || 0,
         staffLimit: staffLimit,
         permissions: limits,
     };

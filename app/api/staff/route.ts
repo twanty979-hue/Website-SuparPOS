@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendProfilePush } from '@/lib/pushNotifications'
+import { calculateEffectivePlan } from '@/lib/planPermissions'
 
 const admin = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
 
@@ -65,6 +66,25 @@ export async function POST(request: NextRequest) {
   if (target.id === profile.id) return NextResponse.json({ success: false, error: 'ไม่สามารถเชิญบัญชีของตัวเองได้' }, { status: 400 })
   if (targetProfile.brand_id === profile.brand_id && targetProfile.is_joined) return NextResponse.json({ success: false, error: 'ผู้ใช้นี้อยู่ในร้านแล้ว' }, { status: 400 })
   if (targetProfile.invited_brand_id === profile.brand_id) return NextResponse.json({ success: false, error: 'ส่งคำเชิญให้ผู้ใช้นี้แล้ว' }, { status: 400 })
+
+  // 🛡️ ตรวจสอบโควต้าพนักงานตามแพ็กเกจ (ไม่รวมเจ้าของร้าน)
+  const { data: brandData } = await db.from('brands')
+    .select('id,name,plan,expiry_go,expiry_basic,expiry_pro,expiry_ultimate')
+    .eq('id', profile.brand_id)
+    .maybeSingle()
+  const effectivePlan = calculateEffectivePlan(brandData)
+  if (effectivePlan !== 'pro' && effectivePlan !== 'ultimate') {
+    return NextResponse.json({ success: false, error: 'แพ็กเกจของคุณไม่รองรับการเพิ่มพนักงาน กรุณาอัปเกรดเป็น Pro หรือ Ultimate' }, { status: 403 })
+  }
+  if (effectivePlan === 'pro') {
+    const { count: currentStaffCount } = await db.from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .or(`brand_id.eq.${profile.brand_id},invited_brand_id.eq.${profile.brand_id}`)
+      .neq('role', 'owner')
+    if ((currentStaffCount || 0) >= 3) {
+      return NextResponse.json({ success: false, error: 'แพ็กเกจ Pro สามารถเพิ่มพนักงานได้สูงสุด 3 คน (ไม่รวมเจ้าของร้าน)' }, { status: 400 })
+    }
+  }
   const role = ['cashier', 'chef', 'staff'].includes(body.role) ? body.role : 'staff'
   const { error } = await db.from('profiles').update({ invited_brand_id: profile.brand_id, is_joined: false }).eq('id', target.id)
   if (error) return NextResponse.json({ success: false, error: error.message }, { status: 400 })
