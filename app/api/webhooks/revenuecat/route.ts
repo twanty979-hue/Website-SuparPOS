@@ -308,11 +308,9 @@ async function applyPlanPurchase(params: {
 
   let nextExpiry: string;
   if (isSandboxEvent(event)) {
-    // In Sandbox, Apple compresses subscription duration (e.g. 5 minutes or 1 day).
-    // Ensure the customer always gets full month/year credit so testing works naturally.
-    nextExpiry = currentExpiry && currentExpiry.isAfter(now)
-      ? currentExpiry.add(1, period === 'yearly' ? 'year' : 'month').toISOString()
-      : now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
+    // ใน Sandbox: Apple จะเร่งเวลาและต่ออายุอัตโนมัติหลายรอบติดต่อกันในไม่กี่นาที
+    // เพื่อป้องกันไม่ให้วันหมดอายุทบซ้อนจนกลายเป็นหลายร้อยวัน ให้ตั้งวันหมดอายุเป็น 31 วัน (หรือ 365 วัน) นับจากปัจจุบันเสมอ
+    nextExpiry = now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
   } else {
     // In Production: Apple/Google provides authoritative expiration date (incomingExpiry).
     // Always ensure nextExpiry is at least incomingExpiry, or extends if currentExpiry is further.
@@ -338,7 +336,9 @@ async function applyPlanPurchase(params: {
     .single();
 
   const effectivePlan = calculateEffectivePlan(updatedBrand);
-  const bonusCoins = await calculateBonusCoins(plan, period);
+  const bonusCoins = (isSandboxEvent(event) && eventType === 'RENEWAL')
+    ? 0
+    : await calculateBonusCoins(plan, period);
 
   await supabaseAdmin
     .from('brands')
