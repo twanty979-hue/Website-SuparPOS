@@ -76,17 +76,28 @@ export function normalizePlan(value: unknown): PlanKey {
 }
 
 export function calculateEffectivePlan(brand: Record<string, unknown> | null | undefined): PlanKey {
-  const configuredPlan = normalizePlan(brand?.plan);
-  if (configuredPlan === 'free') return 'free';
+  if (!brand) return 'free';
+  const now = new Date();
 
-  const expiryKey = `expiry_${configuredPlan}`;
-  const rawExpiry = brand?.[expiryKey];
-  if (!rawExpiry) return 'free';
+  const isFuture = (val: unknown): boolean => {
+    if (!val) return false;
+    const d = new Date(String(val).replace(' ', 'T'));
+    return !Number.isNaN(d.getTime()) && d > now;
+  };
 
-  const expiry = new Date(String(rawExpiry).replace(' ', 'T'));
-  return Number.isNaN(expiry.getTime()) || expiry <= new Date()
-    ? 'free'
-    : configuredPlan;
+  if (isFuture(brand.expiry_ultimate)) return 'ultimate';
+  if (isFuture(brand.expiry_pro)) return 'pro';
+  if (isFuture(brand.expiry_basic)) return 'basic';
+  if (isFuture(brand.expiry_go)) return 'go';
+
+  // Fallback to configured plan if set, otherwise free
+  const configuredPlan = normalizePlan(brand.plan);
+  if (configuredPlan !== 'free') {
+    const rawExpiry = brand[`expiry_${configuredPlan}`];
+    if (isFuture(rawExpiry)) return configuredPlan;
+  }
+
+  return 'free';
 }
 
 export function mergePlanPermissions(plan: PlanKey, saved: unknown): PlanPermissions {
