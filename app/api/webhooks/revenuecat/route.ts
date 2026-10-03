@@ -319,12 +319,22 @@ async function applyPlanPurchase(params: {
       : incomingExpiry.toISOString();
   }
 
+  const updatePayload: Record<string, any> = {
+    plan,
+    [expiryColumn]: nextExpiry,
+    updated_at: new Date().toISOString(),
+  };
+
+  for (const key of PLAN_KEYS) {
+    const col = expiryColumnFor(key);
+    if (col !== expiryColumn) {
+      updatePayload[col] = null;
+    }
+  }
+
   const { error: expiryUpdateError } = await supabaseAdmin
     .from('brands')
-    .update({
-      [expiryColumn]: nextExpiry,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq('id', brandId);
 
   if (expiryUpdateError) throw expiryUpdateError;
@@ -335,18 +345,19 @@ async function applyPlanPurchase(params: {
     .eq('id', brandId)
     .single();
 
-  const effectivePlan = calculateEffectivePlan(updatedBrand);
+  const effectivePlan = plan;
   const bonusCoins = (isSandboxEvent(event) && eventType === 'RENEWAL')
     ? 0
     : await calculateBonusCoins(plan, period);
 
-  await supabaseAdmin
-    .from('brands')
-    .update({
-      plan: effectivePlan,
-      coins: (updatedBrand.coins || 0) + bonusCoins,
-    })
-    .eq('id', brandId);
+  if (bonusCoins > 0) {
+    await supabaseAdmin
+      .from('brands')
+      .update({
+        coins: (updatedBrand?.coins || 0) + bonusCoins,
+      })
+      .eq('id', brandId);
+  }
 
   try {
     await sendBrandNotification({

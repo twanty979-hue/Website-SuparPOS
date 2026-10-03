@@ -268,26 +268,26 @@ export async function POST(request: Request) {
       targetExpiry = now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
     }
 
-    await supabaseAdmin
-      .from('brands')
-      .update({
-        [expiryCol]: targetExpiry,
-        updated_at: now.toISOString(),
-      })
-      .eq('id', brandId);
+    // 🌟 อัปเดตแพ็กเกจที่ผู้ใช้เลือก พร้อมเคลียร์คอลัมน์วันหมดอายุของแพ็กเกจอื่น เพื่อไม่ให้แพ็กเกจเก่ามาทับ
+    const updatePayload: Record<string, any> = {
+      plan: normalizedPlan,
+      [expiryCol]: targetExpiry,
+      updated_at: now.toISOString(),
+    };
 
-    const { data: updatedBrand } = await supabaseAdmin
-      .from('brands')
-      .select('*')
-      .eq('id', brandId)
-      .single();
-
-    const effectivePlan = calculateEffectivePlanForBrand(updatedBrand);
+    const allPlanCols = ['expiry_go', 'expiry_basic', 'expiry_pro', 'expiry_ultimate'];
+    for (const col of allPlanCols) {
+      if (col !== expiryCol) {
+        updatePayload[col] = null;
+      }
+    }
 
     await supabaseAdmin
       .from('brands')
-      .update({ plan: effectivePlan })
+      .update(updatePayload)
       .eq('id', brandId);
+
+    const effectivePlan = normalizedPlan;
 
     // Update pending payment logs for this plan
     await supabaseAdmin
