@@ -242,6 +242,7 @@ export async function POST(request: Request) {
     let targetExpiry: string;
     if (expirationDate && dayjs(expirationDate).isValid()) {
       const appleExpiry = dayjs(expirationDate);
+      if (appleExpiry.isAfter(now)) {
         if (action === 'restore' || !isSandbox) {
           // 🌟 กู้คืนการซื้อ (Restore) หรือ Production: ยึดวันหมดอายุจริงที่ Apple ถืออยู่เป๊ะๆ 100%
           // เหลือเท่าไหร่ใน Apple ก็ต้องได้เท่านั้นเด็ดขาด! เหลือ 1 วันก็ได้ 1 วันเท่าเดิม ไม่มีการแถม 31 วันใหม่
