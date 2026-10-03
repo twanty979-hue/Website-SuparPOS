@@ -308,12 +308,11 @@ async function applyPlanPurchase(params: {
 
   let nextExpiry: string;
   if (isSandboxEvent(event)) {
-    // In Sandbox, if customer already has active time remaining on this plan, add to it
-    if (currentExpiry && currentExpiry.isAfter(now)) {
-      nextExpiry = currentExpiry.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
-    } else {
-      nextExpiry = incomingExpiry.toISOString();
-    }
+    // In Sandbox, Apple compresses subscription duration (e.g. 5 minutes or 1 day).
+    // Ensure the customer always gets full month/year credit so testing works naturally.
+    nextExpiry = currentExpiry && currentExpiry.isAfter(now)
+      ? currentExpiry.add(1, period === 'yearly' ? 'year' : 'month').toISOString()
+      : now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
   } else {
     // In Production: Apple/Google provides authoritative expiration date (incomingExpiry).
     // Always ensure nextExpiry is at least incomingExpiry, or extends if currentExpiry is further.

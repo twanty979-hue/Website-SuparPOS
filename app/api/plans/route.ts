@@ -243,7 +243,20 @@ export async function POST(request: Request) {
     if (expirationDate && dayjs(expirationDate).isValid()) {
       const appleExpiry = dayjs(expirationDate);
       if (appleExpiry.isAfter(now)) {
-        targetExpiry = appleExpiry.toISOString();
+        const diffDays = appleExpiry.diff(now, 'day');
+        // ถ้าเป็น Apple Sandbox การหมดอายุจะถูกเร่งเวลา เช่น 5 นาที หรือ 1 วัน
+        // ให้คำนวณวันหมดอายุเต็มตามรอบบิลจริง (31 วัน สำหรับ monthly, 365 วัน สำหรับ yearly)
+        if (period === 'yearly' && diffDays < 300) {
+          targetExpiry = currentExpiry && currentExpiry.isAfter(now)
+            ? currentExpiry.add(1, 'year').toISOString()
+            : now.add(1, 'year').toISOString();
+        } else if (period === 'monthly' && diffDays < 25) {
+          targetExpiry = currentExpiry && currentExpiry.isAfter(now)
+            ? currentExpiry.add(1, 'month').toISOString()
+            : now.add(1, 'month').toISOString();
+        } else {
+          targetExpiry = appleExpiry.toISOString();
+        }
       } else {
         return NextResponse.json({
           success: false,
