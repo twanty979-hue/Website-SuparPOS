@@ -247,13 +247,9 @@ export async function POST(request: Request) {
         // ถ้าเป็น Apple Sandbox การหมดอายุจะถูกเร่งเวลา เช่น 5 นาที หรือ 1 วัน
         // ให้คำนวณวันหมดอายุเต็มตามรอบบิลจริง (31 วัน สำหรับ monthly, 365 วัน สำหรับ yearly)
         if (period === 'yearly' && diffDays < 300) {
-          targetExpiry = currentExpiry && currentExpiry.isAfter(now)
-            ? currentExpiry.add(1, 'year').toISOString()
-            : now.add(1, 'year').toISOString();
+          targetExpiry = now.add(1, 'year').toISOString();
         } else if (period === 'monthly' && diffDays < 25) {
-          targetExpiry = currentExpiry && currentExpiry.isAfter(now)
-            ? currentExpiry.add(1, 'month').toISOString()
-            : now.add(1, 'month').toISOString();
+          targetExpiry = now.add(1, 'month').toISOString();
         } else {
           targetExpiry = appleExpiry.toISOString();
         }
@@ -265,9 +261,7 @@ export async function POST(request: Request) {
         }, { status: 400 });
       }
     } else {
-      targetExpiry = currentExpiry && currentExpiry.isAfter(now)
-        ? currentExpiry.add(1, period === 'yearly' ? 'year' : 'month').toISOString()
-        : now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
+      targetExpiry = now.add(1, period === 'yearly' ? 'year' : 'month').toISOString();
     }
 
     await supabaseAdmin
