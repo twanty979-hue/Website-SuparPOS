@@ -13,10 +13,161 @@ export async function OPTIONS() {
   });
 }
 
+async function seedTablesAndProducts(
+  supabaseAdmin: any,
+  brandId: string,
+  tableCount?: number,
+  products?: Array<any>
+) {
+  // 1. โต๊ะในร้าน (ล็อกแผนฟรีสูงสุด 10 โต๊ะ)
+  const safeTableCount = Math.max(1, Math.min(Number(tableCount) || 10, 10));
+  const { count: existingTableCount } = await supabaseAdmin
+    .from('tables')
+    .select('id', { count: 'exact', head: true })
+    .eq('brand_id', brandId)
+    .eq('is_active', true);
+
+  if (!existingTableCount || existingTableCount === 0) {
+    const tables = Array.from({ length: safeTableCount }, (_, i) => {
+      const num = String(i + 1).padStart(2, '0');
+      return {
+        brand_id: brandId,
+        label: `T-${num}`,
+        capacity: 4,
+        status: 'available',
+        is_active: true,
+        access_token: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      };
+    });
+    await supabaseAdmin.from('tables').insert(tables);
+  }
+
+  // 2. แบนเนอร์เริ่มต้น (Welcome Banner)
+  const { count: bannerCount } = await supabaseAdmin
+    .from('banners')
+    .select('id', { count: 'exact', head: true })
+    .eq('brand_id', brandId);
+
+  if (!bannerCount || bannerCount === 0) {
+    await supabaseAdmin.from('banners').insert({
+      brand_id: brandId,
+      image_name: 'https://img.pos-foodscan.com/268dccbf-a568-4a90-b184-d23811937d9f/1772290694984-1772290692774.webp',
+      title: 'ยินดีต้อนรับสู่ร้านค้า',
+      sort_order: 1,
+      is_active: true,
+    });
+  }
+
+  // 3. เมนูอาหารและหมวดหมู่ (อย่างน้อย 1 รายการ)
+  if (Array.isArray(products) && products.length > 0) {
+    const categoryMap = new Map<string, string>();
+    for (const p of products) {
+      const catName = String(p.category_name || p.category || 'อาหารทั่วไป').trim();
+      if (!categoryMap.has(catName)) {
+        const { data: existingCat } = await supabaseAdmin
+          .from('categories')
+          .select('id')
+          .eq('brand_id', brandId)
+          .eq('name', catName)
+          .maybeSingle();
+
+        if (existingCat?.id) {
+          categoryMap.set(catName, existingCat.id);
+        } else {
+          const { data: newCat } = await supabaseAdmin
+            .from('categories')
+            .insert({ brand_id: brandId, name: catName, is_active: true })
+            .select('id')
+            .single();
+          if (newCat?.id) categoryMap.set(catName, newCat.id);
+        }
+      }
+    }
+
+    for (let i = 0; i < products.length; i++) {
+      const p = products[i];
+      const prodName = String(p.name || `เมนู ${i + 1}`).trim();
+      const price = Math.max(0, Number(p.price) || 0);
+      const costPrice = Math.max(0, Number(p.cost_price) || 0);
+      const catName = String(p.category_name || p.category || 'อาหารทั่วไป').trim();
+      const catId = categoryMap.get(catName) || null;
+      const imgUrl = p.image_url || p.image_name || 'https://img.pos-foodscan.com/268dccbf-a568-4a90-b184-d23811937d9f/1772290694984-1772290692774.webp';
+
+      // 3.1 บันทึกเข้า product_master
+      let masterProdId: string | null = null;
+      try {
+        const { data: masterProd } = await supabaseAdmin
+          .from('product_master')
+          .insert({
+            brand_id: brandId,
+            name: prodName,
+            price: price,
+            cost_price: costPrice,
+            image_url: imgUrl,
+            category_name: catName,
+            is_active: true,
+          })
+          .select('id')
+          .single();
+        if (masterProd?.id) masterProdId = masterProd.id;
+      } catch (err) {
+        console.warn('Skipping product_master insert error:', err);
+      }
+
+      // 3.2 บันทึกเข้า products สำหรับหน้าร้าน POS
+      const { data: insertedProduct, error: prodErr } = await supabaseAdmin
+        .from('products')
+        .insert({
+          brand_id: brandId,
+          name: prodName,
+          price: price,
+          image_name: imgUrl,
+          category_id: catId,
+          product_master_id: masterProdId,
+          is_available: true,
+          is_recommended: i === 0,
+        })
+        .select('id')
+        .single();
+
+      if (prodErr) console.error('Error inserting product:', prodErr);
+
+      // 3.3 บันทึกสต็อกเริ่มต้นถ้ามี masterProdId
+      if (masterProdId) {
+        try {
+          await supabaseAdmin.from('stock').insert({
+            product_master_id: masterProdId,
+            quantity: 100,
+            min_quantity: 10,
+          });
+        } catch (_) {}
+      }
+    }
+  }
+
+  // 4. บันทึก onboarding_completed ลงใน brands.config
+  const { data: bData } = await supabaseAdmin
+    .from('brands')
+    .select('config')
+    .eq('id', brandId)
+    .maybeSingle();
+
+  const currentConfig = (bData?.config as Record<string, any>) || {};
+  await supabaseAdmin
+    .from('brands')
+    .update({
+      config: {
+        ...currentConfig,
+        onboarding_completed: true,
+      },
+    })
+    .eq('id', brandId);
+}
+
 export async function POST(request: Request) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    // 🛡️ ขั้นตอนที่ 1 & 2: ตรวจสอบและดึง User จาก Token (รองรับ Expired Token อัตโนมัติ)
+    // 🛡️ ขั้นตอนที่ 1 & 2: ตรวจสอบและดึง User จาก Token
     const { user } = await getAuthenticatedUser(request);
 
     if (!user) {
@@ -27,16 +178,17 @@ export async function POST(request: Request) {
     }
 
     const secureUserId = user.id;
-    const { shopName, shopPhone } = await request.json();
+    const body = await request.json();
+    const { shopName, shopPhone, tableCount, products } = body;
 
     if (!shopName) {
       return NextResponse.json(
-        { error: "ข้อมูลไม่ครบถ้วน" }, 
+        { error: "ข้อมูลไม่ครบถ้วน (กรุณาระบุชื่อร้าน)" }, 
         { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } }
       );
     }
 
-    // 🛑 ขั้นตอนที่ 3: เช็คเงื่อนไขล็อกสิทธิ์ (1 คน ต่อ 1 ร้านเท่านั้น)
+    // 🛑 ขั้นตอนที่ 3: เช็คเงื่อนไข (1 คน ต่อ 1 ร้าน)
     let { data: currentProfile, error: profileReadError } = await supabaseAdmin
       .from('profiles')
       .select('brand_id')
@@ -61,25 +213,26 @@ export async function POST(request: Request) {
     }
 
     if (currentProfile?.brand_id) {
+      const existingBrandId = currentProfile.brand_id;
+      // ถ้ามีการส่ง tableCount หรือ products มา ให้ seed ข้อมูลลงร้านที่มีอยู่เดิมด้วย
+      if (tableCount || (Array.isArray(products) && products.length > 0)) {
+        await seedTablesAndProducts(supabaseAdmin, existingBrandId, tableCount, products);
+      }
       return NextResponse.json(
-        { success: true, brandId: currentProfile.brand_id, alreadyExists: true },
+        { success: true, brandId: existingBrandId, alreadyExists: true, message: "ตั้งค่าร้านค้าสำเร็จ" },
         { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } }
       );
     }
 
-    // 🚀 ขั้นตอนที่ 4: เริ่มทำธุรกรรมเมื่อผ่านการตรวจสอบทั้งหมด
-
-    // สร้าง Brand ใหม่
+    // 🚀 ขั้นตอนที่ 4: สร้าง Brand ใหม่
     const { data: brand, error: brandErr } = await supabaseAdmin.from('brands').insert({
       name: shopName,
       phone: shopPhone,
       plan: 'free',
       status: 'trial',
-      // Keep tutorial completion state on the brand so every device for this
-      // shop sees the same onboarding progress from its first sign-in.
       config: {
         vat: 0,
-        onboarding_completed: false,
+        onboarding_completed: true,
         service_charge: 0,
         tutorial_pos: false,
         tutorial_menu: false,
@@ -100,23 +253,27 @@ export async function POST(request: Request) {
       own_brand_id: brand.id,
       role: 'owner',
       updated_at: new Date().toISOString()
-    }).eq('id', secureUserId).select('id').single(); // อัปเดตตรงไอดีที่ได้มาจาก Token
+    }).eq('id', secureUserId).select('id').single();
 
     if (profileErr) {
       await supabaseAdmin.from('brands').delete().eq('id', brand.id);
       throw profileErr;
     }
 
+    // สร้างโต๊ะ (สูงสุด 10 โต๊ะ) และเมนูอาหาร (อย่างน้อย 1 เมนู)
+    await seedTablesAndProducts(supabaseAdmin, brand.id, tableCount, products);
+
     const response = NextResponse.json({ 
       success: true, 
       brandId: brand.id,
-      message: "สร้างร้านค้าและตั้งค่าเจ้าของสำเร็จ" 
+      message: "สร้างร้านค้า ตั้งค่าโต๊ะและเมนูอาหารเริ่มต้นสำเร็จ" 
     });
     
     response.headers.set('Access-Control-Allow-Origin', '*');
     return response;
 
   } catch (error: any) {
+    console.error('setup/brand error:', error);
     return NextResponse.json(
       { error: error.message || "เกิดข้อผิดพลาดภายในระบบ" }, 
       { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
