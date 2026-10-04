@@ -93,6 +93,8 @@ export async function POST(request: Request) {
     const { supabase, brandId, effectivePlan } = await getSupabaseAndBrandId(request);
     const body = await request.json();
     const { id, label, capacity, status, access_token, action, count } = body;
+    const incomingTables = Array.isArray(body.tables) ? body.tables : null;
+    const isBatch = Boolean(incomingTables && incomingTables.length > 0);
 
     if (!id && action !== 'generate_tokens') {
       // ตรวจสอบโควตาจำนวนโต๊ะสูงสุดตามแพ็กเกจ
@@ -117,11 +119,14 @@ export async function POST(request: Request) {
           .eq('brand_id', brandId)
           .eq('is_active', true);
 
-        if (!countError && (tableCount ?? 0) >= maxTables) {
+        const currentCount = tableCount ?? 0;
+        const addCount = isBatch ? incomingTables.length : 1;
+
+        if (!countError && currentCount + addCount > maxTables) {
           return NextResponse.json(
             {
               success: false,
-              error: `จำนวนโต๊ะเกินขีดจำกัดของแพ็กเกจ (สูงสุด ${maxTables} โต๊ะ) กรุณาอัปเกรดแพ็กเกจ`,
+              error: `จำนวนโต๊ะเกินขีดจำกัดของแพ็กเกจ (ปัจจุบันมี ${currentCount} โต๊ะ, ไม่สามารถเพิ่มอีก ${addCount} โต๊ะได้เนื่องจากจำกัดสูงสุด ${maxTables} โต๊ะ) กรุณาอัปเกรดแพ็กเกจ`,
             },
             { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } }
           );
@@ -141,6 +146,38 @@ export async function POST(request: Request) {
         .single();
       if (error) throw error;
       return NextResponse.json({ success: true, tokens, data }, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+    }
+
+    // 🚀 โหมดเพิ่มทีละหลายโต๊ะ (Batch Insert)
+    if (isBatch) {
+      const rowsToInsert = incomingTables.map((item: any) => {
+        const itemLabel = typeof item === 'string' ? item : (item.label || '');
+        const itemToken = (typeof item === 'object' && item.access_token) ? item.access_token : makeTableToken();
+        const itemCap = (typeof item === 'object' && item.capacity !== undefined) ? Number(item.capacity) : 4;
+        return {
+          brand_id: brandId,
+          label: itemLabel.toString().trim(),
+          capacity: itemCap,
+          status: 'available',
+          access_token: itemToken,
+          access_tokens: [itemToken],
+        };
+      }).filter((r: any) => r.label.length > 0);
+
+      if (rowsToInsert.length === 0) {
+        return NextResponse.json({ success: false, error: 'กรุณาระบุชื่อโต๊ะอย่างน้อย 1 โต๊ะ' }, { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+      }
+
+      const { data, error } = await supabase
+        .from('tables')
+        .insert(rowsToInsert)
+        .select('*');
+
+      if (error) throw error;
+      return NextResponse.json(
+        { success: true, message: `เพิ่มโต๊ะใหม่สำเร็จ ${rowsToInsert.length} โต๊ะ`, data, count: rowsToInsert.length },
+        { status: 201, headers: { 'Access-Control-Allow-Origin': '*' } }
+      );
     }
 
     if (!label) {
