@@ -180,14 +180,23 @@ export async function getAuthContext(
   if (user?.id) {
     const { data: profile } = await adminClient
       .from('profiles')
-      .select('brand_id, role, brands(timezone, plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate)')
+      .select('brand_id, own_brand_id, role, brands(timezone, plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate)')
       .eq('id', user.id)
       .single();
 
-    if (profile?.brand_id) {
-      brandId = profile.brand_id;
-      role = profile.role || 'staff';
+    const effBrandId = profile?.brand_id || profile?.own_brand_id;
+    if (effBrandId) {
+      brandId = effBrandId;
+      role = profile?.role || 'staff';
       brandData = Array.isArray((profile as any).brands) ? (profile as any).brands[0] : (profile as any).brands;
+      if (!brandData) {
+        const { data: bData } = await adminClient
+          .from('brands')
+          .select('timezone, plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate')
+          .eq('id', effBrandId)
+          .single();
+        brandData = bData;
+      }
     }
   }
 

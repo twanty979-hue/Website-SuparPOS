@@ -104,7 +104,8 @@ export async function POST(request: Request) {
     if (Array.isArray(products) && products.length > 0) {
       const categoryMap = new Map<string, string>();
       for (const p of products) {
-        const catName = String(p.category_name || p.category || 'อาหารทั่วไป').trim();
+        const catName = String(p.category_name || p.category || '').trim();
+        if (!catName) continue;
         if (!categoryMap.has(catName)) {
           const { data: existingCat } = await supabaseAdmin
             .from('categories')
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
         const price = Math.max(0, Number(p.price) || 0);
         const priceSpecial = p.price_special ? Number(p.price_special) : null;
         const priceJumbo = p.price_jumbo ? Number(p.price_jumbo) : null;
-        const catName = String(p.category_name || p.category || 'อาหารทั่วไป').trim();
+        const catName = String(p.category_name || p.category || '').trim();
         const isValidUuid = (id: any) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         const catId = isValidUuid(p.category_id) ? p.category_id : (categoryMap.get(catName) || null);
         const imgUrl = p.image_url || p.image_name || null;

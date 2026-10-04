@@ -57,18 +57,14 @@ export async function GET(request: NextRequest) {
     ? await db.from('invitation_logs').select('role,created_at').eq('employee_id', user.id).eq('from_brand_id', profile.invited_brand_id).eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle()
     : { data: null }
 
-  const currentBrand = brandMap.get(profile.brand_id) as any || null
-  let onboardingCompleted = true
+  const effectiveBrandId = profile.brand_id || profile.own_brand_id || null
+  const currentBrand = brandMap.get(effectiveBrandId) as any || null
+  let onboardingCompleted = false
   if (currentBrand) {
-    if (typeof currentBrand.config?.onboarding_completed === 'boolean') {
-      onboardingCompleted = currentBrand.config.onboarding_completed
-    } else {
-      const { count } = await db
-        .from('products')
-        .select('id', { count: 'exact', head: true })
-        .eq('brand_id', profile.brand_id)
-        .is('deleted_at', null)
-      onboardingCompleted = (count || 0) > 0
+    // อ่านสถานะตั้งค่าเริ่มต้นจากตาราง brands (ฟิลด์ config.onboarding_completed) โดยตรง
+    onboardingCompleted = currentBrand.config?.onboarding_completed === true
+    if (!profile.brand_id && effectiveBrandId) {
+      db.from('profiles').update({ brand_id: effectiveBrandId }).eq('id', user.id).then();
     }
   }
 
@@ -76,6 +72,7 @@ export async function GET(request: NextRequest) {
     success: true,
     profile: {
       ...profile,
+      brand_id: effectiveBrandId,
       email: user.email,
       onboarding_completed: onboardingCompleted,
       current_brand: currentBrand

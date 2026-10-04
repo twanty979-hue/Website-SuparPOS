@@ -19,6 +19,8 @@ export async function OPTIONS() {
 import { getAuthContext } from '@/lib/authHelper';
 import { deduplicateAndCleanCategories } from '@/lib/categoryHelper';
 
+const isValidUuid = (val: any) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
 async function getSupabaseAndBrand(request: Request, fallbackData?: any) {
   return getAuthContext(request, fallbackData);
 }
@@ -29,6 +31,13 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const queryBrandId = url.searchParams.get('brand_id');
     const { supabase, brandId } = await getSupabaseAndBrand(request, { brand_id: queryBrandId });
+
+    if (!isValidUuid(brandId)) {
+      return NextResponse.json(
+        { success: true, data: [], categories: [] },
+        { status: 200, headers: corsHeaders }
+      );
+    }
 
     const { data, error } = await supabase
       .from('categories')
@@ -76,6 +85,25 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, error: 'กรุณาระบุชื่อหมวดหมู่' },
         { status: 400, headers: corsHeaders }
+      );
+    }
+
+    // 🛡️ ถ้าร้านยังอยู่ในขั้นตอนตั้งค่าเริ่มต้น (ยังไม่มี UUID จริงในระบบ) ให้ส่งข้อมูลกลับทันที ไม่ต้องบันทึก DB
+    if (!isValidUuid(brandId)) {
+      const tempCat = {
+        id: id || `temp_${Date.now()}`,
+        brand_id: brandId,
+        name: trimmedName,
+        sort_order: Number(sort_order) || 0,
+        is_active: is_active ?? true,
+      };
+      return NextResponse.json(
+        {
+          success: true,
+          data: tempCat,
+          category: tempCat,
+        },
+        { status: 200, headers: corsHeaders }
       );
     }
 
@@ -173,6 +201,13 @@ export async function DELETE(request: Request) {
     }
 
     const { supabase, brandId } = await getSupabaseAndBrand(request, { brand_id: fallbackBrandId });
+
+    if (!isValidUuid(brandId)) {
+      return NextResponse.json(
+        { success: true, message: 'ลบหมวดหมู่เรียบร้อยแล้ว' },
+        { status: 200, headers: corsHeaders }
+      );
+    }
 
     const { error } = await supabase
       .from('categories')

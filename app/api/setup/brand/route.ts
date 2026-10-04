@@ -62,7 +62,8 @@ async function seedTablesAndProducts(
   if (Array.isArray(products) && products.length > 0) {
     const categoryMap = new Map<string, string>();
     for (const p of products) {
-      const catName = String(p.category_name || p.category || 'อาหารทั่วไป').trim();
+      const catName = String(p.category_name || p.category || '').trim();
+      if (!catName) continue;
       if (!categoryMap.has(catName)) {
         const { data: existingCat } = await supabaseAdmin
           .from('categories')
@@ -90,7 +91,7 @@ async function seedTablesAndProducts(
         const price = Math.max(0, Number(p.price) || 0);
         const priceSpecial = p.price_special ? Number(p.price_special) : null;
         const priceJumbo = p.price_jumbo ? Number(p.price_jumbo) : null;
-        const catName = String(p.category_name || p.category || 'อาหารทั่วไป').trim();
+        const catName = String(p.category_name || p.category || '').trim();
         const isValidUuid = (id: any) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
         const catId = isValidUuid(p.category_id) ? p.category_id : (categoryMap.get(catName) || null);
         const imgUrl = p.image_url || p.image_name || null;
@@ -169,7 +170,7 @@ export async function POST(request: Request) {
     // 🛑 ขั้นตอนที่ 3: เช็คเงื่อนไข (1 คน ต่อ 1 ร้าน)
     let { data: currentProfile, error: profileReadError } = await supabaseAdmin
       .from('profiles')
-      .select('brand_id')
+      .select('brand_id, own_brand_id')
       .eq('id', secureUserId)
       .maybeSingle();
 
@@ -184,17 +185,30 @@ export async function POST(request: Request) {
           avatar_url: String(metadata.avatar_url || metadata.picture || '').trim() || null,
           updated_at: new Date().toISOString(),
         })
-        .select('brand_id')
+        .select('brand_id, own_brand_id')
         .single();
       if (createProfileError) throw createProfileError;
       currentProfile = createdProfile;
     }
 
-    if (currentProfile?.brand_id) {
-      const existingBrandId = currentProfile.brand_id;
+    const existingBrandId = currentProfile?.brand_id || currentProfile?.own_brand_id;
+    if (existingBrandId) {
+      if (!currentProfile?.brand_id) {
+        await supabaseAdmin.from('profiles').update({ brand_id: existingBrandId }).eq('id', secureUserId);
+      }
+      if (shopName) {
+        await supabaseAdmin.from('brands').update({ name: shopName, phone: shopPhone }).eq('id', existingBrandId);
+      }
       // ถ้ามีการส่ง tableCount หรือ products มา ให้ seed ข้อมูลลงร้านที่มีอยู่เดิมด้วย
       if (tableCount || (Array.isArray(products) && products.length > 0)) {
         await seedTablesAndProducts(supabaseAdmin, existingBrandId, tableCount, products);
+      }
+      if (Array.isArray(products) && products.length > 0) {
+        const { data: bData } = await supabaseAdmin.from('brands').select('config').eq('id', existingBrandId).maybeSingle();
+        const cfg = (bData?.config as Record<string, any>) || {};
+        await supabaseAdmin.from('brands').update({
+          config: { ...cfg, onboarding_completed: true }
+        }).eq('id', existingBrandId);
       }
       return NextResponse.json(
         { success: true, brandId: existingBrandId, alreadyExists: true, message: "ตั้งค่าร้านค้าสำเร็จ" },
@@ -202,7 +216,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🚀 ขั้นตอนที่ 4: สร้าง Brand ใหม่
+    const hasProducts = Array.isArray(products) && products.length > 0;
     const { data: brand, error: brandErr } = await supabaseAdmin.from('brands').insert({
       name: shopName,
       phone: shopPhone,
@@ -210,7 +224,7 @@ export async function POST(request: Request) {
       status: 'trial',
       config: {
         vat: 0,
-        onboarding_completed: true,
+        onboarding_completed: hasProducts,
         service_charge: 0,
         tutorial_pos: false,
         tutorial_menu: false,
