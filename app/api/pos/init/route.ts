@@ -62,7 +62,7 @@ export async function GET(request: Request) {
       supabase.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).is('deleted_at', null).order('created_at', { ascending: true }), 
       supabase.from('product_master').select('*').eq('brand_id', brandId).eq('is_active', true).order('created_at', { ascending: true }), 
       supabase.from('discounts').select(`*, discount_products(product_id)`).eq('brand_id', brandId).eq('is_active', true),
-      supabase.from('tables').select('*').eq('brand_id', brandId).order('label'),
+      supabase.from('tables').select('*').eq('brand_id', brandId).eq('is_active', true).order('label'),
       supabase
         .from('orders')
         .select('*, order_items(*)')

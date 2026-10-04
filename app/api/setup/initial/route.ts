@@ -48,13 +48,14 @@ export async function POST(request: Request) {
 
     // 1. โต๊ะในร้าน (ล็อกแผนฟรีสูงสุด 10 โต๊ะ)
     const safeTableCount = Math.max(1, Math.min(Number(tableCount) || 10, 10));
-    const { count: existingTableCount } = await supabaseAdmin
+    const { data: existingTables } = await supabaseAdmin
       .from('tables')
-      .select('id', { count: 'exact', head: true })
+      .select('id, label')
       .eq('brand_id', brandId)
       .eq('is_active', true);
 
-    if (!existingTableCount || existingTableCount === 0) {
+    const existingCount = existingTables?.length || 0;
+    if (existingCount === 0) {
       const tables = Array.from({ length: safeTableCount }, (_, i) => {
         const num = String(i + 1).padStart(2, '0');
         return {
@@ -67,6 +68,20 @@ export async function POST(request: Request) {
         };
       });
       await supabaseAdmin.from('tables').insert(tables);
+    } else if (existingCount < safeTableCount) {
+      const diff = safeTableCount - existingCount;
+      const newTables = Array.from({ length: diff }, (_, i) => {
+        const num = String(existingCount + i + 1).padStart(2, '0');
+        return {
+          brand_id: brandId,
+          label: `T-${num}`,
+          capacity: 4,
+          status: 'available',
+          is_active: true,
+          access_token: Math.random().toString(36).substring(2, 10).toUpperCase(),
+        };
+      });
+      await supabaseAdmin.from('tables').insert(newTables);
     }
 
     // 2. แบนเนอร์เริ่มต้น (ถ้ายังไม่มี)
@@ -103,7 +118,13 @@ export async function POST(request: Request) {
           } else {
             const { data: newCat } = await supabaseAdmin
               .from('categories')
-              .insert({ brand_id: brandId, name: catName, is_active: true })
+              .insert({
+                brand_id: brandId,
+                name: catName,
+                sort_order: 1,
+                is_active: true,
+                created_at: new Date().toISOString(),
+              })
               .select('id')
               .single();
             if (newCat?.id) categoryMap.set(catName, newCat.id);
@@ -115,57 +136,36 @@ export async function POST(request: Request) {
         const p = products[i];
         const prodName = String(p.name || `เมนู ${i + 1}`).trim();
         const price = Math.max(0, Number(p.price) || 0);
-        const costPrice = Math.max(0, Number(p.cost_price) || 0);
+        const priceSpecial = p.price_special ? Number(p.price_special) : null;
+        const priceJumbo = p.price_jumbo ? Number(p.price_jumbo) : null;
         const catName = String(p.category_name || p.category || 'อาหารทั่วไป').trim();
-        const catId = categoryMap.get(catName) || null;
-        const imgUrl = p.image_url || p.image_name || 'https://img.pos-foodscan.com/268dccbf-a568-4a90-b184-d23811937d9f/1772290694984-1772290692774.webp';
+        const catId = p.category_id || categoryMap.get(catName) || null;
+        const imgUrl = p.image_url || p.image_name || null;
 
-        // 3.1 บันทึกเข้า product_master
-        let masterProdId: string | null = null;
-        try {
-          const { data: masterProd } = await supabaseAdmin
-            .from('product_master')
-            .insert({
-              brand_id: brandId,
-              name: prodName,
-              price: price,
-              cost_price: costPrice,
-              image_url: imgUrl,
-              category_name: catName,
-              is_active: true,
-            })
-            .select('id')
-            .single();
-          if (masterProd?.id) masterProdId = masterProd.id;
-        } catch (err) {
-          console.warn('Skipping product_master insert error:', err);
-        }
-
-        // 3.2 บันทึกเข้า products สำหรับหน้าร้าน POS
+        // บันทึกเข้า products สำหรับหน้าร้าน POS และหน้าจัดการอาหาร
         const { error: prodErr } = await supabaseAdmin
           .from('products')
           .insert({
             brand_id: brandId,
             name: prodName,
             price: price,
+            price_special: priceSpecial,
+            price_jumbo: priceJumbo,
             image_name: imgUrl,
             category_id: catId,
-            product_master_id: masterProdId,
+            category: catName,
+            options: Array.isArray(p.options)
+              ? p.options.filter((opt: any) => opt?.source !== 'topping_group')
+              : (p.options && typeof p.options === 'object' ? p.options : []),
             is_available: true,
             is_recommended: i === 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           });
 
-        if (prodErr) console.error('Error inserting product:', prodErr);
-
-        // 3.3 บันทึกสต็อกเริ่มต้น
-        if (masterProdId) {
-          try {
-            await supabaseAdmin.from('stock').insert({
-              product_master_id: masterProdId,
-              quantity: 100,
-              min_quantity: 10,
-            });
-          } catch (_) {}
+        if (prodErr) {
+          console.error('Error inserting product:', prodErr);
+          throw new Error(`บันทึกเมนู "${prodName}" ไม่สำเร็จ: ${prodErr.message}`);
         }
       }
     }

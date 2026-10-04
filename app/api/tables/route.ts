@@ -182,7 +182,7 @@ export async function POST(request: Request) {
   }
 }
 
-// --- ❌ [DELETE] ลบโต๊ะ (Soft Delete) ---
+// --- ❌ [DELETE] ลบโต๊ะ (Smart Delete: ลบถาวรถ้าไม่มีออเดอร์ / ปิดการใช้งานถ้ามีประวัติบิล) ---
 export async function DELETE(request: Request) {
   try {
     const { supabase, brandId } = await getSupabaseAndBrandId(request);
@@ -191,10 +191,30 @@ export async function DELETE(request: Request) {
 
     if (!tableId) return NextResponse.json({ success: false, error: 'กรุณาระบุไอดีโต๊ะ' }, { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
 
-    const { error } = await supabase
-      .from('tables').update({ is_active: false }).eq('id', tableId).eq('brand_id', brandId);
+    // ตรวจสอบว่าโต๊ะนี้มีประวัติออเดอร์ผูกอยู่หรือไม่
+    const { count: orderCount } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('table_id', tableId);
 
-    if (error) throw error;
+    if (!orderCount || orderCount === 0) {
+      // โต๊ะที่ไม่มีประวัติออเดอร์ -> ลบออกจากฐานข้อมูลจริงถาวร (Hard Delete)
+      const { error: delError } = await supabase
+        .from('tables')
+        .delete()
+        .eq('id', tableId)
+        .eq('brand_id', brandId);
+      if (delError) throw delError;
+    } else {
+      // โต๊ะที่เคยมีออเดอร์แล้ว -> ปิดใช้งาน (Soft Delete) เพื่อรักษาประวัติการเงินและใบเสร็จย้อนหลัง
+      const { error: updateError } = await supabase
+        .from('tables')
+        .update({ is_active: false })
+        .eq('id', tableId)
+        .eq('brand_id', brandId);
+      if (updateError) throw updateError;
+    }
+
     return NextResponse.json({ success: true, message: 'ลบโต๊ะสำเร็จ' }, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
   } catch (error: any) {
     const status = error.message === 'Unauthorized' ? 401 : 500;

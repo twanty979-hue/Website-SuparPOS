@@ -84,66 +84,43 @@ async function seedTablesAndProducts(
       }
     }
 
-    for (let i = 0; i < products.length; i++) {
-      const p = products[i];
-      const prodName = String(p.name || `เมนู ${i + 1}`).trim();
-      const price = Math.max(0, Number(p.price) || 0);
-      const costPrice = Math.max(0, Number(p.cost_price) || 0);
-      const catName = String(p.category_name || p.category || 'อาหารทั่วไป').trim();
-      const catId = categoryMap.get(catName) || null;
-      const imgUrl = p.image_url || p.image_name || 'https://img.pos-foodscan.com/268dccbf-a568-4a90-b184-d23811937d9f/1772290694984-1772290692774.webp';
+      for (let i = 0; i < products.length; i++) {
+        const p = products[i];
+        const prodName = String(p.name || `เมนู ${i + 1}`).trim();
+        const price = Math.max(0, Number(p.price) || 0);
+        const priceSpecial = p.price_special ? Number(p.price_special) : null;
+        const priceJumbo = p.price_jumbo ? Number(p.price_jumbo) : null;
+        const catName = String(p.category_name || p.category || 'อาหารทั่วไป').trim();
+        const catId = p.category_id || categoryMap.get(catName) || null;
+        const imgUrl = p.image_url || p.image_name || null;
 
-      // 3.1 บันทึกเข้า product_master
-      let masterProdId: string | null = null;
-      try {
-        const { data: masterProd } = await supabaseAdmin
-          .from('product_master')
+        // บันทึกเข้า products สำหรับหน้าร้าน POS และหน้าจัดการอาหาร
+        const { error: prodErr } = await supabaseAdmin
+          .from('products')
           .insert({
             brand_id: brandId,
             name: prodName,
             price: price,
-            cost_price: costPrice,
-            image_url: imgUrl,
-            category_name: catName,
-            is_active: true,
-          })
-          .select('id')
-          .single();
-        if (masterProd?.id) masterProdId = masterProd.id;
-      } catch (err) {
-        console.warn('Skipping product_master insert error:', err);
-      }
-
-      // 3.2 บันทึกเข้า products สำหรับหน้าร้าน POS
-      const { data: insertedProduct, error: prodErr } = await supabaseAdmin
-        .from('products')
-        .insert({
-          brand_id: brandId,
-          name: prodName,
-          price: price,
-          image_name: imgUrl,
-          category_id: catId,
-          product_master_id: masterProdId,
-          is_available: true,
-          is_recommended: i === 0,
-        })
-        .select('id')
-        .single();
-
-      if (prodErr) console.error('Error inserting product:', prodErr);
-
-      // 3.3 บันทึกสต็อกเริ่มต้นถ้ามี masterProdId
-      if (masterProdId) {
-        try {
-          await supabaseAdmin.from('stock').insert({
-            product_master_id: masterProdId,
-            quantity: 100,
-            min_quantity: 10,
+            price_special: priceSpecial,
+            price_jumbo: priceJumbo,
+            image_name: imgUrl,
+            category_id: catId,
+            category: catName,
+            options: Array.isArray(p.options)
+              ? p.options.filter((opt: any) => opt?.source !== 'topping_group')
+              : (p.options && typeof p.options === 'object' ? p.options : []),
+            is_available: true,
+            is_recommended: i === 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           });
-        } catch (_) {}
+
+        if (prodErr) {
+          console.error('Error inserting product:', prodErr);
+          throw new Error(`บันทึกเมนู "${prodName}" ไม่สำเร็จ: ${prodErr.message}`);
+        }
       }
     }
-  }
 
   // 4. บันทึก onboarding_completed ลงใน brands.config
   const { data: bData } = await supabaseAdmin
