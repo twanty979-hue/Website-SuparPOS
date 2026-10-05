@@ -97,7 +97,9 @@ export async function getOrderUsage(brandId: string, customSupabase?: any) {
         .neq('role', 'owner'),
     ]);
 
-    const staffLimit = plan === 'pro' ? 3 : (plan === 'ultimate' ? 0 : 1);
+    const staffLimit = typeof limits.max_staff === 'number'
+      ? limits.max_staff
+      : (plan === 'pro' ? 3 : (plan === 'ultimate' ? 0 : 1));
 
     // กรณีแพ็กเกจที่ไม่จำกัดออเดอร์ (Infinity)
     if (limits.max_orders === 0) {

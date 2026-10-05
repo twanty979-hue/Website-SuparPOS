@@ -12,6 +12,7 @@ export type PlanPermissions = {
   max_products: number;
   max_tables: number;
   max_orders: number;
+  max_staff: number;
 };
 
 export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
@@ -23,6 +24,7 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
     max_products: 0,
     max_tables: 10,
     max_orders: 300,
+    max_staff: 1,
   },
   go: {
     max_days: 180,
@@ -32,6 +34,7 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
     max_products: 0,
     max_tables: 0,
     max_orders: 1000,
+    max_staff: 1,
   },
   basic: {
     max_days: 0,
@@ -41,6 +44,7 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
     max_products: 0,
     max_tables: 0,
     max_orders: 0,
+    max_staff: 1,
   },
   pro: {
     max_days: 0,
@@ -50,6 +54,7 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
     max_products: 0,
     max_tables: 0,
     max_orders: 0,
+    max_staff: 3,
   },
   ultimate: {
     max_days: 0,
@@ -59,6 +64,7 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
     max_products: 0,
     max_tables: 0,
     max_orders: 0,
+    max_staff: 0,
   },
 };
 
@@ -116,6 +122,7 @@ export function mergePlanPermissions(plan: PlanKey, saved: unknown): PlanPermiss
     max_products: toLimit(record.max_products, fallback.max_products),
     max_tables: toLimit(record.max_tables, fallback.max_tables),
     max_orders: toLimit(record.max_orders ?? record.max_qr_orders ?? record.max_bills, fallback.max_orders),
+    max_staff: toLimit(record.max_staff ?? record.staff_limit, fallback.max_staff),
   };
 }
 
