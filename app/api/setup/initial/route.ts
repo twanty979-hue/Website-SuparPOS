@@ -33,10 +33,10 @@ export async function POST(request: Request) {
     if (!brandId) {
       const { data: profile } = await supabaseAdmin
         .from('profiles')
-        .select('brand_id')
+        .select('brand_id, own_brand_id')
         .eq('id', user.id)
         .maybeSingle();
-      brandId = profile?.brand_id;
+      brandId = profile?.brand_id || profile?.own_brand_id;
     }
 
     if (!brandId) {
