@@ -39,9 +39,14 @@ export async function POST(request: Request) {
     // ดึงข้อมูล Profile
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('brand_id, full_name')
+      .select('brand_id, full_name, role')
       .eq('id', authData.user.id)
       .single();
+
+    const userMeta = (authData.user as any).user_metadata || {};
+    const permissions = profile?.role === 'owner'
+      ? ['*']
+      : (Array.isArray(userMeta.permissions) ? userMeta.permissions : (profile?.role === 'chef' ? ['kitchen', 'inventory', 'menu'] : ['pos', 'kitchen', 'receipt_history', 'table']));
 
     // ✅ 2. เตรียมข้อมูลส่งกลับ (มี Session ครบถ้วนตามที่คุณป้อต้องการ)
     const responseData = {
@@ -49,6 +54,8 @@ export async function POST(request: Request) {
       session: authData.session, // ส่งไปทั้งก้อนเพื่อให้ Flutter เอาไปใช้ต่อ
       brand_id: profile?.brand_id,
       shop_name: profile?.full_name,
+      role: profile?.role || 'cashier',
+      permissions,
       redirectTo: !profile?.brand_id
         ? '/register'
         : '/dashboard'

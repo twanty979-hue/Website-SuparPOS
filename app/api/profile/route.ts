@@ -68,12 +68,22 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const userMeta = (user as any).user_metadata || {}
+  const permissions = profile.role === 'owner'
+    ? ['pos', 'kitchen', 'receipt_history', 'dashboard', 'inventory', 'menu', 'main_product', 'table', 'discount', 'banner', 'theme', 'settings', '*']
+    : (Array.isArray(userMeta.permissions) && userMeta.permissions.length > 0
+        ? userMeta.permissions
+        : (profile.role === 'chef'
+            ? ['kitchen', 'inventory', 'menu']
+            : ['pos', 'kitchen', 'receipt_history', 'table']))
+
   return NextResponse.json({
     success: true,
     profile: {
       ...profile,
       brand_id: effectiveBrandId,
       email: user.email,
+      permissions,
       onboarding_completed: onboardingCompleted,
       current_brand: currentBrand
         ? { ...currentBrand, onboarding_completed: onboardingCompleted }

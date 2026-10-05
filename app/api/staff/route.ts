@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sendProfilePush } from '@/lib/pushNotifications'
 import { calculateEffectivePlan } from '@/lib/planPermissions'
-
-const admin = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
-
 import { getAuthenticatedUser } from '@/lib/authHelper'
+
+const admin = () => createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+)
+
+const STAFF_DOMAIN = '@posfoodscan.com'
+
+const DEFAULT_CASHIER_PERMS = ['pos', 'kitchen', 'receipt_history', 'table']
+const DEFAULT_CHEF_PERMS = ['kitchen', 'inventory', 'menu']
+const ALL_PERMS = ['pos', 'kitchen', 'receipt_history', 'dashboard', 'inventory', 'menu', 'main_product', 'table', 'discount', 'banner', 'theme', 'settings']
 
 async function ownerContext(request: NextRequest) {
   const { user, adminClient: db } = await getAuthenticatedUser(request)
@@ -21,32 +29,40 @@ export async function GET(request: NextRequest) {
   const context = await ownerContext(request)
   if (!context) return denied()
   const { db, profile } = context
-  const { data: members, error } = await db.from('profiles').select('id,full_name,phone,avatar_url,role,brand_id,invited_brand_id,is_joined').or(`brand_id.eq.${profile.brand_id},invited_brand_id.eq.${profile.brand_id}`).neq('id', profile.id)
+
+  const { data: members, error } = await db
+    .from('profiles')
+    .select('id,full_name,phone,avatar_url,role,brand_id,invited_brand_id,is_joined')
+    .or(`brand_id.eq.${profile.brand_id},invited_brand_id.eq.${profile.brand_id}`)
+    .neq('id', profile.id)
+
   if (error) return NextResponse.json({ success: false, error: error.message }, { status: 400 })
-  const ids = (members || []).map(item => item.id)
-  const { data: logs } = ids.length ? await db.from('invitation_logs').select('employee_id,role,status,created_at,updated_at').eq('from_brand_id', profile.brand_id).in('employee_id', ids).order('created_at', { ascending: false }) : { data: [] }
-  const latest = new Map<string, any>()
-  for (const log of logs || []) if (!latest.has(log.employee_id)) latest.set(log.employee_id, log)
-  const { data: users } = await db.auth.admin.listUsers()
-  const emails = new Map((users?.users || []).map(user => [user.id, user.email]))
+
+  const { data: usersData } = await db.auth.admin.listUsers()
+  const userMap = new Map((usersData?.users || []).map(u => [u.id, u]))
+
   const data = (members || []).map(member => {
-    // brand_id คือสิทธิ์ร้านที่ใช้งานจริง ส่วน invited_brand_id ใช้เฉพาะตอนรอตอบรับ
-    // อย่าพึ่ง is_joined เพียงค่าเดียว เพราะข้อมูลสมาชิกเก่าอาจเป็น null/false ได้
-    const hasStoreAccess =
-      member.brand_id === profile.brand_id &&
-      member.invited_brand_id !== profile.brand_id
-    const invitation = latest.get(member.id) || null
+    const authUser = userMap.get(member.id)
+    const email = authUser?.email || ''
+    const meta = authUser?.user_metadata || {}
+
+    const defaultPerms = member.role === 'chef' ? DEFAULT_CHEF_PERMS : DEFAULT_CASHIER_PERMS
+    const permissions = Array.isArray(meta.permissions) ? meta.permissions : defaultPerms
+
+    const hasStoreAccess = member.brand_id === profile.brand_id
 
     return {
       ...member,
-      name: member.full_name,
-      email: emails.get(member.id) || '',
-      invitation,
+      name: member.full_name || meta.full_name || 'พนักงาน',
+      email,
+      role: member.role || meta.role || 'cashier',
+      permissions,
       has_store_access: hasStoreAccess,
-      status: hasStoreAccess ? 'active' : invitation?.status || 'pending',
+      status: hasStoreAccess ? 'active' : 'pending',
     }
   })
-  return NextResponse.json({ success: true, data, history: logs || [] })
+
+  return NextResponse.json({ success: true, data })
 }
 
 export async function POST(request: NextRequest) {
@@ -54,44 +70,186 @@ export async function POST(request: NextRequest) {
   if (!context) return denied()
   const { db, profile } = context
   const body = await request.json().catch(() => ({}))
-  const email = String(body.email || '').trim().toLowerCase()
-  if (!email) return NextResponse.json({ success: false, error: 'กรุณากรอกอีเมล' }, { status: 400 })
-  const { data: users, error: authError } = await db.auth.admin.listUsers()
-  if (authError) return NextResponse.json({ success: false, error: authError.message }, { status: 400 })
-  const target = users.users.find(user => user.email?.toLowerCase() === email)
-  if (!target) return NextResponse.json({ success: false, error: 'ไม่พบอีเมลนี้ในระบบ กรุณาให้พนักงานสมัครสมาชิกก่อน' }, { status: 404 })
-  const { data: targetProfile } = await db.from('profiles').select('id,full_name,phone,avatar_url,brand_id,invited_brand_id,is_joined').eq('id', target.id).maybeSingle()
-  if (!targetProfile) return NextResponse.json({ success: false, error: 'ผู้ใช้นี้ยังไม่มีโปรไฟล์' }, { status: 404 })
-  if (body.action === 'search') return NextResponse.json({ success: true, profile: { ...targetProfile, email: target.email } })
-  if (target.id === profile.id) return NextResponse.json({ success: false, error: 'ไม่สามารถเชิญบัญชีของตัวเองได้' }, { status: 400 })
-  if (targetProfile.brand_id === profile.brand_id && targetProfile.is_joined) return NextResponse.json({ success: false, error: 'ผู้ใช้นี้อยู่ในร้านแล้ว' }, { status: 400 })
-  if (targetProfile.invited_brand_id === profile.brand_id) return NextResponse.json({ success: false, error: 'ส่งคำเชิญให้ผู้ใช้นี้แล้ว' }, { status: 400 })
+  const action = body.action || 'create'
 
-  // 🛡️ ตรวจสอบโควต้าพนักงานตามแพ็กเกจ (ไม่รวมเจ้าของร้าน)
-  const { data: brandData } = await db.from('brands')
+  // ==================== UPDATE PERMISSIONS & ROLE ====================
+  if (action === 'update' || action === 'update_permissions') {
+    const targetId = String(body.id || body.employeeId || '').trim()
+    if (!targetId) return NextResponse.json({ success: false, error: 'ระบุรหัสพนักงาน' }, { status: 400 })
+
+    const { data: targetProfile } = await db
+      .from('profiles')
+      .select('id,brand_id,role')
+      .eq('id', targetId)
+      .maybeSingle()
+
+    if (!targetProfile || targetProfile.brand_id !== profile.brand_id) {
+      return NextResponse.json({ success: false, error: 'ไม่พบพนักงานในร้านนี้' }, { status: 404 })
+    }
+
+    const updatedRole = body.role === 'chef' ? 'chef' : 'cashier'
+    const updatedFullName = body.full_name ? String(body.full_name).trim() : undefined
+    const updatedPermissions = Array.isArray(body.permissions)
+      ? body.permissions
+      : (updatedRole === 'chef' ? DEFAULT_CHEF_PERMS : DEFAULT_CASHIER_PERMS)
+
+    const authUpdates: { user_metadata: Record<string, any>; password?: string } = {
+      user_metadata: {
+        role: updatedRole,
+        permissions: updatedPermissions,
+        ...(updatedFullName ? { full_name: updatedFullName } : {}),
+      },
+    }
+
+    if (body.password && String(body.password).trim().length >= 6) {
+      authUpdates.password = String(body.password).trim()
+    }
+
+    await db.auth.admin.updateUserById(targetId, authUpdates)
+
+    await db.from('profiles').update({
+      role: updatedRole,
+      ...(updatedFullName ? { full_name: updatedFullName } : {}),
+      updated_at: new Date().toISOString(),
+    }).eq('id', targetId)
+
+    return NextResponse.json({
+      success: true,
+      message: 'อัปเดตข้อมูลและสิทธิ์พนักงานเรียบร้อยแล้ว',
+      role: updatedRole,
+      permissions: updatedPermissions,
+    })
+  }
+
+  // ==================== CREATE STAFF (@posfoodscan.com) ====================
+  // ตรวจสอบแพ็กเกจของร้าน
+  const { data: brandData } = await db
+    .from('brands')
     .select('id,name,plan,expiry_go,expiry_basic,expiry_pro,expiry_ultimate')
     .eq('id', profile.brand_id)
     .maybeSingle()
+
   const effectivePlan = calculateEffectivePlan(brandData)
   if (effectivePlan !== 'pro' && effectivePlan !== 'ultimate') {
-    return NextResponse.json({ success: false, error: 'แพ็กเกจของคุณไม่รองรับการเพิ่มพนักงาน กรุณาอัปเกรดเป็น Pro หรือ Ultimate' }, { status: 403 })
+    return NextResponse.json({
+      success: false,
+      error: 'แพ็กเกจของคุณไม่รองรับการเพิ่มพนักงาน กรุณาอัปเกรดเป็น Pro หรือ Ultimate',
+    }, { status: 403 })
   }
+
   if (effectivePlan === 'pro') {
-    const { count: currentStaffCount } = await db.from('profiles')
+    const { count: currentStaffCount } = await db
+      .from('profiles')
       .select('id', { count: 'exact', head: true })
-      .or(`brand_id.eq.${profile.brand_id},invited_brand_id.eq.${profile.brand_id}`)
+      .eq('brand_id', profile.brand_id)
       .neq('role', 'owner')
+
     if ((currentStaffCount || 0) >= 3) {
-      return NextResponse.json({ success: false, error: 'แพ็กเกจ Pro สามารถเพิ่มพนักงานได้สูงสุด 3 คน (ไม่รวมเจ้าของร้าน)' }, { status: 400 })
+      return NextResponse.json({
+        success: false,
+        error: 'แพ็กเกจ Pro สามารถเพิ่มพนักงานได้สูงสุด 3 คน (ไม่รวมเจ้าของร้าน) หากต้องการเพิ่มมากกว่านี้ กรุณาอัปเกรดเป็น Ultimate',
+      }, { status: 400 })
     }
   }
-  const role = ['cashier', 'chef', 'staff'].includes(body.role) ? body.role : 'staff'
-  const { error } = await db.from('profiles').update({ invited_brand_id: profile.brand_id, is_joined: false }).eq('id', target.id)
-  if (error) return NextResponse.json({ success: false, error: error.message }, { status: 400 })
-  await db.from('invitation_logs').insert({ employee_id: target.id, from_brand_id: profile.brand_id, status: 'pending', role })
-  const { data: brand } = await db.from('brands').select('name').eq('id', profile.brand_id).maybeSingle()
-  await sendProfilePush({ profileIds: [target.id], title: 'คุณได้รับคำเชิญเข้าร่วมร้าน', message: `${brand?.name || 'ร้านค้า'} เชิญคุณเข้าร่วมทีม`, type: 'STAFF_INVITATION', data: { brandId: profile.brand_id, role, path: '/dashboard/profile' } })
-  return NextResponse.json({ success: true, message: 'ส่งคำเชิญเรียบร้อยแล้ว' })
+
+  const rawUsername = String(body.username || body.email || '').trim().toLowerCase()
+  const password = String(body.password || '').trim()
+  const fullName = String(body.full_name || body.name || '').trim()
+  const role = body.role === 'chef' ? 'chef' : 'cashier'
+
+  if (!rawUsername) {
+    return NextResponse.json({ success: false, error: 'กรุณากรอกชื่อผู้ใช้ (Username)' }, { status: 400 })
+  }
+
+  if (!password || password.length < 6) {
+    return NextResponse.json({ success: false, error: 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร' }, { status: 400 })
+  }
+
+  if (!fullName) {
+    return NextResponse.json({ success: false, error: 'กรุณากรอกชื่อพนักงาน' }, { status: 400 })
+  }
+
+  // จัดรูปแบบอีเมลภายใต้ @posfoodscan.com
+  let email = rawUsername
+  if (!email.includes('@')) {
+    email = `${email}${STAFF_DOMAIN}`
+  } else if (!email.endsWith(STAFF_DOMAIN)) {
+    // ถ้าระบุ @ อื่นมา ให้เปลี่ยนเป็นโดเมนของร้าน
+    const userPart = email.split('@')[0]
+    email = `${userPart}${STAFF_DOMAIN}`
+  }
+
+  // กำหนดสิทธิ์ตั้งต้นถ้าไม่ได้ส่งมา
+  const permissions = Array.isArray(body.permissions) && body.permissions.length > 0
+    ? body.permissions
+    : (role === 'chef' ? DEFAULT_CHEF_PERMS : DEFAULT_CASHIER_PERMS)
+
+  // ตรวจสอบว่าชื่อผู้ใช้ซ้ำใน Auth หรือไม่
+  const { data: existingUsers } = await db.auth.admin.listUsers()
+  const duplicate = (existingUsers?.users || []).find(u => u.email?.toLowerCase() === email)
+  if (duplicate) {
+    const usernameOnly = email.replace(STAFF_DOMAIN, '')
+    return NextResponse.json({
+      success: false,
+      error: `ชื่อผู้ใช้ "${usernameOnly}" มีในระบบแล้ว กรุณาตั้งชื่ออื่น เช่น ${usernameOnly}01`,
+    }, { status: 400 })
+  }
+
+  // เสกบัญชี Auth ใหม่โดยยืนยันอีเมลทันที
+  const { data: newAuthUser, error: authError } = await db.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName,
+      role,
+      permissions,
+      brand_id: profile.brand_id,
+      created_by_owner_id: profile.id,
+    },
+  })
+
+  if (authError || !newAuthUser?.user) {
+    return NextResponse.json({
+      success: false,
+      error: authError?.message || 'ไม่สามารถสร้างบัญชีได้',
+    }, { status: 400 })
+  }
+
+  // บันทึกลงตาราง profiles ให้พร้อมใช้งานทันที (is_joined = true)
+  const { error: profileUpsertError } = await db.from('profiles').upsert({
+    id: newAuthUser.user.id,
+    brand_id: profile.brand_id,
+    full_name: fullName,
+    email,
+    role,
+    is_joined: true,
+    is_active: true,
+    updated_at: new Date().toISOString(),
+  })
+
+  if (profileUpsertError) {
+    // Rollback auth user ถ้า profiles insert ไม่สำเร็จ
+    await db.auth.admin.deleteUser(newAuthUser.user.id).catch(() => {})
+    return NextResponse.json({
+      success: false,
+      error: profileUpsertError.message,
+    }, { status: 400 })
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: 'สร้างบัญชีพนักงานเรียบร้อยแล้ว',
+    staff: {
+      id: newAuthUser.user.id,
+      full_name: fullName,
+      email,
+      role,
+      permissions,
+      brand_id: profile.brand_id,
+      brand_name: brandData?.name || '',
+    },
+  })
 }
 
 export async function DELETE(request: NextRequest) {
@@ -99,26 +257,34 @@ export async function DELETE(request: NextRequest) {
   if (!context) return denied()
   const { db, profile } = context
   const body = await request.json().catch(() => ({}))
-  const employeeId = String(body.employeeId || '')
-  const { data: target } = await db.from('profiles').select('brand_id,own_brand_id,invited_brand_id').eq('id', employeeId).maybeSingle()
-  if (!target || (target.brand_id !== profile.brand_id && target.invited_brand_id !== profile.brand_id)) return NextResponse.json({ success: false, error: 'ไม่พบพนักงานในร้านนี้' }, { status: 404 })
-  
-  const isOriginalOwnerOfOtherBrand = 
-    target.own_brand_id != null && 
-    target.own_brand_id !== target.brand_id;
+  const employeeId = String(body.employeeId || body.id || '')
 
-  const update = target.brand_id === profile.brand_id
-    ? { 
-        brand_id: isOriginalOwnerOfOtherBrand ? target.own_brand_id : null, 
-        own_brand_id: isOriginalOwnerOfOtherBrand ? target.own_brand_id : null, 
-        invited_brand_id: null, 
-        role: isOriginalOwnerOfOtherBrand ? 'owner' : 'cashier', 
-        is_joined: false 
-      }
-    : { invited_brand_id: null, is_joined: false }
-    
-  const { error } = await db.from('profiles').update(update).eq('id', employeeId)
-  if (error) return NextResponse.json({ success: false, error: error.message }, { status: 400 })
-  await db.from('invitation_logs').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('employee_id', employeeId).eq('from_brand_id', profile.brand_id).eq('status', 'pending')
-  return NextResponse.json({ success: true })
+  if (!employeeId) {
+    return NextResponse.json({ success: false, error: 'ระบุรหัสพนักงานที่ต้องการลบ' }, { status: 400 })
+  }
+
+  const { data: target } = await db
+    .from('profiles')
+    .select('id,brand_id,email')
+    .eq('id', employeeId)
+    .maybeSingle()
+
+  if (!target || target.brand_id !== profile.brand_id) {
+    return NextResponse.json({ success: false, error: 'ไม่พบพนักงานในร้านนี้' }, { status: 404 })
+  }
+
+  // ลบออกจาก profiles
+  await db.from('profiles').delete().eq('id', employeeId)
+
+  // ลบบัญชี auth ด้วย
+  try {
+    await db.auth.admin.deleteUser(employeeId)
+  } catch (_) {}
+
+  // ลบ log คำเชิญเก่าถ้ามี
+  try {
+    await db.from('invitation_logs').delete().eq('employee_id', employeeId)
+  } catch (_) {}
+
+  return NextResponse.json({ success: true, message: 'ลบบัญชีพนักงานเรียบร้อยแล้ว' })
 }
