@@ -56,7 +56,15 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     // 🚀 ตรวจสิทธิ์พนักงานด้วย Token
-    const { supabase, brandId } = await getSupabaseAndBrandId(request);
+    const { supabase, brandId, isOwner, user } = await getSupabaseAndBrandId(request);
+    const userMeta = (user as any)?.user_metadata || {};
+    const permissions: string[] = Array.isArray(userMeta.permissions) ? userMeta.permissions : [];
+    if (!isOwner && !permissions.includes('*') && !permissions.includes('banner')) {
+      return NextResponse.json(
+        { success: false, error: 'เฉพาะเจ้าของร้านหรือพนักงานที่มีสิทธิ์แบนเนอร์เท่านั้น' },
+        { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } }
+      );
+    }
     
     const body = await request.json();
     const { id, image_name, title, link_url, sort_order, is_active } = body;
@@ -97,7 +105,15 @@ export async function POST(request: Request) {
 // --- 🗑️ [DELETE] ลบแบนเนอร์ของร้าน ---
 export async function DELETE(request: Request) {
   try {
-    const { supabase, brandId } = await getSupabaseAndBrandId(request);
+    const { supabase, brandId, isOwner, user } = await getSupabaseAndBrandId(request);
+    const userMeta = (user as any)?.user_metadata || {};
+    const permissions: string[] = Array.isArray(userMeta.permissions) ? userMeta.permissions : [];
+    if (!isOwner && !permissions.includes('*') && !permissions.includes('banner')) {
+      return NextResponse.json(
+        { success: false, error: 'เฉพาะเจ้าของร้านหรือพนักงานที่มีสิทธิ์แบนเนอร์เท่านั้น' },
+        { status: 403, headers: { 'Access-Control-Allow-Origin': '*' } }
+      );
+    }
 
     let id: string | null = null;
     const { searchParams } = new URL(request.url);
