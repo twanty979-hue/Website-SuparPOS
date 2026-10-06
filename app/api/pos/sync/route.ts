@@ -233,6 +233,13 @@ export async function POST(request: Request) {
           };
         });
 
+        // ล้าง order_items เดิมที่ไม่ได้ถูกยกเลิกของออเดอร์นี้ เพื่อป้องกันรายการซ้ำซ้อนจาก UUID เก่าที่ถูกรวบแล้ว
+        await supabase
+          .from('order_items')
+          .delete()
+          .eq('order_id', cleanOrder.id)
+          .neq('status', 'cancelled');
+
         const { error: itemsError } = await supabase
           .from('order_items')
           .upsert(cleanItems);
