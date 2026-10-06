@@ -2,6 +2,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // --- 🌐 จัดการ CORS Preflight ---
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -174,7 +177,11 @@ export async function GET(request: Request) {
       effective_plan: effectivePlan
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
     });
 
   } catch (error: any) {
