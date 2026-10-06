@@ -236,6 +236,33 @@ export async function fetchShopData(params: ShopParams) {
       };
     }
 
+    // 🛡️ ตรวจสอบโควตาจำนวนโต๊ะของร้านค้า (Table Over-quota Guard)
+    let maxTables = 0;
+    try {
+      const { limits: planLimits } = await getBrandPlanPermissions(supabaseServer, brandId);
+      maxTables = planLimits.max_tables || 0;
+    } catch (_) {}
+
+    if (maxTables > 0) {
+      const { data: allBrandTables } = await supabaseServer
+        .from('tables')
+        .select('id, created_at')
+        .eq('brand_id', brandId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      const sorted = allBrandTables || [];
+      const allowedIds = new Set(sorted.slice(0, maxTables).map(t => String(t.id)));
+      if (!allowedIds.has(String(realTableId))) {
+        return {
+          success: false,
+          error: 'โต๊ะนี้อยู่นอกช่วงเวลาให้บริการ กรุณาติดต่อสั่งอาหารที่เคาน์เตอร์',
+          is_table_locked: true,
+          lock_reason: 'over_quota',
+        };
+      }
+    }
+
     // ---------------------------------------------------------
     // 🛡️ KILL SWITCH LOGIC (ระบบตรวจสอบวันหมดอายุ)
     // ---------------------------------------------------------
@@ -480,6 +507,29 @@ export async function submitOrder(payload: {
         error: limitErr?.message || 'ร้านนี้ถึงขีดจำกัดแพ็กเกจ กรุณาให้ร้านสมัครสมาชิกเพื่อใช้งานต่อ'
       };
     }
+
+    // 🛡️ ตรวจสอบโควตาโต๊ะ (Table Quota Validation: ไม่อนุญาตให้สั่งอาหารจากโต๊ะที่เกินโควต้าแพ็กเกจ)
+    try {
+      const { limits: planLimits } = await getBrandPlanPermissions(supabaseServer, brandId);
+      const maxTables = planLimits.max_tables || 0;
+      if (maxTables > 0) {
+        const { data: allowedTables } = await supabaseServer
+          .from('tables')
+          .select('id')
+          .eq('brand_id', brandId)
+          .eq('is_active', true)
+          .order('created_at', { ascending: true })
+          .limit(maxTables);
+        const allowedTableSet = new Set((allowedTables || []).map((t: any) => String(t.id)));
+        if (!allowedTableSet.has(String(realTableId))) {
+          return {
+            success: false,
+            code: 'TABLE_OVER_QUOTA',
+            error: 'โต๊ะนี้อยู่นอกช่วงเวลาให้บริการ กรุณาติดต่อสั่งอาหารที่เคาน์เตอร์',
+          };
+        }
+      }
+    } catch (_) {}
 
     const productIds = [...new Set(cart.map((item) => String(item.id || '')))]
       .filter(Boolean);

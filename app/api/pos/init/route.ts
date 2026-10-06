@@ -96,9 +96,11 @@ export async function GET(request: Request) {
       }));
 
     let maxFoodItems = 0;
+    let maxTables = 0;
     try {
       const { limits: planLimits } = await getBrandPlanPermissions(supabase, brandId);
       maxFoodItems = planLimits.max_food_items || 0;
+      maxTables = planLimits.max_tables || 0;
     } catch (_) {}
 
     const formattedFood = (productsRes.data || []).map((p, index) => {
@@ -128,16 +130,37 @@ export async function GET(request: Request) {
     const allCombinedProducts = [...formattedFood, ...formattedRetail];
     const lockedFoodCount = maxFoodItems > 0 ? Math.max(0, (productsRes.data || []).length - maxFoodItems) : 0;
 
+    const rawTables = tablesRes.data || [];
+    const sortedTablesByCreated = [...rawTables].sort((a: any, b: any) => {
+      const timeA = new Date(a.created_at || 0).getTime();
+      const timeB = new Date(b.created_at || 0).getTime();
+      return timeA - timeB;
+    });
+    const allowedTableIds = new Set(
+      (maxTables > 0 ? sortedTablesByCreated.slice(0, maxTables) : sortedTablesByCreated).map((t: any) => String(t.id))
+    );
+    const formattedTables = rawTables.map((t: any) => {
+      const isLocked = maxTables > 0 && !allowedTableIds.has(String(t.id));
+      return {
+        ...t,
+        is_locked: isLocked,
+        lock_reason: isLocked ? 'over_quota' : null,
+      };
+    });
+    const lockedTableCount = maxTables > 0 ? Math.max(0, rawTables.length - maxTables) : 0;
+
     const response = NextResponse.json({
       success: true,
       categories: categoriesRes.data || [],
       products: allCombinedProducts,
       topping_options: allToppingOptions,
       discounts: discountsRes.data || [],
-      tables: tablesRes.data || [],
+      tables: formattedTables,
       unpaid_orders: unpaidOrdersRes.data || [],
       max_food_items: maxFoodItems,
       locked_food_count: lockedFoodCount,
+      max_tables: maxTables,
+      locked_table_count: lockedTableCount,
     });
 
     response.headers.set('Access-Control-Allow-Origin', '*');

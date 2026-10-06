@@ -72,11 +72,31 @@ export async function GET(request: Request) {
     const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
     const maxTables = Number(rawPerms.max_tables ?? (effectivePlan === 'free' ? 10 : 0));
 
+    const rawTables = tables || [];
+    const sortedTablesByCreated = [...rawTables].sort((a: any, b: any) => {
+      const timeA = new Date(a.created_at || 0).getTime();
+      const timeB = new Date(b.created_at || 0).getTime();
+      return timeA - timeB;
+    });
+    const allowedTableIds = new Set(
+      (maxTables > 0 ? sortedTablesByCreated.slice(0, maxTables) : sortedTablesByCreated).map((t: any) => String(t.id))
+    );
+    const formattedTables = rawTables.map((t: any) => {
+      const isLocked = maxTables > 0 && !allowedTableIds.has(String(t.id));
+      return {
+        ...t,
+        is_locked: isLocked,
+        lock_reason: isLocked ? 'over_quota' : null,
+      };
+    });
+    const lockedTableCount = maxTables > 0 ? Math.max(0, rawTables.length - maxTables) : 0;
+
     return NextResponse.json({ 
       success: true, 
-      data: tables || [],
+      data: formattedTables,
       max_tables: maxTables,
-      total_count: tables?.length || 0,
+      locked_table_count: lockedTableCount,
+      total_count: rawTables.length,
       effective_plan: effectivePlan
     }, {
       status: 200, headers: { 'Access-Control-Allow-Origin': '*' },
