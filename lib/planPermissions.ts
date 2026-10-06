@@ -24,7 +24,7 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
     max_products: 0,
     max_tables: 10,
     max_orders: 300,
-    max_staff: 1,
+    max_staff: 0,
   },
   go: {
     max_days: 180,
@@ -34,7 +34,7 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
     max_products: 0,
     max_tables: 0,
     max_orders: 1000,
-    max_staff: 1,
+    max_staff: 0,
   },
   basic: {
     max_days: 0,
@@ -44,7 +44,7 @@ export const DEFAULT_PLAN_PERMISSIONS: Record<PlanKey, PlanPermissions> = {
     max_products: 0,
     max_tables: 0,
     max_orders: 0,
-    max_staff: 1,
+    max_staff: 0,
   },
   pro: {
     max_days: 0,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { calculateEffectivePlan } from '@/lib/planPermissions'
+import { calculateEffectivePlan, getBrandPlanPermissions } from '@/lib/planPermissions'
 import { getAuthenticatedUser } from '@/lib/authHelper'
 
 const admin = () => createClient(
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   const { data: members, error } = await db
     .from('profiles')
-    .select('id,full_name,phone,avatar_url,role,brand_id,invited_brand_id,is_joined')
+    .select('id,full_name,phone,avatar_url,role,brand_id,invited_brand_id,is_joined,is_active')
     .or(`brand_id.eq.${profile.brand_id},invited_brand_id.eq.${profile.brand_id}`)
     .neq('id', profile.id)
 
@@ -49,7 +49,9 @@ export async function GET(request: NextRequest) {
     const defaultPerms = member.role === 'chef' ? DEFAULT_CHEF_PERMS : DEFAULT_CASHIER_PERMS
     const permissions = Array.isArray(meta.permissions) ? meta.permissions : defaultPerms
 
-    const hasStoreAccess = member.brand_id === profile.brand_id
+    const isActive = member.is_active !== false
+    const hasStoreAccess = member.brand_id === profile.brand_id && isActive
+    const status = !isActive ? 'inactive' : (hasStoreAccess ? 'active' : 'pending')
 
     return {
       ...member,
@@ -58,12 +60,41 @@ export async function GET(request: NextRequest) {
       role: member.role || meta.role || 'cashier',
       permissions,
       avatar_url: member.avatar_url || meta.avatar_url || null,
+      is_active: isActive,
       has_store_access: hasStoreAccess,
-      status: hasStoreAccess ? 'active' : 'pending',
+      status,
     }
   })
 
-  return NextResponse.json({ success: true, data })
+  // 🛡️ ดึงโควตาพนักงานตามแพลนที่ตั้งไว้จากฐานข้อมูลแบบไดนามิก
+  let quota = {
+    plan: 'free',
+    current_staff: 0,
+    max_staff: 0,
+    is_unlimited: false,
+    remaining: 0,
+    can_add_more: false,
+  }
+
+  try {
+    const { plan: effectivePlan, limits } = await getBrandPlanPermissions(db, profile.brand_id)
+    const maxStaff = typeof limits.max_staff === 'number'
+      ? limits.max_staff
+      : (effectivePlan === 'pro' ? 3 : (effectivePlan === 'ultimate' ? 0 : 0))
+    const isUnlimited = effectivePlan === 'ultimate' || (maxStaff === 0 && effectivePlan === 'pro')
+    const activeStaffCount = data.filter(m => m.is_active).length
+
+    quota = {
+      plan: effectivePlan,
+      current_staff: activeStaffCount,
+      max_staff: maxStaff,
+      is_unlimited: isUnlimited,
+      remaining: isUnlimited ? -1 : Math.max(0, maxStaff - activeStaffCount),
+      can_add_more: isUnlimited || activeStaffCount < maxStaff,
+    }
+  } catch (_) {}
+
+  return NextResponse.json({ success: true, data, quota })
 }
 
 export async function POST(request: NextRequest) {
@@ -128,33 +159,97 @@ export async function POST(request: NextRequest) {
     })
   }
 
+  // ==================== REACTIVATE / ACTIVATE STAFF ====================
+  if (action === 'reactivate' || action === 'activate') {
+    const targetId = String(body.id || body.employeeId || '').trim()
+    if (!targetId) return NextResponse.json({ success: false, error: 'ระบุรหัสพนักงาน' }, { status: 400 })
+
+    const { data: targetProfile } = await db
+      .from('profiles')
+      .select('id,brand_id,role,is_active,full_name')
+      .eq('id', targetId)
+      .maybeSingle()
+
+    if (!targetProfile || targetProfile.brand_id !== profile.brand_id) {
+      return NextResponse.json({ success: false, error: 'ไม่พบพนักงานในร้านนี้' }, { status: 404 })
+    }
+
+    // ตรวจสอบโควตาพนักงานก่อนเปิดใช้งาน
+    const { plan: effectivePlan, limits } = await getBrandPlanPermissions(db, profile.brand_id)
+    const maxStaff = typeof limits.max_staff === 'number'
+      ? limits.max_staff
+      : (effectivePlan === 'pro' ? 3 : (effectivePlan === 'ultimate' ? 0 : 0))
+    const isUnlimited = effectivePlan === 'ultimate' || (maxStaff === 0 && effectivePlan === 'pro')
+
+    if (!isUnlimited) {
+      const { count: activeStaffCount } = await db
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_id', profile.brand_id)
+        .neq('role', 'owner')
+        .neq('is_active', false)
+
+      if ((activeStaffCount || 0) >= maxStaff) {
+        return NextResponse.json({
+          success: false,
+          error: `โควตาพนักงานเต็มแล้ว (${activeStaffCount}/${maxStaff} คน) กรุณาอัปเกรดเป็น Ultimate หรือถอดพนักงานคนอื่นออกก่อน`,
+        }, { status: 400 })
+      }
+    }
+
+    // ปลดแบนใน Auth
+    try {
+      await db.auth.admin.updateUserById(targetId, {
+        ban_duration: 'none',
+        user_metadata: { is_active: true },
+      })
+    } catch (_) {}
+
+    await db.from('profiles').update({
+      is_active: true,
+      is_joined: true,
+      updated_at: new Date().toISOString(),
+    }).eq('id', targetId)
+
+    return NextResponse.json({
+      success: true,
+      message: `เปิดใช้งานบัญชี ${targetProfile.full_name || 'พนักงาน'} เรียบร้อยแล้ว`,
+    })
+  }
+
   // ==================== CREATE STAFF (@posfoodscan.com) ====================
-  // ตรวจสอบแพ็กเกจของร้าน
+  // ตรวจสอบแพ็กเกจของร้านและโควตาพนักงานแบบไดนามิกจากฐานข้อมูล
   const { data: brandData } = await db
     .from('brands')
-    .select('id,name,plan,expiry_go,expiry_basic,expiry_pro,expiry_ultimate')
+    .select('id,name')
     .eq('id', profile.brand_id)
     .maybeSingle()
 
-  const effectivePlan = calculateEffectivePlan(brandData)
-  if (effectivePlan !== 'pro' && effectivePlan !== 'ultimate') {
+  const { plan: effectivePlan, limits } = await getBrandPlanPermissions(db, profile.brand_id)
+  const maxStaff = typeof limits.max_staff === 'number'
+    ? limits.max_staff
+    : (effectivePlan === 'pro' ? 3 : (effectivePlan === 'ultimate' ? 0 : 0))
+  const isUnlimited = effectivePlan === 'ultimate' || (maxStaff === 0 && effectivePlan === 'pro')
+
+  if (!isUnlimited && maxStaff <= 0) {
     return NextResponse.json({
       success: false,
-      error: 'แพ็กเกจของคุณไม่รองรับการเพิ่มพนักงาน กรุณาอัปเกรดเป็น Pro หรือ Ultimate',
+      error: `แพ็กเกจ ${effectivePlan.toUpperCase()} ไม่รองรับการเพิ่มพนักงาน กรุณาอัปเกรดเป็น Pro หรือ Ultimate`,
     }, { status: 403 })
   }
 
-  if (effectivePlan === 'pro') {
-    const { count: currentStaffCount } = await db
+  if (!isUnlimited) {
+    const { count: activeStaffCount } = await db
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('brand_id', profile.brand_id)
       .neq('role', 'owner')
+      .neq('is_active', false)
 
-    if ((currentStaffCount || 0) >= 3) {
+    if ((activeStaffCount || 0) >= maxStaff) {
       return NextResponse.json({
         success: false,
-        error: 'แพ็กเกจ Pro สามารถเพิ่มพนักงานได้สูงสุด 3 คน (ไม่รวมเจ้าของร้าน) หากต้องการเพิ่มมากกว่านี้ กรุณาอัปเกรดเป็น Ultimate',
+        error: `แพ็กเกจ ${effectivePlan.toUpperCase()} สามารถเพิ่มพนักงานที่ใช้งานอยู่ได้สูงสุด ${maxStaff} คน (ขณะนี้มี ${activeStaffCount} คน) หากต้องการเพิ่มมากกว่านี้ กรุณาอัปเกรดเป็น Ultimate หรือถอดพนักงานที่ไม่ใช้ออกครับ`,
       }, { status: 400 })
     }
   }
@@ -269,14 +364,16 @@ export async function DELETE(request: NextRequest) {
   const { db, profile } = context
   const body = await request.json().catch(() => ({}))
   const employeeId = String(body.employeeId || body.id || '')
+  // mode: 'deactivate' (default, ถอดพนักงานออกอย่างปลอดภัย ไม่ลบประวัติการขาย) หรือ 'permanent_delete' (ลบถาวรเฉพาะเมื่อไม่มีบิลขาย)
+  const mode = String(body.mode || 'deactivate').toLowerCase()
 
   if (!employeeId) {
-    return NextResponse.json({ success: false, error: 'ระบุรหัสพนักงานที่ต้องการลบ' }, { status: 400 })
+    return NextResponse.json({ success: false, error: 'ระบุรหัสพนักงานที่ต้องการลบหรือถอดสิทธิ์' }, { status: 400 })
   }
 
   const { data: target } = await db
     .from('profiles')
-    .select('id,brand_id,email')
+    .select('id,brand_id,email,full_name')
     .eq('id', employeeId)
     .maybeSingle()
 
@@ -284,18 +381,59 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'ไม่พบพนักงานในร้านนี้' }, { status: 404 })
   }
 
-  // ลบออกจาก profiles
-  await db.from('profiles').delete().eq('id', employeeId)
+  // 🛡️ ตรวจสอบว่าพนักงานมีประวัติการขายหรือสร้างบิลใน pai_orders หรือไม่
+  const { count: salesHistoryCount } = await db
+    .from('pai_orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('cashier_id', employeeId)
 
-  // ลบบัญชี auth ด้วย
+  const hasSalesHistory = (salesHistoryCount || 0) > 0
+
+  if (mode === 'permanent_delete') {
+    if (hasSalesHistory) {
+      return NextResponse.json({
+        success: false,
+        error: `พนักงานท่านนี้ (${target.full_name || target.email}) มีประวัติบิลขายในระบบจำนวน ${salesHistoryCount} บิล เพื่อความถูกต้องของรายงานยอดขายและใบเสร็จย้อนหลัง กรุณาใช้การ 'ถอดออกจากร้าน (ระงับสิทธิ์)' แทนการลบถาวรครับ`,
+      }, { status: 400 })
+    }
+
+    // ไม่มีประวัติการขาย สามารถลบถาวรได้
+    await db.from('profiles').delete().eq('id', employeeId)
+    try {
+      await db.auth.admin.deleteUser(employeeId)
+    } catch (_) {}
+    try {
+      await db.from('invitation_logs').delete().eq('employee_id', employeeId)
+    } catch (_) {}
+
+    return NextResponse.json({
+      success: true,
+      message: 'ลบบัญชีพนักงานถาวรเรียบร้อยแล้ว',
+      action: 'deleted',
+    })
+  }
+
+  // 🛡️ DEFAULT MODE: 'deactivate' (ถอดพนักงานออกอย่างปลอดภัย คืนโควตา แต่เก็บประวัติการขายไว้ 100%)
+  // 1. ระงับสิทธิ์ใน profiles
+  await db.from('profiles').update({
+    is_active: false,
+    is_joined: false,
+    updated_at: new Date().toISOString(),
+  }).eq('id', employeeId)
+
+  // 2. แบนบัญชีใน Auth ไม่ให้ล็อกอินหรือสร้าง Session ใหม่ได้
   try {
-    await db.auth.admin.deleteUser(employeeId)
+    await db.auth.admin.updateUserById(employeeId, {
+      ban_duration: '876000h', // 100 ปี
+      user_metadata: {
+        is_active: false,
+      },
+    })
   } catch (_) {}
 
-  // ลบ log คำเชิญเก่าถ้ามี
-  try {
-    await db.from('invitation_logs').delete().eq('employee_id', employeeId)
-  } catch (_) {}
-
-  return NextResponse.json({ success: true, message: 'ลบบัญชีพนักงานเรียบร้อยแล้ว' })
+  return NextResponse.json({
+    success: true,
+    message: `ถอดพนักงานออกจากร้านเรียบร้อยแล้ว คืนโควตาพนักงานทันที (ประวัติการขายและบิลย้อนหลังของ ${target.full_name || 'พนักงาน'} ยังคงอยู่ครบถ้วน)`,
+    action: 'deactivated',
+  })
 }
