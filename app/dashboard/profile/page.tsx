@@ -298,16 +298,63 @@ function ProfileContent() {
       {/* --- 🖼️ MODAL สำหรับ CROP รูปภาพ --- */}
       {isCropModalOpen && imageToCrop && (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4">
-          <div className="relative w-full max-w-md h-[40vh] md:h-[50vh] min-h-[300px] max-h-[500px] bg-white rounded-[24px] md:rounded-3xl overflow-hidden shadow-2xl mb-4 md:mb-6">
+          <div className="relative w-full max-w-md h-[40vh] md:h-[50vh] min-h-[300px] max-h-[500px] bg-slate-900 rounded-[24px] md:rounded-3xl overflow-hidden shadow-2xl mb-3">
             <Cropper
               image={imageToCrop}
               crop={crop}
               zoom={zoom}
+              minZoom={0.2}
+              maxZoom={3}
+              restrictPosition={false}
               aspect={1} 
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
             />
+          </div>
+
+          {/* Slider & Quick Presets */}
+          <div className="w-full max-w-md mb-4 bg-white/10 backdrop-blur-md rounded-2xl p-3 space-y-2 border border-white/10">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setZoom(prev => Math.max(0.2, +(prev - 0.1).toFixed(2)))}
+                className="w-7 h-7 rounded-lg bg-white/20 text-white font-bold hover:bg-white/30 flex items-center justify-center text-sm shadow-sm"
+              >-</button>
+              <input
+                type="range"
+                min={0.2}
+                max={3}
+                step={0.05}
+                value={zoom}
+                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer accent-blue-400"
+              />
+              <button
+                type="button"
+                onClick={() => setZoom(prev => Math.min(3, +(prev + 0.1).toFixed(2)))}
+                className="w-7 h-7 rounded-lg bg-white/20 text-white font-bold hover:bg-white/30 flex items-center justify-center text-sm shadow-sm"
+              >+</button>
+              <span className="text-[11px] font-bold text-white/80 w-10 text-right">
+                {Math.round(zoom * 100)}%
+              </span>
+            </div>
+            <div className="flex gap-2 justify-center">
+              <button
+                type="button"
+                onClick={() => { setZoom(0.85); setCrop({ x: 0, y: 0 }); }}
+                className="px-3 py-1 text-xs font-bold rounded-lg bg-white/15 text-white hover:bg-white/25 transition-colors"
+              >
+                พอดีรูป
+              </button>
+              <button
+                type="button"
+                onClick={() => { setZoom(1); setCrop({ x: 0, y: 0 }); }}
+                className="px-3 py-1 text-xs font-bold rounded-lg bg-white/15 text-white hover:bg-white/25 transition-colors"
+              >
+                เต็มกรอบ
+              </button>
+            </div>
           </div>
           
           <div className="flex gap-3 md:gap-4 w-full max-w-md">

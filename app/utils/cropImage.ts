@@ -16,12 +16,16 @@ export function getRadianAngle(degreeValue: number) {
 
 /**
  * ฟังก์ชันสำหรับตัดรูปภาพ (Crop) และคืนค่าออกมาเป็น URL (Blob) 
- * เพื่อนำไปใช้อัปโหลดขึ้น Supabase ต่อไป
+ * - เติมพื้นหลังสีขาวสะอาดตาเสมอ ป้องกันขอบดำหรือขอบโปร่งแสง
+ * - คำนวณพิกัดการวาดแบบ Proportional Scale ป้องกันภาพบิดเบี้ยว / บีบอ้วนเด็ดขาด
+ * - รองรับการซูมออก (Zoom Out) ให้เห็นรูปทรงยาวครบทั้งภาพโดยมีขอบขาวล้อมรอบ
  */
 export default async function getCroppedImg(
   imageSrc: string,
   pixelCrop: { x: number; y: number; width: number; height: number },
-  rotation = 0
+  rotation = 0,
+  targetSize = 600,
+  backgroundColor = '#FFFFFF'
 ): Promise<string> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement('canvas');
@@ -31,49 +35,48 @@ export default async function getCroppedImg(
     throw new Error('No 2d context');
   }
 
-  // ตั้งค่าขนาด Canvas ให้เท่ากับรูปภาพต้นฉบับ
-  canvas.width = image.width;
-  canvas.height = image.height;
+  // กำหนดขนาดปลายทางเป็นสี่เหลี่ยมจัตุรัส (หรือตามสัดส่วนของ pixelCrop)
+  const isSquare = Math.abs(pixelCrop.width - pixelCrop.height) < 1;
+  const outW = isSquare ? targetSize : Math.max(1, Math.round(pixelCrop.width));
+  const outH = isSquare ? targetSize : Math.max(1, Math.round(pixelCrop.height));
 
-  ctx.translate(image.width / 2, image.height / 2);
-  ctx.rotate(getRadianAngle(rotation));
-  ctx.translate(-image.width / 2, -image.height / 2);
+  canvas.width = outW;
+  canvas.height = outH;
 
-  // วาดรูปลงบน Canvas
-  ctx.drawImage(image, 0, 0);
+  // 1. เติมพื้นหลังสีขาวล้วนสะอาดตาก่อนเสมอ
+  ctx.fillStyle = backgroundColor;
+  ctx.fillRect(0, 0, outW, outH);
 
-  const croppedCanvas = document.createElement('canvas');
-  const croppedCtx = croppedCanvas.getContext('2d');
+  // 2. คำนวณสเกลจากกรอบ Crop เทียบกับขนาดจริงของ Canvas ปลายทาง
+  const scaleX = outW / Math.max(1, pixelCrop.width);
+  const scaleY = outH / Math.max(1, pixelCrop.height);
 
-  if (!croppedCtx) {
-    throw new Error('No 2d context');
+  const destX = -pixelCrop.x * scaleX;
+  const destY = -pixelCrop.y * scaleY;
+  const destW = (image.naturalWidth || image.width) * scaleX;
+  const destH = (image.naturalHeight || image.height) * scaleY;
+
+  // 3. วาดภาพลง Canvas ตามสัดส่วนจริง โดยไม่ให้ภาพเพี้ยน
+  if (rotation) {
+    ctx.save();
+    const centerX = destX + destW / 2;
+    const centerY = destY + destH / 2;
+    ctx.translate(centerX, centerY);
+    ctx.rotate(getRadianAngle(rotation));
+    ctx.drawImage(image, -destW / 2, -destH / 2, destW, destH);
+    ctx.restore();
+  } else {
+    ctx.drawImage(image, destX, destY, destW, destH);
   }
-
-  // ตั้งค่าขนาด Canvas ใหม่ให้เท่ากับขนาดที่ถูก Crop
-  croppedCanvas.width = pixelCrop.width;
-  croppedCanvas.height = pixelCrop.height;
-
-  // วาดเฉพาะส่วนที่ถูก Crop ลงไป
-  croppedCtx.drawImage(
-    canvas,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    pixelCrop.width,
-    pixelCrop.height
-  );
 
   // คืนค่าเป็น Blob URL เพื่อง่ายต่อการนำไปใช้งานต่อ
   return new Promise((resolve, reject) => {
-    croppedCanvas.toBlob((file) => {
+    canvas.toBlob((file) => {
       if (file) {
         resolve(URL.createObjectURL(file));
       } else {
         reject(new Error('Canvas is empty'));
       }
-    }, 'image/jpeg', 0.9); // 0.9 คือคุณภาพของรูป (90%)
+    }, 'image/webp', 0.9);
   });
 }

@@ -150,6 +150,9 @@ export function useProductMaster() {
     canvas.width = TARGET_SIZE;
     canvas.height = TARGET_SIZE;
 
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
+
     ctx.drawImage(image, 0, 0, TARGET_SIZE, TARGET_SIZE);
 
     // 3. 🚀 ลูปบีบอัดไฟล์ให้เหลือ <= 25KB

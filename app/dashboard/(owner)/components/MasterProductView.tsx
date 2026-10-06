@@ -356,33 +356,103 @@ export default function MasterProductView() {
         {isCropModalOpen && imageToCrop && (
           <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setIsCropModalOpen(false)}></div>
-            <div className="bg-white w-full max-w-lg rounded-[28px] shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-100">
+            <div className="bg-white w-full max-w-lg rounded-[28px] shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in duration-150 border border-slate-100">
               
               <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                  <IconImage size={16} className="text-emerald-500" /> ตัดรูปภาพ
-                </h3>
+                <div>
+                  <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <IconImage size={16} className="text-emerald-500" /> จัดตำแหน่งรูปภาพ
+                  </h3>
+                  <p className="text-xs text-slate-400 font-medium">ลากเลื่อนตำแหน่ง หรือย่อ-ขยายได้อิสระ (ขอบรอบภาพจะเป็นสีขาวสะอาดตา)</p>
+                </div>
                 <button onClick={() => setIsCropModalOpen(false)} className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-200 flex items-center justify-center"><IconX size={18}/></button>
               </div>
 
               <div className="relative w-full h-[50vh] sm:h-[400px] bg-slate-50">
                 <Cropper
-                  image={imageToCrop} crop={crop} zoom={zoom} aspect={1}
-                  onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} showGrid={true}
-                  style={{ containerStyle: { background: '#f8fafc' }, cropAreaStyle: { border: '2px solid #10b981', borderRadius: '1rem', boxShadow: '0 0 0 9999em rgba(15, 23, 42, 0.5)' } }}
+                  image={imageToCrop}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  minZoom={0.2}
+                  maxZoom={3}
+                  restrictPosition={false}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                  showGrid={true}
+                  style={{
+                    containerStyle: { background: '#f8fafc' },
+                    cropAreaStyle: { border: '2px solid #10b981', borderRadius: '1rem', boxShadow: '0 0 0 9999em rgba(15, 23, 42, 0.65)' }
+                  }}
                 />
               </div>
 
-              <div className="p-6 bg-white space-y-6">
-                <div className="flex items-center gap-4 px-2">
-                  <IconImage size={20} className="text-slate-400" />
-                  <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
-                  <IconZoom size={20} className="text-slate-600" />
+              <div className="p-5 bg-white space-y-4">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                      <IconZoom size={14} /> ซูมรูปภาพ:
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => { setZoom(0.6); setCrop({ x: 0, y: 0 }); }}
+                        className="px-2.5 py-1 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+                      >
+                        พอดีรูป (มีขอบขาว)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setZoom(1); setCrop({ x: 0, y: 0 }); }}
+                        className="px-2.5 py-1 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                      >
+                        เต็มกรอบ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCrop({ x: 0, y: 0 })}
+                        className="px-2.5 py-1 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                      >
+                        จัดกึ่งกลาง
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 px-1">
+                    <button
+                      type="button"
+                      onClick={() => setZoom(prev => Math.max(0.2, Number((prev - 0.1).toFixed(2))))}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-colors"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="range"
+                      value={zoom}
+                      min={0.2}
+                      max={3}
+                      step={0.05}
+                      aria-labelledby="Zoom"
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setZoom(prev => Math.min(3, Number((prev + 0.1).toFixed(2))))}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-colors"
+                    >
+                      +
+                    </button>
+                    <span className="text-xs font-mono font-bold text-slate-500 w-12 text-right">
+                      {(zoom * 100).toFixed(0)}%
+                    </span>
+                  </div>
                 </div>
                 
-                <div className="flex gap-3 pt-2">
-                  <button onClick={() => setIsCropModalOpen(false)} className="flex-1 py-3.5 rounded-xl font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50">ยกเลิก</button>
-                  <button onClick={handleCropComplete} className="flex-1 py-3.5 rounded-xl font-bold text-white bg-emerald-500 shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 hover:-translate-y-0.5 transition-all">ยืนยันรูปภาพ</button>
+                <div className="flex gap-3 pt-1">
+                  <button onClick={() => setIsCropModalOpen(false)} className="flex-1 py-3 rounded-xl font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 text-sm">ยกเลิก</button>
+                  <button onClick={handleCropComplete} className="flex-1 py-3 rounded-xl font-bold text-white bg-emerald-500 shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 hover:-translate-y-0.5 transition-all text-sm">ยืนยันรูปภาพ</button>
                 </div>
               </div>
             </div>

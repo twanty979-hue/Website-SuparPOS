@@ -180,19 +180,22 @@ export default function AdminProductsPage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('No 2d context');
 
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
-    ctx.drawImage(
-      image,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
-      0,
-      0,
-      pixelCrop.width,
-      pixelCrop.height
-    );
+    const TARGET_SIZE = 600;
+    canvas.width = TARGET_SIZE;
+    canvas.height = TARGET_SIZE;
+
+    // เติมพื้นหลังสีขาวสะอาดตาเสมอ ป้องกันขอบดำหรือขอบโปร่งแสงเวลาภาพมีพื้นที่เหลือ
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
+
+    const scaleX = TARGET_SIZE / Math.max(1, pixelCrop.width);
+    const scaleY = TARGET_SIZE / Math.max(1, pixelCrop.height);
+    const destX = -pixelCrop.x * scaleX;
+    const destY = -pixelCrop.y * scaleY;
+    const destW = (image.naturalWidth || image.width) * scaleX;
+    const destH = (image.naturalHeight || image.height) * scaleY;
+
+    ctx.drawImage(image, destX, destY, destW, destH);
 
     return new Promise((resolve, reject) => {
       let quality = 0.8;
@@ -2137,42 +2140,96 @@ export default function AdminProductsPage() {
 
       {/* Image Cropper Modal */}
       {cropModal.open && cropModal.image && (
-        <div className="fixed inset-0 bg-black/80 flex flex-col justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex flex-col justify-center items-center z-50 p-4">
           <div className="relative w-full max-w-md h-[400px] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl">
             <Cropper
               image={cropModal.image}
               crop={crop}
               zoom={zoom}
               aspect={1}
+              minZoom={0.2}
+              maxZoom={3}
+              restrictPosition={false}
               onCropChange={setCrop}
               onCropComplete={(_croppedArea, croppedAreaPixels) => {
                 setCroppedAreaPixels(croppedAreaPixels);
               }}
               onZoomChange={setZoom}
+              showGrid={true}
+              style={{
+                containerStyle: { background: '#0f172a' },
+                cropAreaStyle: { border: '2px solid #10b981', borderRadius: '1rem', boxShadow: '0 0 0 9999em rgba(15, 23, 42, 0.65)' }
+              }}
             />
           </div>
 
           <div className="w-full max-w-md bg-white p-4 rounded-2xl mt-3 flex flex-col gap-3 shadow-xl">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-slate-500">ซูม:</span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500">ซูมรูปภาพ:</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => { setZoom(0.6); setCrop({ x: 0, y: 0 }); }}
+                  className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+                >
+                  พอดีรูป (มีขอบขาว)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setZoom(1); setCrop({ x: 0, y: 0 }); }}
+                  className="px-2.5 py-1 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  เต็มกรอบ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCrop({ x: 0, y: 0 })}
+                  className="px-2.5 py-1 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  จัดกึ่งกลาง
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setZoom(prev => Math.max(0.2, Number((prev - 0.1).toFixed(2))))}
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-colors"
+              >
+                -
+              </button>
               <input
                 type="range"
-                min={1}
+                min={0.2}
                 max={3}
-                step={0.1}
+                step={0.05}
                 value={zoom}
                 onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full accent-[#2C4A34]"
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#2C4A34]"
               />
-            </div>
-            <div className="flex gap-2">
               <button
+                type="button"
+                onClick={() => setZoom(prev => Math.min(3, Number((prev + 0.1).toFixed(2))))}
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-colors"
+              >
+                +
+              </button>
+              <span className="text-xs font-mono font-bold text-slate-500 w-12 text-right">
+                {(zoom * 100).toFixed(0)}%
+              </span>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
                 onClick={() => setCropModal({ open: false, image: null })}
                 className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-xs"
               >
                 ยกเลิก
               </button>
               <button
+                type="button"
                 onClick={handleConfirmCrop}
                 disabled={uploadingImage}
                 className="flex-1 py-2.5 bg-[#2C4A34] hover:bg-[#1E3A27] disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-sm flex items-center justify-center gap-1.5"

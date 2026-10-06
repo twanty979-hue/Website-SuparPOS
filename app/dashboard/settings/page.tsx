@@ -1,4 +1,4 @@
-﻿// app/dashboard/settings/page.tsx
+// app/dashboard/settings/page.tsx
 'use client';
 
 import { Suspense, useState } from 'react';
@@ -165,25 +165,74 @@ function SettingsPageContent() {
       {/* --- 🖼️ MODAL CROP (CENTERED) --- */}
       {isCropModalOpen && imageToCrop && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-[90vw] md:max-w-sm rounded-3xl md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+          <div className="bg-white w-full max-w-[90vw] md:max-w-sm rounded-3xl md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col">
             
             <div className="px-4 py-3 md:px-5 md:py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                <h3 className="font-black text-slate-800 text-sm md:text-base">ตัดรูป {croppingField === 'logo_url' ? 'โลโก้ร้าน' : 'QR Code'}</h3>
             </div>
 
-            <div className="relative w-full aspect-square bg-slate-200">
+            <div className="relative w-full aspect-square bg-slate-100">
               <Cropper
                 image={imageToCrop}
                 crop={crop}
                 zoom={zoom}
+                minZoom={0.2}
+                maxZoom={3}
+                restrictPosition={false}
                 aspect={1}
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
               />
             </div>
+
+            {/* Slider & Quick Presets */}
+            <div className="px-4 pt-3 pb-2 bg-slate-50 border-t border-slate-100 space-y-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setZoom(prev => Math.max(0.2, +(prev - 0.1).toFixed(2)))}
+                  className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 flex items-center justify-center text-sm shadow-sm"
+                  title="ย่อขนาด"
+                >-</button>
+                <input
+                  type="range"
+                  min={0.2}
+                  max={3}
+                  step={0.05}
+                  value={zoom}
+                  onChange={(e) => setZoom(parseFloat(e.target.value))}
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => setZoom(prev => Math.min(3, +(prev + 0.1).toFixed(2)))}
+                  className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 flex items-center justify-center text-sm shadow-sm"
+                  title="ขยายขนาด"
+                >+</button>
+                <span className="text-[11px] font-bold text-slate-500 w-10 text-right">
+                  {Math.round(zoom * 100)}%
+                </span>
+              </div>
+              <div className="flex gap-1.5 justify-center">
+                <button
+                  type="button"
+                  onClick={() => { setZoom(0.85); setCrop({ x: 0, y: 0 }); }}
+                  className="px-2.5 py-1 text-xs font-bold rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors shadow-sm"
+                >
+                  พอดีรูป
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setZoom(1); setCrop({ x: 0, y: 0 }); }}
+                  className="px-2.5 py-1 text-xs font-bold rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors shadow-sm"
+                >
+                  เต็มกรอบ
+                </button>
+              </div>
+            </div>
             
-            <div className="p-3 md:p-4 flex gap-2 md:gap-3 bg-white">
+            <div className="p-3 md:p-4 flex gap-2 md:gap-3 bg-white border-t border-slate-100">
                <button type="button" onClick={() => setIsCropModalOpen(false)} className="flex-1 py-2.5 md:py-3 bg-slate-100 text-slate-600 rounded-lg md:rounded-xl font-bold text-sm hover:bg-slate-200 transition-all active:scale-95">
                  ยกเลิก
                </button>

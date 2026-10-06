@@ -133,17 +133,19 @@ export function useProducts() {
       canvas.width = TARGET_SIZE;
       canvas.height = TARGET_SIZE;
 
-      ctx.drawImage(
-        image,
-        croppedAreaPixels.x,
-        croppedAreaPixels.y,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height,
-        0,
-        0,
-        TARGET_SIZE,
-        TARGET_SIZE
-      );
+      // เติมพื้นหลังสีขาวสะอาดตาเสมอ ป้องกันขอบดำหรือขอบโปร่งแสงเวลาภาพมีพื้นที่เหลือ
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
+
+      // คำนวณสเกลแบบแม่นยำตามสัดส่วนจริงของรูป ไม่บีบ ไม่อ้วน รองรับการซูมออก (Zoom Out)
+      const scaleX = TARGET_SIZE / Math.max(1, croppedAreaPixels.width);
+      const scaleY = TARGET_SIZE / Math.max(1, croppedAreaPixels.height);
+      const destX = -croppedAreaPixels.x * scaleX;
+      const destY = -croppedAreaPixels.y * scaleY;
+      const destW = (image.naturalWidth || image.width) * scaleX;
+      const destH = (image.naturalHeight || image.height) * scaleY;
+
+      ctx.drawImage(image, destX, destY, destW, destH);
 
       let quality = 0.9;
       let webpBlob: Blob | null = null;
