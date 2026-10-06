@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   const { data: members, error } = await db
     .from('profiles')
-    .select('id,full_name,phone,avatar_url,role,brand_id,invited_brand_id,is_joined,is_active')
+    .select('id,full_name,email,phone,avatar_url,role,brand_id,invited_brand_id,is_joined,is_active')
     .or(`brand_id.eq.${profile.brand_id},invited_brand_id.eq.${profile.brand_id}`)
     .neq('id', profile.id)
 
@@ -43,7 +43,8 @@ export async function GET(request: NextRequest) {
 
   const data = (members || []).map(member => {
     const authUser = userMap.get(member.id)
-    const email = authUser?.email || ''
+    // ✅ ลำดับ: auth email → profiles.email (fallback)
+    const email = authUser?.email || (member.email as string | undefined) || ''
     const meta = authUser?.user_metadata || {}
 
     const defaultPerms = member.role === 'chef' ? DEFAULT_CHEF_PERMS : DEFAULT_CASHIER_PERMS
@@ -67,22 +68,41 @@ export async function GET(request: NextRequest) {
   })
 
   // 🛡️ ดึงโควตาพนักงานตามแพลนที่ตั้งไว้จากฐานข้อมูลแบบไดนามิก
-  let quota = {
+  let quota: {
+    plan: string
+    current_staff: number
+    max_staff: number
+    is_unlimited: boolean
+    remaining: number
+    can_add_more: boolean
+    expiry_date: string | null
+  } = {
     plan: 'free',
     current_staff: 0,
     max_staff: 0,
     is_unlimited: false,
     remaining: 0,
     can_add_more: false,
+    expiry_date: null,
   }
 
   try {
+    const { data: brand } = await db
+      .from('brands')
+      .select('plan, expiry_go, expiry_basic, expiry_pro, expiry_ultimate')
+      .eq('id', profile.brand_id)
+      .maybeSingle()
+
     const { plan: effectivePlan, limits } = await getBrandPlanPermissions(db, profile.brand_id)
     const maxStaff = typeof limits.max_staff === 'number'
       ? limits.max_staff
-      : (effectivePlan === 'pro' ? 3 : (effectivePlan === 'ultimate' ? 0 : 0))
-    const isUnlimited = effectivePlan === 'ultimate' || (maxStaff === 0 && effectivePlan === 'pro')
+      : (effectivePlan === 'pro' ? 3 : 0)
+    const isUnlimited = effectivePlan === 'ultimate' || (maxStaff === 0 && effectivePlan !== 'free' && effectivePlan !== 'go' && effectivePlan !== 'basic')
     const activeStaffCount = data.filter(m => m.is_active).length
+
+    // ดึงวันหมดอายุของแพลนที่ใช้งานอยู่
+    const expiryKey = `expiry_${effectivePlan}` as keyof typeof brand
+    const expiryDate = brand ? (brand[expiryKey] as string | null) : null
 
     quota = {
       plan: effectivePlan,
@@ -91,6 +111,7 @@ export async function GET(request: NextRequest) {
       is_unlimited: isUnlimited,
       remaining: isUnlimited ? -1 : Math.max(0, maxStaff - activeStaffCount),
       can_add_more: isUnlimited || activeStaffCount < maxStaff,
+      expiry_date: expiryDate ?? null,
     }
   } catch (_) {}
 
