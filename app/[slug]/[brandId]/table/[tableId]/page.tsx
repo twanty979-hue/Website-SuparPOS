@@ -76,30 +76,97 @@ import { ProductCardBadge, ProductModalBadge } from "@/components/common/ThemePr
 // 🌟 1. ประกาศ URL ของ Cloudflare ตรงนี้
 const CDN_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "https://img.pos-foodscan.com";
 
-// 🛡️ Universal fallback: สำหรับธีมในอนาคตที่อาจไม่ได้ใส่ Component ป้ายเข้ามา
+// 🛡️ Universal fallback & sold-out/locked badge enforcer: สำหรับ 60+ ธีมทั้งหมด
 function UniversalThemeBadgeEnforcer({ products, activeTab, selectedProduct }: { products: any[]; activeTab: string; selectedProduct: any }) {
   React.useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const timer = setTimeout(() => {
-      // 1. ตรวจสอบการ์ดในหน้า Home
-      if ((activeTab === "home" || !activeTab) && products?.length) {
-        const hasCardBadge = document.querySelector('[data-theme-badge="true"]');
-        if (!hasCardBadge) {
-          const recommendedProducts = products.filter((p: any) => p.is_recommended);
-          const allImgs = Array.from(document.querySelectorAll("img"));
+    const enforceBadges = () => {
+      if (!products || !products.length) return;
 
-          recommendedProducts.forEach((p: any) => {
-            if (!p.image_name) return;
-            const matchImg = allImgs.find((img) => img.src && img.src.includes(p.image_name));
-            if (matchImg && matchImg.parentElement) {
-              const parent = matchImg.parentElement;
-              if (parent.querySelector('[data-theme-badge="true"]')) return;
+      const allImgs = Array.from(document.querySelectorAll("img"));
 
+      // 1. ตรวจสอบการ์ดสินค้าทุกใบในหน้าเว็บ (ทั้ง Home, Menu, Search, Category)
+      products.forEach((p: any) => {
+        const isLocked = Boolean(p.is_locked);
+        const isSoldOut = p.is_available === false || isLocked;
+
+        // ค้นหารูปภาพของการ์ดสินค้านี้
+        const matchingCardImgs: HTMLImageElement[] = [];
+
+        if (p.image_name) {
+          allImgs.forEach(img => {
+            // ไม่นับแบนเนอร์และรูปใน modal
+            if (img.id === 'modalImage' || img.closest('#bannerSlider, [class*="banner"], [class*="modal"], [class*="fixed"]')) return;
+            if (img.src && img.src.includes(p.image_name)) {
+              matchingCardImgs.push(img);
+            }
+          });
+        }
+
+        // หากไม่มีรูป หรือยังหาไม่เจอ ให้ค้นหาจากการ์ดที่มีชื่ออาหาร
+        if (matchingCardImgs.length === 0 && p.name) {
+          const cards = Array.from(document.querySelectorAll('.item-card, .modern-card, [class*="card"], div.group'));
+          cards.forEach(card => {
+            if (card.closest('[class*="modal"], [class*="fixed"]')) return;
+            if (card.textContent && card.textContent.includes(p.name)) {
+              const cardImg = card.querySelector('img');
+              if (cardImg && !matchingCardImgs.includes(cardImg)) {
+                matchingCardImgs.push(cardImg);
+              }
+            }
+          });
+        }
+
+        matchingCardImgs.forEach(img => {
+          const parent = img.parentElement;
+          if (!parent) return;
+
+          // ถ้าสินค้าหมด หรือ พักการขาย (เกินโควต้า)
+          if (isSoldOut) {
+            img.style.filter = "grayscale(95%) contrast(85%) opacity(0.65)";
+            img.style.transition = "filter 0.3s ease";
+
+            if (window.getComputedStyle(parent).position === "static") {
+              parent.style.position = "relative";
+            }
+
+            if (!parent.querySelector('[data-theme-soldout-overlay="true"]')) {
+              const overlay = document.createElement("div");
+              overlay.setAttribute("data-theme-soldout-overlay", "true");
+              overlay.className = "absolute inset-0 z-10 pointer-events-none flex items-center justify-center bg-black/40 backdrop-blur-[1px] rounded-[inherit]";
+              overlay.innerHTML = isLocked
+                ? `<span class="bg-rose-950/90 text-rose-100 border border-rose-500/50 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 backdrop-blur-sm">
+                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-rose-300 shrink-0">
+                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                       <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                     </svg>
+                     <span>พักการขาย</span>
+                   </span>`
+                : `<span class="bg-slate-900/90 text-white border border-white/20 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 backdrop-blur-sm">
+                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 animate-pulse"></span>
+                     <span>สินค้าหมด</span>
+                   </span>`;
+              parent.appendChild(overlay);
+            }
+
+            // ล็อคปุ่มบวกในตัวการ์ด
+            const cardRoot = img.closest('.item-card, .modern-card, [class*="card"], div.group') || parent.parentElement;
+            if (cardRoot) {
+              const plusBtns = Array.from(cardRoot.querySelectorAll('button'));
+              plusBtns.forEach(btn => {
+                if (btn.querySelector('.fi-rr-plus, svg, [class*="plus"]') || btn.textContent?.includes('+')) {
+                  btn.style.opacity = '0.35';
+                  btn.style.pointerEvents = 'none';
+                }
+              });
+            }
+          } else if (p.is_recommended || p.is_auto_recommended) {
+            // ป้ายเมนูแนะนำ / สุ่ม (สำหรับธีมที่ไม่ได้เขียน ProductCardBadge)
+            if (!parent.querySelector('[data-theme-badge="true"]')) {
               if (window.getComputedStyle(parent).position === "static") {
                 parent.style.position = "relative";
               }
-
               const badge = document.createElement("div");
               badge.setAttribute("data-theme-badge", "true");
               badge.className = "absolute top-2 left-2 z-10 pointer-events-none";
@@ -118,46 +185,111 @@ function UniversalThemeBadgeEnforcer({ products, activeTab, selectedProduct }: {
                    </span>`;
               parent.appendChild(badge);
             }
-          });
-        }
-      }
+          }
+        });
+      });
 
-      // 2. ตรวจสอบ Modal รายละเอียดเมนู
-      if (selectedProduct && (selectedProduct.is_recommended || selectedProduct.is_auto_recommended)) {
-        const hasModalBadge = document.querySelector('[data-theme-modal-badge="true"]');
-        if (!hasModalBadge) {
-          const allImgs = Array.from(document.querySelectorAll("img"));
-          const modalImg = allImgs.find((img) => img.src && selectedProduct.image_name && img.src.includes(selectedProduct.image_name));
-          if (modalImg && modalImg.parentElement) {
-            const parent = modalImg.parentElement;
-            if (!parent.querySelector('[data-theme-modal-badge="true"]')) {
-              if (window.getComputedStyle(parent).position === "static") {
-                parent.style.position = "relative";
-              }
-              const modalBadge = document.createElement("div");
-              modalBadge.setAttribute("data-theme-modal-badge", "true");
-              modalBadge.className = "absolute top-4 left-4 z-10 pointer-events-none";
-              modalBadge.innerHTML = selectedProduct.is_auto_recommended
-                ? `<span class="bg-[#1C1917]/85 backdrop-blur-md text-white border border-white/10 text-xs font-medium px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
-                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400">
-                       <polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line>
+      // 2. ตรวจสอบ Modal รายละเอียดเมนู (selectedProduct)
+      if (selectedProduct) {
+        const isLocked = Boolean(selectedProduct.is_locked);
+        const isSoldOut = selectedProduct.is_available === false || isLocked;
+
+        const modalImg = allImgs.find(img => img.id === 'modalImage' || (selectedProduct.image_name && img.src && img.src.includes(selectedProduct.image_name) && Boolean(img.closest('[class*="fixed"], [class*="modal"]'))));
+
+        if (modalImg && modalImg.parentElement) {
+          const parent = modalImg.parentElement;
+          if (window.getComputedStyle(parent).position === "static") {
+            parent.style.position = "relative";
+          }
+
+          if (isSoldOut) {
+            modalImg.style.filter = "grayscale(95%) contrast(85%) opacity(0.65)";
+            if (!parent.querySelector('[data-theme-modal-status="true"]')) {
+              const statusBadge = document.createElement("div");
+              statusBadge.setAttribute("data-theme-modal-status", "true");
+              statusBadge.className = "absolute top-4 left-4 z-20 pointer-events-none";
+              statusBadge.innerHTML = isLocked
+                ? `<span class="bg-rose-950/95 backdrop-blur-md text-rose-100 border border-rose-500/50 text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5">
+                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-rose-300">
+                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                       <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                      </svg>
-                     <span class="tracking-wide">เมนูสุ่ม</span>
+                     <span>พักการขาย (เกินโควต้า)</span>
                    </span>`
-                : `<span class="bg-[#1C1917]/85 backdrop-blur-md text-white border border-white/10 text-xs font-medium px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
-                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="text-amber-400">
-                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                     </svg>
-                     <span class="tracking-wide">เมนูแนะนำ</span>
+                : `<span class="bg-slate-900/95 backdrop-blur-md text-white border border-white/20 text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5">
+                     <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0 animate-pulse"></span>
+                     <span>สินค้าหมดชั่วคราว</span>
                    </span>`;
-              parent.appendChild(modalBadge);
+              parent.appendChild(statusBadge);
+            }
+          } else if ((selectedProduct.is_recommended || selectedProduct.is_auto_recommended) && !parent.querySelector('[data-theme-modal-badge="true"]')) {
+            const modalBadge = document.createElement("div");
+            modalBadge.setAttribute("data-theme-modal-badge", "true");
+            modalBadge.className = "absolute top-4 left-4 z-10 pointer-events-none";
+            modalBadge.innerHTML = selectedProduct.is_auto_recommended
+              ? `<span class="bg-[#1C1917]/85 backdrop-blur-md text-white border border-white/10 text-xs font-medium px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
+                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400">
+                     <polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line>
+                   </svg>
+                   <span class="tracking-wide">เมนูสุ่ม</span>
+                 </span>`
+              : `<span class="bg-[#1C1917]/85 backdrop-blur-md text-white border border-white/10 text-xs font-medium px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
+                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="text-amber-400">
+                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                   </svg>
+                   <span class="tracking-wide">เมนูแนะนำ</span>
+                 </span>`;
+            parent.appendChild(modalBadge);
+          }
+        }
+
+        // จัดการปุ่มสั่งใน Modal หากสินค้าหมดหรือถูกล็อค
+        if (isSoldOut) {
+          const modalRoot = modalImg?.closest('[class*="fixed"], [class*="modal"]') || document.querySelector('#modalName')?.parentElement?.parentElement?.parentElement;
+          if (modalRoot) {
+            const actionBtns = Array.from(modalRoot.querySelectorAll('button')).filter(btn => {
+              const id = btn.id || '';
+              const text = (btn.textContent || '').trim();
+              return id === 'addToCartBtn' || id === 'orderNowBtn' ||
+                ['Grab It', 'EAT NOW', 'ใส่ตะกร้า', 'สั่งเลย', 'Add to Cart', 'Order Now'].some(t => text.includes(t));
+            });
+
+            actionBtns.forEach(btn => {
+              (btn as HTMLButtonElement).disabled = true;
+              btn.style.opacity = '0.45';
+              btn.style.cursor = 'not-allowed';
+              btn.style.pointerEvents = 'none';
+              if (!btn.getAttribute('data-original-text')) {
+                btn.setAttribute('data-original-text', btn.textContent || '');
+                btn.textContent = isLocked ? '🔒 พักการขาย' : '⚠️ สินค้าหมด';
+              }
+            });
+
+            if (!modalRoot.querySelector('[data-theme-modal-alert="true"]')) {
+              const alertBox = document.createElement("div");
+              alertBox.setAttribute("data-theme-modal-alert", "true");
+              alertBox.className = "w-full py-2.5 px-4 mb-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold text-center flex items-center justify-center gap-2";
+              alertBox.innerHTML = `<span>${isLocked ? '🔒 เมนูนี้พักการขายชั่วคราว (เกินโควต้าแพ็กเกจของร้าน)' : '⚠️ ขออภัย เมนูนี้หมดชั่วคราว ไม่สามารถสั่งได้'}</span>`;
+              const bottomArea = modalRoot.querySelector('.grid-cols-2, [class*="border-t"]');
+              if (bottomArea && bottomArea.parentElement) {
+                bottomArea.parentElement.insertBefore(alertBox, bottomArea);
+              }
             }
           }
         }
       }
-    }, 150);
+    };
 
-    return () => clearTimeout(timer);
+    const timer = setTimeout(enforceBadges, 120);
+    const observer = new MutationObserver(() => {
+      enforceBadges();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, [products, activeTab, selectedProduct]);
 
   return null;
@@ -168,8 +300,20 @@ export default function Page({ params, searchParams }: { params: any, searchPara
   const resolvedSearchParams = (searchParams ? React.use(searchParams) : {}) as { theme?: string };
 
   // ดึง state และ actions มาตามปกติ
-  const { state, actions, helpers: originalHelpers } = useShopLogic(resolvedParams);
+  const { state, actions: rawActions, helpers: originalHelpers } = useShopLogic(resolvedParams);
   
+  // 🛡️ เสริมความปลอดภัยของ Actions: ป้องกันการกดสั่งสินค้าหมด/ล็อคในทุกธีม
+  const actions = React.useMemo(() => ({
+    ...rawActions,
+    handleAddToCart: (product: any, variant: any, note: string = "") => {
+      if (!product || product.is_locked || product.is_available === false) {
+        alert(product?.is_locked ? "ขออภัย เมนูนี้พักการขายชั่วคราว (เกินโควต้าแพ็กเกจของร้าน)" : "ขออภัย เมนูนี้สินค้าหมดชั่วคราว ไม่สามารถสั่งได้");
+        return;
+      }
+      rawActions.handleAddToCart(product, variant, note);
+    }
+  }), [rawActions]);
+
   const { loading, error, brand } = state;
 
   // 🌟 2. ดัดแปลง (Override) Helpers เดิมที่มาจาก Hook เพื่อให้รองรับ Cloudflare และ Badge

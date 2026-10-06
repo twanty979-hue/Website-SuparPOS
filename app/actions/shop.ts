@@ -320,7 +320,7 @@ export async function fetchShopData(params: ShopParams) {
     ] = await Promise.all([
       supabaseServer.from('banners').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
       supabaseServer.from('categories').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
-      supabaseServer.from('products').select('*').eq('brand_id', brandId).eq('is_available', true).is('deleted_at', null).order('is_recommended', { ascending: false }).order('created_at', { ascending: true }),
+      supabaseServer.from('products').select('*').eq('brand_id', brandId).is('deleted_at', null).order('is_recommended', { ascending: false }).order('created_at', { ascending: true }),
       supabaseServer.from('discounts').select(`*, discount_products(product_id)`).eq('brand_id', brandId).eq('is_active', true),
       supabaseServer.from('orders').select(`*, order_items(*)`).eq('brand_id', brandId).eq('table_id', realTableId).neq('status', 'paid').order('created_at', { ascending: false }),
       supabaseServer.from('topping_groups').select('*').eq('brand_id', brandId).eq('is_active', true).order('sort_order'),
@@ -365,11 +365,13 @@ export async function fetchShopData(params: ShopParams) {
 
     const mappedProducts = (prodRes.data || []).map(p => {
       const isOverQuota = allowedProductIds !== null && !allowedProductIds.has(String(p.id));
+      const isLocked = isOverQuota;
+      const isAvailable = isLocked ? false : Boolean(p.is_available);
       return {
         ...p,
-        is_available: isOverQuota ? false : p.is_available,
-        is_locked: isOverQuota,
-        lock_reason: isOverQuota ? 'over_quota' : null,
+        is_available: isAvailable,
+        is_locked: isLocked,
+        lock_reason: isLocked ? 'over_quota' : null,
         options: [
           ...buildToppingOptionsForProducts(
             toppingGroupRes.data || [],
@@ -385,25 +387,24 @@ export async function fetchShopData(params: ShopParams) {
     });
 
     // 🌟 สุ่มสินค้าแนะนำให้ครบ 6 รายการในหน้าแรก หากที่ตั้งค่าไว้มีน้อยกว่า 6 รายการ
+    // เฉพาะสินค้าที่พร้อมขายและไม่ถูกล็อคเท่านั้นที่จะถูกสุ่มมาเป็นสินค้าแนะนำ
     const explicitlyRecommended = mappedProducts
-      .filter(p => Boolean(p.is_recommended))
-      .map(p => ({ ...p, is_auto_recommended: false }));
+      .filter(p => Boolean(p.is_recommended));
     let finalProducts = mappedProducts.map(p => ({ ...p, is_auto_recommended: false }));
 
     if (explicitlyRecommended.length < 6) {
-      const otherProducts = mappedProducts.filter(p => !p.is_recommended);
+      const availableOtherProducts = mappedProducts.filter(p => !p.is_recommended && p.is_available && !p.is_locked);
       const needed = 6 - explicitlyRecommended.length;
-      const shuffledOthers = [...otherProducts].sort(() => 0.5 - Math.random());
-      const selectedToFill = shuffledOthers.slice(0, needed).map(p => ({
-        ...p,
-        is_recommended: true,
-        is_auto_recommended: true,
-      }));
-      const remainingOthers = shuffledOthers.slice(needed).map(p => ({
-        ...p,
-        is_auto_recommended: false,
-      }));
-      finalProducts = [...explicitlyRecommended, ...selectedToFill, ...remainingOthers];
+      const shuffledOthers = [...availableOtherProducts].sort(() => 0.5 - Math.random());
+      const selectedToFillIds = new Set(shuffledOthers.slice(0, needed).map(p => String(p.id)));
+      finalProducts = mappedProducts.map(p => {
+        const isAuto = selectedToFillIds.has(String(p.id));
+        return {
+          ...p,
+          is_recommended: Boolean(p.is_recommended) || isAuto,
+          is_auto_recommended: isAuto,
+        };
+      });
     }
 
     return {

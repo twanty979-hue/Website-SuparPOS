@@ -165,16 +165,16 @@ export const useShopLogic = (params: any) => {
           const manualRec = rawList.filter((p: any) => Boolean(p.is_recommended));
           if (manualRec.length >= target) return rawList;
 
-          const others = rawList.filter((p: any) => !p.is_recommended);
+          const availableOthers = rawList.filter((p: any) => !p.is_recommended && p.is_available !== false && !p.is_locked);
           const needed = target - manualRec.length;
-          const shuffled = [...others].sort(() => 0.5 - Math.random());
-          const fillItems = shuffled.slice(0, needed).map((p: any) => ({
-            ...p,
-            is_recommended: true,
-            is_auto_recommended: true,
-          }));
-          const remaining = shuffled.slice(needed);
-          return [...manualRec, ...fillItems, ...remaining];
+          const shuffled = [...availableOthers].sort(() => 0.5 - Math.random());
+          const fillItemIds = new Set(shuffled.slice(0, needed).map((p: any) => String(p.id)));
+          return rawList.map((p: any) => {
+            if (fillItemIds.has(String(p.id))) {
+              return { ...p, is_recommended: true, is_auto_recommended: true };
+            }
+            return p;
+          });
         };
 
         setProducts(fillRecommended(d.products || [], 6));
@@ -322,6 +322,14 @@ export const useShopLogic = (params: any) => {
 
   // --- Cart Actions ---
   const handleAddToCart = (product: any, variant: any, note: string = "") => {
+    if (!product || product.is_locked || product.is_available === false) {
+      const msg = product?.is_locked
+        ? 'ขออภัย รายการนี้พักการขายชั่วคราว (เกินโควต้าแพ็กเกจของร้าน)'
+        : 'ขออภัย รายการนี้สินค้าหมดชั่วคราว ไม่สามารถสั่งได้';
+      alert(msg);
+      return;
+    }
+
     const pricing = calculatePrice(product, variant);
     const cleanNote = note ? note.trim() : "";
     const toppingsSnapshot = Array.isArray(product.toppings_snapshot)
