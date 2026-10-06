@@ -11,7 +11,7 @@ export async function OPTIONS() {
     status: 204,
     headers: {
       ...corsHeaders,
-      'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
     },
   });
 }
@@ -64,6 +64,13 @@ export async function GET(request: Request) {
       );
     }
 
+    const { data: brandConfigRow } = await supabase
+      .from('brands')
+      .select('config')
+      .eq('id', brandId)
+      .maybeSingle();
+    const brandIngredientImages = (brandConfigRow?.config?.ingredient_images || {}) as Record<string, string>;
+
     if (view === 'history') {
       let historyQuery = supabase
         .from('ingredient_stock_movements')
@@ -95,10 +102,21 @@ export async function GET(request: Request) {
       const { data, error } = await historyQuery;
       if (error) throw error;
       const rows = data || [];
+      const movementsWithImages = rows.slice(0, limit).map((m: any) => {
+        const ing = m.ingredients || {};
+        return {
+          ...m,
+          ingredients: {
+            ...ing,
+            image_url: ing.image_url || brandIngredientImages[m.ingredient_id] || null,
+          },
+        };
+      });
+
       return NextResponse.json(
         {
           success: true,
-          movements: rows.slice(0, limit),
+          movements: movementsWithImages,
           page,
           has_more: rows.length > limit,
         },
@@ -170,10 +188,15 @@ export async function GET(request: Request) {
     const { data, error, count } = await ingredientsQuery;
     if (error) throw error;
 
+    const ingredientsWithImages = (data || []).map((item: any) => ({
+      ...item,
+      image_url: item.image_url || brandIngredientImages[item.id] || null,
+    }));
+
     return NextResponse.json(
       {
         success: true,
-        ingredients: data || [],
+        ingredients: ingredientsWithImages,
         page,
         total: count || 0,
         has_more: offset + (data?.length || 0) < (count || 0),
@@ -466,14 +489,30 @@ export async function POST(request: Request) {
     if (ingredientError) throw ingredientError;
 
     if (ingredientId && body.image_url) {
+      const imgVal = String(body.image_url).trim();
       try {
         await supabase
           .from('ingredients')
-          .update({ image_url: String(body.image_url).trim() })
+          .update({ image_url: imgVal })
           .eq('id', ingredientId);
       } catch (_) {
         // Safe fallback if column not yet added
       }
+
+      try {
+        const { data: brandRow } = await supabase
+          .from('brands')
+          .select('config')
+          .eq('id', brandId)
+          .maybeSingle();
+        const currentConfig = (brandRow?.config || {}) as Record<string, any>;
+        const currentImages = { ...(currentConfig.ingredient_images || {}) };
+        currentImages[ingredientId] = imgVal;
+        await supabase
+          .from('brands')
+          .update({ config: { ...currentConfig, ingredient_images: currentImages } })
+          .eq('id', brandId);
+      } catch (_) {}
     }
 
     return NextResponse.json(
@@ -504,17 +543,39 @@ export async function PATCH(request: Request) {
       'name',
       'sku',
       'category',
+      'category_id',
       'base_unit',
+      'base_unit_id',
       'minimum_stock',
       'allow_negative',
       'is_active',
-      'image_url',
     ];
     const updates = Object.fromEntries(
       allowedFields
         .filter((key) => body[key] !== undefined)
         .map((key) => [key, body[key]]),
     );
+
+    // If category_id changed, sync category text name
+    if (updates.category_id && !updates.category) {
+      const { data: catData } = await supabase
+        .from('ingredient_categories')
+        .select('name')
+        .eq('id', updates.category_id)
+        .maybeSingle();
+      if (catData?.name) updates.category = catData.name;
+    }
+
+    // If base_unit_id changed, sync base_unit text symbol
+    if (updates.base_unit_id && !updates.base_unit) {
+      const { data: unitData } = await supabase
+        .from('measurement_units')
+        .select('name, symbol')
+        .eq('id', updates.base_unit_id)
+        .maybeSingle();
+      if (unitData) updates.base_unit = unitData.symbol || unitData.name;
+    }
+
     updates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
@@ -526,10 +587,78 @@ export async function PATCH(request: Request) {
       .single();
     if (error) throw error;
 
+    // Handle image_url update / deletion
+    let finalImageUrl: string | null = null;
+    if (body.image_url !== undefined) {
+      const imgVal = body.image_url ? String(body.image_url).trim() : null;
+      finalImageUrl = imgVal;
+      try {
+        await supabase
+          .from('ingredients')
+          .update({ image_url: imgVal })
+          .eq('id', body.id);
+      } catch (_) {}
+
+      try {
+        const { data: brandRow } = await supabase
+          .from('brands')
+          .select('config')
+          .eq('id', brandId)
+          .maybeSingle();
+        const currentConfig = (brandRow?.config || {}) as Record<string, any>;
+        const currentImages = { ...(currentConfig.ingredient_images || {}) };
+        if (imgVal) {
+          currentImages[body.id] = imgVal;
+        } else {
+          delete currentImages[body.id];
+        }
+        await supabase
+          .from('brands')
+          .update({ config: { ...currentConfig, ingredient_images: currentImages } })
+          .eq('id', brandId);
+      } catch (_) {}
+    } else {
+      const { data: brandRow } = await supabase
+        .from('brands')
+        .select('config')
+        .eq('id', brandId)
+        .maybeSingle();
+      finalImageUrl = brandRow?.config?.ingredient_images?.[body.id] || null;
+    }
+
     return NextResponse.json(
-      { success: true, ingredient: data },
+      { success: true, ingredient: { ...data, image_url: finalImageUrl } },
       { headers: corsHeaders },
     );
+  } catch (error: any) {
+    const status = error.message === 'Unauthorized' ? 401 : 500;
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status, headers: corsHeaders },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { supabase, brandId } = await getContext(request);
+    const params = new URL(request.url).searchParams;
+    const id = params.get('id');
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'Ingredient id is required' },
+        { status: 400, headers: corsHeaders },
+      );
+    }
+
+    const { error } = await supabase
+      .from('ingredients')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('brand_id', brandId);
+    if (error) throw error;
+
+    return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (error: any) {
     const status = error.message === 'Unauthorized' ? 401 : 500;
     return NextResponse.json(
