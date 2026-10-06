@@ -151,14 +151,25 @@ export async function GET(request: Request) {
     const rawPerms = sysSettings?.dashboard_permissions?.[effectivePlan] || {};
     const maxFoodItems = Number(rawPerms.max_food_items ?? (effectivePlan === 'free' ? 50 : 0));
 
+    const lockedCount = maxFoodItems > 0 ? Math.max(0, productsWithToppings.length - maxFoodItems) : 0;
+    const mappedProductsWithLock = productsWithToppings.map((product: any, index: number) => {
+      const isLocked = maxFoodItems > 0 && index >= maxFoodItems;
+      return {
+        ...product,
+        is_locked: isLocked,
+        lock_reason: isLocked ? 'over_quota' : null,
+      };
+    });
+
     // 🧹 ทำความสะอาดหมวดหมู่ที่ซ้ำกันอัตโนมัติ
     const cleanCategories = await deduplicateAndCleanCategories(supabase, brandId, categoriesRes.data || []);
 
     return new NextResponse(JSON.stringify({ 
       success: true, 
-      products: productsWithToppings,
+      products: mappedProductsWithLock,
       categories: cleanCategories,
       max_food_items: maxFoodItems,
+      locked_count: lockedCount,
       total_count: productsRes.data?.length || 0,
       effective_plan: effectivePlan
     }), {

@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabaseServer';
 import { checkOrderLimitOrThrow } from './limitGuard';
 import { sendBrandNotification } from '@/lib/brandNotifications';
+import { getBrandPlanPermissions } from '@/lib/planPermissions';
 
 // 🌟 ตัวแปรดึง URL ของ Cloudflare จาก .env
 const CDN_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "https://img.pos-foodscan.com";
@@ -317,20 +318,44 @@ export async function fetchShopData(params: ShopParams) {
       image_url: getImageUrl(b.image_name) // เพิ่ม property image_url เข้าไป
     }));
 
-    const mappedProducts = (prodRes.data || []).map(p => ({
-      ...p,
-      options: [
-        ...buildToppingOptionsForProducts(
-          toppingGroupRes.data || [],
-          toppingItemRes.data || [],
-          toppingMappingRes.data || [],
-          p.id,
-        ),
-        ...((Array.isArray(p.options) ? p.options : []) as any[])
-          .filter((option: any) => option?.source !== 'topping_group'),
-      ],
-      image_url: getImageUrl(p.image_name) // เพิ่ม property image_url เข้าไป
-    }));
+    let maxFoodItems = 0;
+    try {
+      const { limits: planLimits } = await getBrandPlanPermissions(supabaseServer, brandId);
+      maxFoodItems = planLimits.max_food_items || 0;
+    } catch (_) {}
+
+    let allowedProductIds: Set<string> | null = null;
+    if (maxFoodItems > 0) {
+      const { data: quotaProducts } = await supabaseServer
+        .from('products')
+        .select('id')
+        .eq('brand_id', brandId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: true })
+        .limit(maxFoodItems);
+      allowedProductIds = new Set((quotaProducts || []).map((p: any) => String(p.id)));
+    }
+
+    const mappedProducts = (prodRes.data || []).map(p => {
+      const isOverQuota = allowedProductIds !== null && !allowedProductIds.has(String(p.id));
+      return {
+        ...p,
+        is_available: isOverQuota ? false : p.is_available,
+        is_locked: isOverQuota,
+        lock_reason: isOverQuota ? 'over_quota' : null,
+        options: [
+          ...buildToppingOptionsForProducts(
+            toppingGroupRes.data || [],
+            toppingItemRes.data || [],
+            toppingMappingRes.data || [],
+            p.id,
+          ),
+          ...((Array.isArray(p.options) ? p.options : []) as any[])
+            .filter((option: any) => option?.source !== 'topping_group'),
+        ],
+        image_url: getImageUrl(p.image_name),
+      };
+    });
 
     // 🌟 สุ่มสินค้าแนะนำให้ครบ 6 รายการในหน้าแรก หากที่ตั้งค่าไว้มีน้อยกว่า 6 รายการ
     const explicitlyRecommended = mappedProducts
@@ -458,6 +483,29 @@ export async function submitOrder(payload: {
 
     const productIds = [...new Set(cart.map((item) => String(item.id || '')))]
       .filter(Boolean);
+
+    // 🛡️ ตรวจสอบโควต้าสินค้า (Quota Validation: ไม่อนุญาตให้สั่งสินค้าที่เกินโควต้าแพ็กเกจ)
+    try {
+      const { limits: planLimits } = await getBrandPlanPermissions(supabaseServer, brandId);
+      const maxFoodItems = planLimits.max_food_items || 0;
+      if (maxFoodItems > 0) {
+        const { data: allowedProducts } = await supabaseServer
+          .from('products')
+          .select('id')
+          .eq('brand_id', brandId)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: true })
+          .limit(maxFoodItems);
+        const allowedSet = new Set((allowedProducts || []).map((p: any) => String(p.id)));
+        const hasOverQuota = productIds.some((id) => !allowedSet.has(id));
+        if (hasOverQuota) {
+          return {
+            success: false,
+            error: 'ขออภัย รายการอาหารบางรายการไม่พร้อมให้บริการในขณะนี้ (เกินโควต้าแพ็กเกจของร้าน)',
+          };
+        }
+      }
+    } catch (_) {}
     const [
       { data: productRows, error: productError },
       { data: discountRows, error: discountError },
