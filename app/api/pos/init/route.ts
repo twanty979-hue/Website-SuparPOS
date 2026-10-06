@@ -14,6 +14,7 @@ export async function OPTIONS() {
 }
 
 import { getAuthContext } from '@/lib/authHelper';
+import { getBrandPlanPermissions } from '@/lib/planPermissions';
 
 const getSupabaseAndBrandId = async (request: Request, body?: any) => {
   return getAuthContext(request, body);
@@ -94,18 +95,29 @@ export async function GET(request: Request) {
           })),
       }));
 
-    const formattedFood = (productsRes.data || []).map(p => ({
-      ...p,
-      item_type: 'food',
-      topping_group_ids: (mappingsRes.data || [])
-        .filter((row: any) => row.product_id === p.id)
-        .map((row: any) => row.group_id),
-      options: [
-        ...buildToppingOptions(groupsRes.data || [], itemsRes.data || [], mappingsRes.data || [], p.id),
-        ...((Array.isArray(p.options) ? p.options : []) as any[])
-          .filter((option: any) => option?.source !== 'topping_group'),
-      ],
-    }));
+    let maxFoodItems = 0;
+    try {
+      const { limits: planLimits } = await getBrandPlanPermissions(supabase, brandId);
+      maxFoodItems = planLimits.max_food_items || 0;
+    } catch (_) {}
+
+    const formattedFood = (productsRes.data || []).map((p, index) => {
+      const isLocked = maxFoodItems > 0 && index >= maxFoodItems;
+      return {
+        ...p,
+        is_locked: isLocked,
+        lock_reason: isLocked ? 'over_quota' : null,
+        item_type: 'food',
+        topping_group_ids: (mappingsRes.data || [])
+          .filter((row: any) => row.product_id === p.id)
+          .map((row: any) => row.group_id),
+        options: [
+          ...buildToppingOptions(groupsRes.data || [], itemsRes.data || [], mappingsRes.data || [], p.id),
+          ...((Array.isArray(p.options) ? p.options : []) as any[])
+            .filter((option: any) => option?.source !== 'topping_group'),
+        ],
+      };
+    });
     const formattedRetail = (retailRes.data || []).map(p => ({
         ...p,
         item_type: 'retail',
@@ -114,6 +126,7 @@ export async function GET(request: Request) {
         is_available: p.is_active
     }));
     const allCombinedProducts = [...formattedFood, ...formattedRetail];
+    const lockedFoodCount = maxFoodItems > 0 ? Math.max(0, (productsRes.data || []).length - maxFoodItems) : 0;
 
     const response = NextResponse.json({
       success: true,
@@ -122,7 +135,9 @@ export async function GET(request: Request) {
       topping_options: allToppingOptions,
       discounts: discountsRes.data || [],
       tables: tablesRes.data || [],
-      unpaid_orders: unpaidOrdersRes.data || [] 
+      unpaid_orders: unpaidOrdersRes.data || [],
+      max_food_items: maxFoodItems,
+      locked_food_count: lockedFoodCount,
     });
 
     response.headers.set('Access-Control-Allow-Origin', '*');
