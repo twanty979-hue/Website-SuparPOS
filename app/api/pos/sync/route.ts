@@ -176,6 +176,78 @@ export async function POST(request: Request) {
       return response;
     }
 
+    // 🌟 [SAVE_TABLE_ORDER]: พักโต๊ะ หรือ บันทึกสั่งอาหารเข้าโต๊ะแบบ Realtime (ไม่รอเช็คบิล)
+    if (action === 'save_table_order') {
+      const targetOrder = newOrderData || payload.orderData;
+      const targetItems = itemsToSave || payload.itemsToSave || payload.items || [];
+
+      if (!targetOrder || !targetOrder.id) {
+        throw new Error('Missing order data for save_table_order');
+      }
+
+      const orderId = isUuidValue(targetOrder.id) ? String(targetOrder.id) : null;
+      if (!orderId) {
+        throw new Error('Invalid order id for save_table_order (must be UUID)');
+      }
+
+      const cleanOrder: Record<string, any> = {
+        id: orderId,
+        brand_id: brandId,
+        table_id: isUuidValue(targetOrder.table_id) ? String(targetOrder.table_id) : null,
+        table_label: targetOrder.table_label || null,
+        table_access_token: targetOrder.table_access_token || null,
+        channel: targetOrder.channel || 'staff_pos',
+        status: targetOrder.status || 'pending',
+        total_price: Number(targetOrder.total_price || 0),
+        type: targetOrder.type || 'table',
+        created_at: targetOrder.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // 1. บันทึก / อัปเดตหัวบิล orders บน Cloud
+      const { error: orderError } = await supabase
+        .from('orders')
+        .upsert(cleanOrder);
+      if (orderError) throw orderError;
+
+      // 2. บันทึกรายการอาหาร order_items บน Cloud
+      if (Array.isArray(targetItems) && targetItems.length > 0) {
+        const cleanItems = targetItems.map((item: any) => {
+          const sanitized = sanitizeOrderItem(item);
+          return {
+            id: isUuidValue(sanitized.id) ? String(sanitized.id) : undefined,
+            order_id: cleanOrder.id,
+            product_id: sanitized.product_id,
+            product_name: sanitized.product_name || 'อาหาร',
+            quantity: Number(sanitized.quantity || sanitized.qty || 1),
+            price: Number(sanitized.price || 0),
+            original_price: Number(sanitized.original_price ?? sanitized.price ?? 0),
+            discount: Number(sanitized.discount || 0),
+            variant: sanitized.variant || 'normal',
+            note: sanitized.note || null,
+            status: sanitized.status || 'active',
+            promotion_snapshot: sanitized.promotion_snapshot,
+            toppings_snapshot: sanitized.toppings_snapshot,
+            created_at: sanitized.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+        });
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .upsert(cleanItems);
+        if (itemsError) throw itemsError;
+      }
+
+      const response = NextResponse.json({
+        success: true,
+        message: 'บันทึกออเดอร์เข้าโต๊ะสำเร็จ',
+        orderId: cleanOrder.id,
+      });
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      return response;
+    }
+
     if (!newOrderData || !itemsToSave || !paiOrderData) {
       throw new Error('รูปแบบโครงสร้างข้อมูลใน Payload ไม่ถูกต้องหรือไม่ครบถ้วน');
     }
