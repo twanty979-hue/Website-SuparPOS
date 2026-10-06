@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
       email,
       role: member.role || meta.role || 'cashier',
       permissions,
+      avatar_url: member.avatar_url || meta.avatar_url || null,
       has_store_access: hasStoreAccess,
       status: hasStoreAccess ? 'active' : 'pending',
     }
@@ -89,6 +90,9 @@ export async function POST(request: NextRequest) {
 
     const updatedRole = body.role === 'chef' ? 'chef' : 'cashier'
     const updatedFullName = body.full_name ? String(body.full_name).trim() : undefined
+    const updatedAvatarUrl = body.avatar_url !== undefined
+      ? (body.avatar_url ? String(body.avatar_url).trim() : null)
+      : undefined
     const updatedPermissions = Array.isArray(body.permissions)
       ? body.permissions
       : (updatedRole === 'chef' ? DEFAULT_CHEF_PERMS : DEFAULT_CASHIER_PERMS)
@@ -98,6 +102,7 @@ export async function POST(request: NextRequest) {
         role: updatedRole,
         permissions: updatedPermissions,
         ...(updatedFullName ? { full_name: updatedFullName } : {}),
+        ...(updatedAvatarUrl !== undefined ? { avatar_url: updatedAvatarUrl } : {}),
       },
     }
 
@@ -110,6 +115,7 @@ export async function POST(request: NextRequest) {
     await db.from('profiles').update({
       role: updatedRole,
       ...(updatedFullName ? { full_name: updatedFullName } : {}),
+      ...(updatedAvatarUrl !== undefined ? { avatar_url: updatedAvatarUrl } : {}),
       updated_at: new Date().toISOString(),
     }).eq('id', targetId)
 
@@ -118,6 +124,7 @@ export async function POST(request: NextRequest) {
       message: 'อัปเดตข้อมูลและสิทธิ์พนักงานเรียบร้อยแล้ว',
       role: updatedRole,
       permissions: updatedPermissions,
+      ...(updatedAvatarUrl !== undefined ? { avatar_url: updatedAvatarUrl } : {}),
     })
   }
 
@@ -156,6 +163,7 @@ export async function POST(request: NextRequest) {
   const password = String(body.password || '').trim()
   const fullName = String(body.full_name || body.name || '').trim()
   const role = body.role === 'chef' ? 'chef' : 'cashier'
+  const avatarUrl = body.avatar_url ? String(body.avatar_url).trim() : null
 
   if (!rawUsername) {
     return NextResponse.json({ success: false, error: 'กรุณากรอกชื่อผู้ใช้ (Username)' }, { status: 400 })
@@ -206,6 +214,7 @@ export async function POST(request: NextRequest) {
       permissions,
       brand_id: profile.brand_id,
       created_by_owner_id: profile.id,
+      avatar_url: avatarUrl,
     },
   })
 
@@ -223,6 +232,7 @@ export async function POST(request: NextRequest) {
     full_name: fullName,
     email,
     role,
+    avatar_url: avatarUrl,
     is_joined: true,
     is_active: true,
     updated_at: new Date().toISOString(),
@@ -246,6 +256,7 @@ export async function POST(request: NextRequest) {
       email,
       role,
       permissions,
+      avatar_url: avatarUrl,
       brand_id: profile.brand_id,
       brand_name: brandData?.name || '',
     },
