@@ -52,20 +52,24 @@ export async function GET(request: NextRequest) {
 
     const isActive = member.is_active !== false
     const hasStoreAccess = member.brand_id === profile.brand_id && isActive
-    const status = !isActive ? 'inactive' : (hasStoreAccess ? 'active' : 'pending')
+    const hasAuth = !!authUser
 
     return {
       ...member,
       name: member.full_name || meta.full_name || 'พนักงาน',
-      email,
+      email: email || (isActive ? '' : '(ถอดสิทธิ์แล้ว • คืนอีเมลว่าง)'),
       role: member.role || meta.role || 'cashier',
       permissions,
       avatar_url: member.avatar_url || meta.avatar_url || null,
       is_active: isActive,
+      has_auth: hasAuth,
       has_store_access: hasStoreAccess,
       status,
     }
   })
+
+  // 🌟 พนักงานที่ใช้งานอยู่ขึ้นก่อน ตามด้วยอดีตพนักงาน
+  data.sort((a, b) => (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0))
 
   // 🛡️ ดึงโควตาพนักงานตามแพลนที่ตั้งไว้จากฐานข้อมูลแบบไดนามิก
   let quota: {
@@ -216,6 +220,15 @@ export async function POST(request: NextRequest) {
           error: `โควตาพนักงานเต็มแล้ว (${activeStaffCount}/${maxStaff} คน) กรุณาอัปเกรดเป็น Ultimate หรือถอดพนักงานคนอื่นออกก่อน`,
         }, { status: 400 })
       }
+    }
+
+    // ตรวจสอบว่ายังมีบัญชี Auth หรือไม่ (กรณีถอดสิทธิ์แบบลบ Auth เพื่อปลดปล่อยอีเมล)
+    const { data: authUserData, error: authCheckErr } = await db.auth.admin.getUserById(targetId)
+    if (authCheckErr || !authUserData?.user) {
+      return NextResponse.json({
+        success: false,
+        error: `บัญชีพนักงานนี้ถูกถอดออกจากระบบและปลดปล่อยชื่อผู้ใช้/อีเมลไปแล้ว หากต้องการให้พนักงานกลับมาทำงาน กรุณากด "+ เพิ่มพนักงาน" เพื่อสร้างบัญชีใหม่ได้เลยครับ`,
+      }, { status: 400 })
     }
 
     // ปลดแบนใน Auth
@@ -434,27 +447,31 @@ export async function DELETE(request: NextRequest) {
     })
   }
 
-  // 🛡️ DEFAULT MODE: 'deactivate' (ถอดพนักงานออกอย่างปลอดภัย คืนโควตา แต่เก็บประวัติการขายไว้ 100%)
-  // 1. ระงับสิทธิ์ใน profiles
+  // 🛡️ DEFAULT MODE: 'deactivate' (ถอดพนักงานออกอย่างปลอดภัย คืนโควตา ลบ Auth เพื่อคืนเมลให้ว่าง แต่เก็บโปรไฟล์และยอดขายไว้ 100%)
+  // 1. ลบบัญชีออกจาก Supabase Auth เพื่อปลดปล่อยอีเมล/Username ให้คนใหม่นำไปใช้ต่อได้ทันที
+  try {
+    await db.auth.admin.deleteUser(employeeId)
+  } catch (authDelErr) {
+    console.warn('[Staff DELETE] Auth deleteUser warning:', authDelErr)
+  }
+
+  // 2. ปรับสถานะใน profiles เป็นไม่ใช้งาน และเคลียร์ email = null เพื่อปลดล็อก Unique Constraint (profiles_email_key)
+  // คงค่า id, full_name, role, brand_id ไว้ครบถ้วนเพื่อคงประวัติบิลใน pai_orders
   await db.from('profiles').update({
     is_active: false,
     is_joined: false,
+    email: null,
     updated_at: new Date().toISOString(),
   }).eq('id', employeeId)
 
-  // 2. แบนบัญชีใน Auth ไม่ให้ล็อกอินหรือสร้าง Session ใหม่ได้
+  // 3. เคลียร์ประวัติคำเชิญ (ถ้ามี)
   try {
-    await db.auth.admin.updateUserById(employeeId, {
-      ban_duration: '876000h', // 100 ปี
-      user_metadata: {
-        is_active: false,
-      },
-    })
+    await db.from('invitation_logs').delete().eq('employee_id', employeeId)
   } catch (_) {}
 
   return NextResponse.json({
     success: true,
-    message: `ถอดพนักงานออกจากร้านเรียบร้อยแล้ว คืนโควตาพนักงานทันที (ประวัติการขายและบิลย้อนหลังของ ${target.full_name || 'พนักงาน'} ยังคงอยู่ครบถ้วน)`,
+    message: `ถอดพนักงานออกจากร้านเรียบร้อยแล้ว คืนโควตาและปลดปล่อยชื่อผู้ใช้ให้คนใหม่นำไปใช้ได้ทันที (ประวัติการขายและบิลของ ${target.full_name || 'พนักงาน'} ยังคงอยู่ครบถ้วน 100%)`,
     action: 'deactivated',
   })
 }
