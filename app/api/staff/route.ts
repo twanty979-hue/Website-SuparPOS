@@ -41,30 +41,6 @@ export async function GET(request: NextRequest) {
   const { data: usersData } = await db.auth.admin.listUsers()
   const userMap = new Map((usersData?.users || []).map(u => [u.id, u]))
 
-  // 📊 คำนวณสถิติยอดขายและจำนวนบิลที่พนักงานแต่ละคนเคยสร้างไว้ใน pai_orders
-  const memberIds = (members || []).map(m => m.id)
-  const salesStatsMap = new Map<string, { total_orders: number; total_sales: number }>()
-
-  if (memberIds.length > 0) {
-    try {
-      const { data: staffOrders } = await db
-        .from('pai_orders')
-        .select('cashier_id, total_amount')
-        .eq('brand_id', profile.brand_id)
-        .in('cashier_id', memberIds)
-
-      if (staffOrders) {
-        for (const o of staffOrders) {
-          if (!o.cashier_id) continue
-          const cur = salesStatsMap.get(o.cashier_id) || { total_orders: 0, total_sales: 0 }
-          cur.total_orders += 1
-          cur.total_sales += Number(o.total_amount) || 0
-          salesStatsMap.set(o.cashier_id, cur)
-        }
-      }
-    } catch (_) {}
-  }
-
   const data = (members || []).map(member => {
     const authUser = userMap.get(member.id)
     // ✅ ลำดับ: auth email → profiles.email (fallback)
@@ -78,7 +54,6 @@ export async function GET(request: NextRequest) {
     const hasStoreAccess = member.brand_id === profile.brand_id && isActive
     const status = !isActive ? 'inactive' : (hasStoreAccess ? 'active' : 'pending')
     const hasAuth = !!authUser
-    const stats = salesStatsMap.get(member.id) || { total_orders: 0, total_sales: 0 }
 
     return {
       ...member,
@@ -94,8 +69,6 @@ export async function GET(request: NextRequest) {
       created_at: member.created_at || null,
       updated_at: member.updated_at || null,
       detached_at: !isActive ? (member.updated_at || null) : null,
-      total_orders: stats.total_orders,
-      total_sales: Math.round(stats.total_sales * 100) / 100,
     }
   })
 
