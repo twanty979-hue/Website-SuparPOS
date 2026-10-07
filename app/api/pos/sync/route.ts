@@ -124,12 +124,14 @@ export async function POST(request: Request) {
         }
       }
 
-      return {
+      const clean = {
         ...item,
         product_id: productId,
         promotion_snapshot: safeJsonParse(item.promotion_snapshot, null),
         toppings_snapshot: safeJsonParse(item.toppings_snapshot, []),
       };
+      delete clean.updated_at;
+      return clean;
     };
 
     if (action === 'cancel_order') {
@@ -229,7 +231,6 @@ export async function POST(request: Request) {
             promotion_snapshot: sanitized.promotion_snapshot,
             toppings_snapshot: sanitized.toppings_snapshot,
             created_at: sanitized.created_at || new Date().toISOString(),
-            updated_at: new Date().toISOString(),
           };
         });
 
